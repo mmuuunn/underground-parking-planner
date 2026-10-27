@@ -1,0 +1,17 @@
+/* Planning controls share the established paper and charcoal palette. */
+.planning-options{display:grid;gap:10px}.parking-option{border-top:1px solid #414246;padding-top:8px}
+.parking-option>label{display:block;color:#ddd;font-size:12px;margin-bottom:5px}
+.parking-option .option-inputs{display:grid;grid-template-columns:1fr 72px 1fr;gap:5px}
+.parking-option select,.parking-option input,.zone-editor select{width:100%;min-width:0;box-sizing:border-box;font:inherit;font-size:11px;background:#2c2d30;color:#ddd;border:1px solid #505155;border-radius:3px;padding:6px}
+.parking-option small{display:block;font-size:10px;color:#aaa;margin-top:5px;line-height:1.6}
+.parking-option .short{color:#e8a38a}.parking-option .option-basis{display:grid;grid-template-columns:1fr 72px;align-items:center;gap:6px;margin-top:6px;color:#aaa;font-size:10px}
+.area-summary{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:11px;margin:12px 0}.area-summary span{color:#aaa}.area-summary b{display:block;margin-top:3px;color:#ddd;font-weight:500}
+.zone-editor{border:1px solid #71664f;padding:10px;border-radius:4px;margin-top:10px}.zone-editor[hidden]{display:none}
+.zone-editor p{font-size:11px;color:#ddd;line-height:1.7}.zone-editor .row{margin-top:8px}
+.ramp-scheme{width:100%;height:auto;color:#c0b49f;margin:8px 0}.ramp-scheme text{font-size:10px;fill:#bbb}.ramp-scheme [data-part]{fill:none;stroke:#8e8e8e;stroke-width:3;cursor:pointer}.ramp-scheme [data-part].selected{stroke:#e5b771;stroke-width:5}
+.ramp-segments{display:flex;gap:4px;flex-wrap:wrap}.ramp-segments button{font-size:10px}.ramp-segments button[aria-pressed=true]{border-color:#b99b70;color:#f2d3a1}
+#rampFieldHelp{min-height:42px;line-height:1.7;color:#c4b397}.ramp-check summary{align-items:flex-start}.ramp-check summary span{line-height:1.6}.ramp-check .check-action{margin-bottom:12px}
+.check-evidence{color:#e7ceaa!important}.check-detail{margin:8px 0;font-size:10px;color:#aaa}.traffic-state{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin:8px 0}.traffic-state b{font-weight:500}.traffic-state[data-state=blocked] b,.traffic-state[data-state=unconnected] b{color:#e8a38a}
+.ug-car{fill:none;stroke-linejoin:round;stroke-linecap:round}.ug-car path,.ug-car rect,.ug-car line{vector-effect:non-scaling-stroke}.zone-pick{cursor:crosshair!important}.issue-explanation{font-size:11px;line-height:1.7;margin:5px 0;color:#c6c6c6}.issue-pop .issue-explanation{color:#51483c}
+@media(prefers-reduced-motion:reduce){.ug-flow{animation:none!important}.ug-car{display:none!important}}
+@media print{.ug-flow{display:inline!important;animation:none!important}.ug-car,#coreHandles,.issue-pop{display:none!important}}

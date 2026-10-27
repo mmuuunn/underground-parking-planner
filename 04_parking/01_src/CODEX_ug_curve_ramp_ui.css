@@ -1,0 +1,39 @@
+/* Curved ramp controls; the established monochrome drawing theme is retained. */
+#straightRampFields[hidden],#curveRampFields[hidden],#curveReview[hidden]{display:none!important}
+#rampKind{margin-bottom:12px}
+#straightRampFields #rampAlignEdge{grid-column:1/-1;justify-self:stretch;min-height:30px}
+#straightRampFields #rampAlignHint{grid-column:1/-1;margin:0 0 8px}
+.curve-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 8px;margin:12px 0}
+.curve-fields label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;color:#b8b8b8}
+.curve-fields input,.curve-fields select{box-sizing:border-box;width:100%;min-width:0;padding:7px 8px;background:#2c2d30;border:1px solid #48494c;border-radius:3px;color:#ddd;font:inherit;font-size:12px}
+.curve-fields input:focus,.curve-fields select:focus{outline:2px solid #af9161;outline-offset:1px}
+.curve-fields .curve-wide{grid-column:1/-1}
+.curve-fields input::placeholder{color:#8c8c8c;font-size:10px}
+.curve-checkbox{display:flex;align-items:center;gap:7px;font-size:11px;color:#bbb}
+.curve-checkbox input{accent-color:#aaa}
+.curve-legend{display:flex;gap:12px;font-size:10px;color:#aaa;margin:12px 0}
+.curve-legend span:before{content:"";display:inline-block;width:17px;border-top:2px solid #aaa;vertical-align:middle;margin-right:5px}
+.curve-legend .curve-curb-key:before{border-top:1px solid #7e8387}
+.curve-legend .curve-grade-key:before{border-top:2px dashed #bf934f}
+.curve-review .section-title{align-items:flex-start;gap:6px}
+.curve-review .review-badge{font-size:9px;white-space:normal;text-align:right}
+.curve-metrics{font-size:11px;line-height:1.7;color:#ddd;margin:8px 0}
+.curve-measurement{font-size:11px;line-height:1.7;color:#bbb;border-top:1px solid #45464a;padding-top:10px}
+.ramp-check{border-top:1px solid #3d3e40;font-size:11px}
+.ramp-check summary{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;cursor:pointer}
+.ramp-check summary span{margin-right:auto}
+.ramp-check summary b{font-size:10px;color:#bdbdbd}
+.ramp-check[data-verdict=FAIL] summary b,.ramp-check[data-verdict=INPUT_ERROR] summary b{color:#e3aa94}
+.ramp-check[data-verdict=UNDETERMINED] summary b{color:#d4bb91}
+.ramp-check p{font-size:11px;line-height:1.65;color:#b4b4b4;margin:0 0 10px;overflow-wrap:anywhere}
+#curveIssues:empty{display:none}
+#curveIssues ul{padding:10px 10px 10px 24px;background:#352e2c;border:1px solid #775849;border-radius:4px;font-size:11px;line-height:1.65;color:#e7c0ab;overflow-wrap:anywhere}
+#curveIssues li+li{margin-top:8px}
+.ramp-candidate-list{display:grid;gap:6px;margin-top:10px}
+.ramp-candidate-list[hidden]{display:none}
+.ramp-candidate{width:100%;text-align:left;background:#292a2d;border:1px solid #515158;border-radius:4px;color:#ddd;padding:8px 9px;cursor:pointer}
+.ramp-candidate:hover,.ramp-candidate:focus-visible{border-color:#bf934f;outline:none}
+.ramp-candidate b{font-size:11px}.ramp-candidate span{float:right;font-size:10px;color:#d1bc97}
+.ramp-candidate small{display:block;clear:both;margin-top:5px;color:#aaa;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:600px){.curve-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media print{#curveReview{display:none}}

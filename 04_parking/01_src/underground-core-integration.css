@@ -1,0 +1,22 @@
+/* The shared 2nd-generation core drawing uses the light underground plan palette. */
+.ug-core-plan { pointer-events:none; }
+.ug-core-plan .core-bound { fill:#f3f5f5; stroke:#71818b; stroke-width:1; stroke-dasharray:6 4; }
+.ug-core-plan .core-plan-zone,
+.ug-core-plan .core-stair-flight,
+.ug-core-plan .core-stair-landing { fill:#e2ebee; stroke:#50636d; stroke-width:1; }
+.ug-core-plan .core-stair-landing { fill:#d5e2e7; }
+.ug-core-plan .core-plan-symbol,
+.ug-core-plan .core-stair-step,
+.ug-core-plan .core-ev-door { stroke:#536a78; stroke-width:1; }
+.ug-core-plan .core-outline,
+.ug-core-plan .core-room-line { stroke:#4b5e68; stroke-width:1.15; }
+.ug-core-plan .core-hall { fill:#dbe5e9; }
+.ug-core-plan .core-plan-text { fill:#344853; stroke:#f3f5f5; stroke-width:2px; }
+.ug-core-plan .core-door,
+.ug-core-plan .core-entry { stroke:#b16e35; fill:none; stroke-width:1.2; }
+.ug-core-plan .core-entry { fill:#b16e35; stroke:none; }
+.ug-core-plan .core-door-cut,
+.ug-core-plan .core-ev-cut { stroke:#f3f5f5; }
+.ug-core-plan .core-hatch { stroke:#a87537; }
+.ug-core-plan .core-dim { display:none; }
+.ug-core-fail .core-bound { fill:#fbf1f1; stroke:#ab4a4a; stroke-width:1.8; stroke-dasharray:5 3; }

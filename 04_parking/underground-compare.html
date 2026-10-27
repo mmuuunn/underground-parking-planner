@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>지하 1층 평면도 · 지하주차 계획</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="01_src/underground-drawing.css">
+  <link rel="stylesheet" href="01_src/CODEX_ug_curve_ramp_ui.css">
+  <link rel="stylesheet" href="../06_core_layout/01_src/core_draw.css">
+  <link rel="stylesheet" href="01_src/underground-core-integration.css">
+  <link rel="stylesheet" href="01_src/planning-controls.css">
+<style>.issue-list{list-style:none;padding:0;margin:6px 0}.issue-list li{margin:0 0 8px;line-height:1.45}.issue-no{display:inline-block;min-width:16px;height:16px;border-radius:8px;background:#d23c3c;color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:16px;margin-right:4px}.issue-actions,.issue-moves{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}</style>
+</head>
+<body>
+<div id="calculationNotice" class="calculation-notice" role="status" aria-live="polite" hidden>배치를 계산하고 있습니다. 잠시 기다려 주세요.</div><div class="app">
+  <header class="app-header">
+    <a class="brand" href="underground-compare.html" aria-label="지하주차 계획 홈"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V4h18v16M8 20V9h8v11M3 15h5m8 0h5"/></svg><strong>주차계획</strong><span class="brand-divider"></span></a>
+    <div class="project"><span class="eyebrow">노원로26가길 7</span><span class="project-name">지하주차 기본계획 <span class="draft-badge">검토 초안</span></span></div>
+    <div class="header-actions"><button class="icon-btn" id="undoBtn" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소">↶</button><button class="icon-btn" id="redoBtn" title="다시 실행 (Ctrl+Y)" aria-label="다시 실행">↷</button><span class="action-divider"></span><button class="hbtn" id="fitBtn">화면 맞춤 <kbd>F</kbd></button><button class="hbtn" id="presentationBtn" aria-pressed="false">도면만 보기</button><button class="primary-btn" id="printBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7V2h10v5M5 14H2V7h16v7h-3M5 11h10v7H5z"/></svg>인쇄</button></div>
+  </header>
+  <main class="drawing-workspace">
+    <div class="workspace-bar"><span class="floor-tab"><b>B1</b> 지하 1층 평면도</span><div class="tools" id="tools" aria-label="편집 도구"></div><div class="view-switch" role="group" aria-label="도면 표현"><button id="drawingMode" class="active" aria-pressed="true">도면</button><button id="inspectionMode" aria-pressed="false">동선 검토</button></div><span class="workspace-unit">단위 mm</span></div>
+    <div class="sheet-area">
+      <div class="sheet-heading"><span class="eyebrow">PARKING PLAN</span><h1>지하 1층 평면도</h1><p>노원로26가길 7 <span>기본계획 / B1</span></p></div>
+      <svg id="plan" role="img" aria-label="편집 가능한 지하 1층 주차 평면도"></svg>
+      <div class="north" id="north"><svg viewBox="0 0 24 36" aria-hidden="true"><path d="M12 2 20 26 12 21 4 26Z" fill="none" stroke="currentColor"/><path d="M12 2V21L4 26Z" fill="currentColor"/></svg><span>N</span></div>
+      <div class="sheet-caption"><span class="drawing-number">A-101</span><div><strong>지하 1층 평면도</strong><span id="sheetSummary">배치 계산 중</span></div><div class="scalebar" id="scalebar"><div></div><span>10 m</span></div></div>
+      <div class="planTitle" aria-live="polite"><b id="ptName"></b><span id="ptSub"></span></div>
+    </div>
+    <div class="drawing-footer"><div class="legend"><span><i class="symbol-wall"></i>외벽·기둥</span><span><i class="symbol-stall"></i>주차구획</span><span class="route-key"><i style="background:#cacaca"></i>램프 진입</span><span class="route-key"><i style="background:#e3e3e3"></i>외곽 차로</span><span class="route-key"><i style="background:#f1f1f1"></i>주차열 차로</span><span class="route-key"><i style="background:repeating-linear-gradient(-45deg,#9a9a9a 0 1px,#e9e9e9 1px 4px)"></i>DA</span><span class="route-key"><i style="border:1px dashed #c29350;background:rgba(219,159,56,.08)"></i>자투리 후보</span><span class="route-key"><i style="background:#2f7bd8;height:2px"></i>차량 동선</span><span class="route-key"><i style="background:#e3eefb;border:1px solid #9bb8dc"></i>장애인 칸</span><span class="inspect-legend"><i class="symbol-warning"></i>동선 검토 필요</span></div><span id="viewStatus">도면 보기</span><button class="text-btn" id="helpBtn" aria-expanded="false">조작 안내 <span>?</span></button></div>
+    <div class="hintbar" id="hintbar"></div>
+  </main>
+  <aside aria-label="주차 계획 설정">
+    <div class="panel-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="planTab" aria-controls="planningPanel" aria-selected="true" class="active">계획</button><button role="tab" id="appearanceTab" aria-controls="appearancePanel" aria-selected="false">도면 표현</button></div>
+    <section class="result-section"><div class="section-title"><h2>주차 계획</h2><span id="reviewBadge" class="review-badge">검토 초안</span></div><div id="stats" aria-live="polite"></div></section>
+    <section id="curveReview" class="curve-review" aria-label="곡선 램프 판정" hidden>
+      <div class="section-title"><h2>곡선 램프 검토</h2><span id="curveReviewSummary" class="review-badge"></span></div>
+      <p id="curveMetrics" class="curve-metrics"></p><p id="curveConditions" class="note"></p>
+      <div id="curveIssues" role="status" aria-live="polite"></div><div id="curveChecks"></div>
+      <p id="curveMeasurement" class="curve-measurement"></p>
+      <p class="note">위 결과는 램프의 6개 항목입니다. 차량 회전·높이·보행·구조 전체를 확인한 결과는 아닙니다.</p>
+    </section>
+    <div id="planningPanel" role="tabpanel" aria-labelledby="planTab">
+      <section><div class="section-title"><h2>지하 외곽</h2><span class="section-index">01</span></div><div class="kv" id="massInfo"></div><p class="note">외곽을 선택해 꼭짓점과 변을 조정합니다.</p></section>
+      <section><div class="section-title"><h2>구조·주차 모듈</h2><span class="section-index">02</span></div><label class="field-label" for="moduleSel">주차구획 · 기둥 간격</label><select id="moduleSel" class="full-select"></select><details class="setting-details"><summary>격자 방향 조정</summary><div class="kv" id="ucsInfo"></div><div class="row"><button class="mini-btn" id="ucsPick">변에 맞추기</button><button class="mini-btn" id="ucsLong">긴 변에 맞추기</button><button class="mini-btn" id="ucsSuggest">방향 제안</button><button class="mini-btn" id="phaseSuggest">구조열 위치 제안</button></div><div class="row" id="ucsList"></div><div class="phase-list" id="phaseList" aria-live="polite"></div></details></section>
+      <section><div class="section-title"><h2>코어</h2><span class="section-index">03</span></div><div id="coreList"></div><label class="toggle-row"><span>장애인 칸 비율 % <small>(비우면 기본 3%, 지침 값이 있으면 입력)</small></span><input type="number" id="accRate" step="0.5" min="0" max="10" placeholder="3"></label><button class="add-btn" id="addCore">+ 코어 추가</button><button class="add-btn" id="bypassBtn">우회 만들기</button></section>
+      <section id="rampSettings"><div class="section-title"><h2>램프</h2><span class="section-index">04</span></div>
+        <label class="field-label" for="rampKind">램프 종류</label><select id="rampKind" class="full-select"><option value="straight">직선 램프</option><option value="curve">곡선 램프</option></select>
+        <div id="straightRampFields" class="ramp-fields"><label class="field-label">길이 <span class="input-unit"><input type="number" id="rampLen" step="0.5" min="10">m</span></label><label class="field-label">폭 <select id="rampW"><option value="3300">3.3 m · 1차로</option><option value="6000">6.0 m · 2차로</option></select></label><button type="button" class="mini-btn" id="rampAlignEdge" aria-pressed="false">외곽 변에 맞추기</button><p class="note" id="rampAlignHint">버튼을 누른 뒤 도면에서 맞출 외곽 변을 선택하세요. 벽 안쪽 0.7m에 놓고, 이후 끌어서 조정할 수 있습니다.</p></div>
+        <div id="curveRampFields" hidden>
+          <p class="note">치수·고도는 mm입니다. 길이와 반경은 입력한 값으로 검토하며 자동으로 늘리지 않습니다.</p>
+          <div class="curve-fields">
+            <label>내려갈 때 회전<select id="curveTurn" data-curve-field="turn"><option value="left">좌회전</option><option value="right">우회전</option></select></label>
+            <label>회전각 (°)<input id="curveTurnDeg" data-curve-field="turnDeg" type="number" step="1" min="0.001" max="359.999"></label>
+            <label>내변반경 (mm)<input id="curveRadius" data-curve-field="innerRadiusMm" type="number" step="100" min="1"></label>
+            <label>차로 수<select id="curveLanes" data-curve-field="lanes"><option value="1">1차로</option><option value="2">2차로</option></select></label>
+            <label class="curve-wide">법령상 차로 너비 (mm)<input id="curveWidth" data-curve-field="legalLaneWidthMm" type="number" step="100" min="1"></label>
+            <label>위쪽 직선 (mm)<input id="curveTop" data-curve-field="straightTopMm" type="number" step="100" min="0"></label>
+            <label>아래쪽 직선 (mm)<input id="curveBottom" data-curve-field="straightBottomMm" type="number" step="100" min="0"></label>
+            <label>위층 접속 고도 (mm)<input id="curveUpper" data-curve-field="upperLevelMm" type="number" step="1"></label>
+            <label>아래층 접속 고도 (mm)<input id="curveLower" data-curve-field="lowerLevelMm" type="number" step="1"></label>
+          </div>
+          <details class="setting-details"><summary>완화구간·연석</summary>
+            <div class="curve-fields">
+              <label>위 완화 길이 (mm)<input id="curveTransitionTop" data-curve-field="topTransitionMm" type="number" min="0" step="100"></label>
+              <label>아래 완화 길이 (mm)<input id="curveTransitionBottom" data-curve-field="bottomTransitionMm" type="number" min="0" step="100"></label>
+              <label>안쪽 연석 폭 (mm)<input id="curveCurbInner" data-curve-field="curbWidthInnerMm" type="number" min="0" step="10" placeholder="미입력"></label>
+              <label>바깥 연석 폭 (mm)<input id="curveCurbOuter" data-curve-field="curbWidthOuterMm" type="number" min="0" step="10" placeholder="미입력"></label>
+            </div><p class="note">완화 길이는 각 직선 안에서 떼어 냅니다. 벽–연석 간격 300mm, 연석 높이 150mm. 폭이 없으면 연석 설치선만 표시합니다.</p>
+          </details>
+          <details class="setting-details"><summary>법규 검토 조건</summary>
+            <div class="curve-fields">
+              <label class="curve-wide">같은 램프 이용 전체 대수<input id="curveTotal" data-curve-field="totalStalls" type="number" min="0" step="1" placeholder="모르면 비워 두세요"></label>
+              <label>주차장 구분<select id="curveParkingKind" data-curve-field="parkingKind"><option value="noeoe">노외</option><option value="buseol">부설</option><option value="unknown">미확인</option></select></label>
+              <label>허가 기준일<input id="curvePermit" data-curve-field="permitDate" type="date"></label>
+              <label class="curve-wide">시설 용도 (부설일 때)<input id="curveFacility" data-curve-field="facilityUse" type="text" placeholder="예: 업무시설"></label>
+            </div>
+            <label class="curve-checkbox"><input id="curveSeparated" data-curve-field="separatedInOut" type="checkbox">진입·진출 차로 분리</label>
+            <p class="note">처음 값은 공통 장면의 80대·노외 기준입니다. 실제 사업 조건에 맞춰 바꾸세요. 생성된 주차대수로 대신 계산하지 않습니다.</p>
+          </details>
+          <div class="curve-legend"><span class="curve-wall-key">벽</span><span class="curve-curb-key">연석</span><span class="curve-grade-key">경사 측정선</span></div>
+        </div>
+        <div class="row"><button class="mini-btn" id="rampRot">90° 회전</button><button class="mini-btn" id="rampFlip">방향 뒤집기</button><button class="mini-btn" id="rampSuggest">자리 제안</button></div><div class="kv" id="rampInfo"></div><div id="rampCandidateList" class="ramp-candidate-list" aria-label="램프 자리 제안" hidden></div>
+      </section>
+      <section><details class="setting-details"><summary>편집 설정</summary><div class="field-label">이동 간격</div><div class="row" id="snapRow"></div><button class="text-btn reset-btn" id="resetBtn">처음 상태로 되돌리기</button></details></section>
+    </div>
+    <div id="appearancePanel" role="tabpanel" aria-labelledby="appearanceTab" hidden>
+      <section><h2>선과 면</h2><p class="note">외벽과 기둥을 진하게, 주차구획과 치수를 가늘게 표시합니다.</p><label class="toggle-row"><span>주차구획 옅은 채움</span><input type="checkbox" id="stallFillToggle"></label><label class="toggle-row"><span>바퀴멈춤 표시</span><input type="checkbox" id="stoppersToggle" checked></label><label class="toggle-row"><span>코어·램프 이름</span><input type="checkbox" id="namesToggle" checked></label><label class="toggle-row"><span>동선 움직임(흐르는 점선·차)</span><input type="checkbox" id="motionToggle" checked></label><button class="add-btn" id="copyScene" title="외곽·램프·코어 입력을 글로 복사합니다. 문제 장면을 개발자에게 붙여 주면 그대로 다시 열 수 있습니다">현재 장면 복사(재현용)</button></section>
+      <section><h2>치수와 주변</h2><label class="toggle-row"><span>외곽 치수</span><input type="checkbox" id="dimensionsToggle" checked></label><label class="toggle-row"><span>기둥 축선</span><input type="checkbox" id="axesToggle" checked></label><label class="toggle-row"><span>대지 경계</span><input type="checkbox" id="siteToggle"></label></section>
+      <section><h2>검토 표시</h2><p class="note">동선 검토에서 순환 중심선과 막다른 차로, 제외된 구획을 확인합니다. 수정이 필요한 항목은 계획 요약에 항상 표시됩니다.</p><button class="add-btn" id="inspectFromPanel">동선 검토 열기 →</button></section>
+    </div>
+    <section class="verification-section"><details><summary>검토 항목과 계산 정보</summary><div id="detail"></div></details></section>
+    <div class="panel-footnote">회전 궤적·구조·보행·법규 확인 전의 계획 초안입니다.</div>
+  </aside>
+</div>
+
+<script src="../00_shared/lib/clipper.js"></script>
+<script src="../01_stair/01_src/stair.js"></script>
+<script src="../06_core_layout/01_src/core_layout.js"></script>
+<script src="../06_core_layout/01_src/core_gen2.js"></script>
+<script>window.esc = window.CoreLayout.esc;</script>
+<script src="../06_core_layout/01_src/core_draw.js"></script>
+<script src="src/underground/candidates/rectangular-loop-v04.js"></script>
+<script>window.UGLoop = window.UGEngine;</script>
+<script src="01_src/plan/CLAUDE_ugp_geom.js"></script>
+<script src="01_src/plan/planning-boundary.js"></script><script src="01_src/plan/planning-zones.js"></script>
+<script src="01_src/plan/CLAUDE_ugp_grid.js"></script>
+<script src="01_src/plan/CLAUDE_ugp_network.js"></script>
+<script src="01_src/plan/CLAUDE_ugp_curve_ramp.js"></script>
+<script src="01_src/plan/CLAUDE_ugp_ramp.js"></script>
+<script src="01_src/plan/stall-modules.js"></script><script src="01_src/plan/stall-allocation.js"></script><script src="01_src/plan/occupant-routing.js"></script><script src="01_src/plan/core-fit.js"></script><script src="01_src/plan/CLAUDE_ugp_layout.js"></script>
+<script src="01_src/plan/CLAUDE_ugp_verify.js"></script>
+<script src="01_src/plan/vehicle-routes.js"></script>
+<script src="01_src/plan/CLAUDE_ugp_plan.js"></script>
+<script src="src/underground/evaluators/evaluator-core.js"></script>
+<!-- file:// cannot fetch JSON reliably. Keep this snapshot equal to data-source. -->
+<script type="application/json" id="parkingRules" data-source="src/underground/rules/kr-parking-rules-2026-07-27.json">
+{
+  "schema": "ug-rules/0.1",
+  "id": "kr-parking-rules-2026-07-27",
+  "namespace": "law",
+  "edition": {
+    "name": "국토교통부령 제1604호",
+    "effectiveFrom": "2026-07-27",
+    "effectiveTo": null,
+    "rampGeometryEffectiveFrom": "2026-03-31"
+  },
+  "source": {
+    "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+    "checkedOn": "2026-10-24",
+    "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+    "secondCheck": "done"
+  },
+  "rules": [
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-straight-one-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 3300,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-straight-two-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 6000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-curve-one-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 3600,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-curve-two-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 6500,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.large-ramp-threshold",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 사목 1)",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minStalls",
+        "value": 50,
+        "unit": "stall"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.large-ramp-two-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 사목 1)",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 6000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-straight-slope",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 라목",
+      "status": "verified",
+      "quantity": {
+        "name": "maxSlopePct",
+        "value": 17,
+        "unit": "%"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-curve-slope",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 라목",
+      "status": "verified",
+      "quantity": {
+        "name": "maxSlopePct",
+        "value": 14,
+        "unit": "%"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curve-inner-radius",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 나목",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minRadiusMm",
+        "value": 6000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.small-curve-inner-radius",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 나목",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minRadiusMm",
+        "value": 5000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.motorcycle-curve-inner-radius",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 나목",
+      "status": "verified",
+      "quantity": {
+        "name": "minRadiusMm",
+        "value": 3000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-convex-50",
+      "citation": "주차장법 시행규칙 별표 1",
+      "status": "verified",
+      "quantity": {
+        "name": "minLengthMm",
+        "value": 1700,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-concave-100",
+      "citation": "주차장법 시행규칙 별표 1",
+      "status": "verified",
+      "quantity": {
+        "name": "minLengthMm",
+        "value": 2000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-concave-threshold",
+      "citation": "주차장법 시행규칙 별표 1",
+      "status": "verified",
+      "quantity": {
+        "name": "minStalls",
+        "value": 100,
+        "unit": "stall"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-break-straight",
+      "citation": "주차장법 시행규칙 별표 1 비고",
+      "status": "verified",
+      "quantity": {
+        "name": "minChangePct",
+        "value": 8.5,
+        "unit": "%"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-break-curve",
+      "citation": "주차장법 시행규칙 별표 1 비고",
+      "status": "verified",
+      "quantity": {
+        "name": "minChangePct",
+        "value": 7,
+        "unit": "%"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-max-slope-ratio",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 사목 2)",
+      "status": "verified",
+      "quantity": {
+        "name": "maxRatioPct",
+        "value": 50,
+        "unit": "%"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curb-wall-offset",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minOffsetMm",
+        "value": 300,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curb-min-height",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minHeightMm",
+        "value": 100,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curb-max-height",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "maxHeightMm",
+        "value": 150,
+        "unit": "mm"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.4.entrance-width",
+      "citation": "주차장법 시행규칙 제6조제1항제4호",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 3500,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.4.large-entrance-width",
+      "citation": "주차장법 시행규칙 제6조제1항제4호",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 5500,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.compact",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2000,
+        "depthMm": 3600
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.general",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2500,
+        "depthMm": 5000
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.expanded",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2600,
+        "depthMm": 5200
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.accessible",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 3300,
+        "depthMm": 5000
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.motorcycle",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 1000,
+        "depthMm": 2300
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.1.compact",
+      "citation": "주차장법 시행규칙 제3조제1항제1호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 1700,
+        "depthMm": 4500
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / ALRIS 조회 일치 + 사용자 확인 결정 (2026-10-24)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.1.general",
+      "citation": "주차장법 시행규칙 제3조제1항제1호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2000,
+        "depthMm": 6000
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / ALRIS 조회 일치 + 사용자 확인 결정 (2026-10-24)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.1.motorcycle",
+      "citation": "주차장법 시행규칙 제3조제1항제1호",
+      "status": "needs-recheck",
+      "quantity": {
+        "widthMm": 1000,
+        "depthMm": 2300
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "pending"
+      }
+    },
+    {
+      "ruleId": "kr.rule11.p5.small-attached",
+      "citation": "주차장법 시행규칙 제11조제5항",
+      "status": "unverified",
+      "quantity": {
+        "name": "maxStalls",
+        "value": 8,
+        "unit": "stall"
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "pending"
+      }
+    },
+    {
+      "ruleId": "kr.rule11.p1.attached-application",
+      "citation": "주차장법 시행규칙 제11조제1항",
+      "status": "verified",
+      "quantity": null,
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    }
+  ]
+}
+</script>
+<script src="01_src/CODEX_ug_compare_page.js"></script>
+<script src="01_src/planning-controls.js"></script>
+<script src="01_src/CODEX_underground_drawing_presentation.js"></script>
+</body>
+</html>

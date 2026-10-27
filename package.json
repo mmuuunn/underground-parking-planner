@@ -1,0 +1,9 @@
+{
+  "name": "underground-parking-planner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Underground parking basic-planning prototype and verification harness",
+  "scripts": {
+    "test": "node --test --test-isolation=none 04_parking/02_tests/planning-backend.test.cjs 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs 04_parking/02_tests/CLAUDE_ug_plan_invariance.test.cjs 04_parking/02_tests/CLAUDE_ug_curve_ramp.test.cjs 04_parking/02_tests/parking-turns.test.cjs"
+  }
+}

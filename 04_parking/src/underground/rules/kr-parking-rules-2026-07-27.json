@@ -1,0 +1,805 @@
+{
+  "schema": "ug-rules/0.1",
+  "id": "kr-parking-rules-2026-07-27",
+  "namespace": "law",
+  "edition": {
+    "name": "국토교통부령 제1604호",
+    "effectiveFrom": "2026-07-27",
+    "effectiveTo": null,
+    "rampGeometryEffectiveFrom": "2026-03-31"
+  },
+  "source": {
+    "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+    "checkedOn": "2026-10-24",
+    "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+    "secondCheck": "done"
+  },
+  "rules": [
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-straight-one-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 3300,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-straight-two-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 6000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-curve-one-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 3600,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-curve-two-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 6500,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.large-ramp-threshold",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 사목 1)",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minStalls",
+        "value": 50,
+        "unit": "stall"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.large-ramp-two-lane-width",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 사목 1)",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 6000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-straight-slope",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 라목",
+      "status": "verified",
+      "quantity": {
+        "name": "maxSlopePct",
+        "value": 17,
+        "unit": "%"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.ramp-curve-slope",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 라목",
+      "status": "verified",
+      "quantity": {
+        "name": "maxSlopePct",
+        "value": 14,
+        "unit": "%"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curve-inner-radius",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 나목",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minRadiusMm",
+        "value": 6000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.small-curve-inner-radius",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 나목",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minRadiusMm",
+        "value": 5000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.motorcycle-curve-inner-radius",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 나목",
+      "status": "verified",
+      "quantity": {
+        "name": "minRadiusMm",
+        "value": 3000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-convex-50",
+      "citation": "주차장법 시행규칙 별표 1",
+      "status": "verified",
+      "quantity": {
+        "name": "minLengthMm",
+        "value": 1700,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-concave-100",
+      "citation": "주차장법 시행규칙 별표 1",
+      "status": "verified",
+      "quantity": {
+        "name": "minLengthMm",
+        "value": 2000,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-concave-threshold",
+      "citation": "주차장법 시행규칙 별표 1",
+      "status": "verified",
+      "quantity": {
+        "name": "minStalls",
+        "value": 100,
+        "unit": "stall"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-break-straight",
+      "citation": "주차장법 시행규칙 별표 1 비고",
+      "status": "verified",
+      "quantity": {
+        "name": "minChangePct",
+        "value": 8.5,
+        "unit": "%"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-break-curve",
+      "citation": "주차장법 시행규칙 별표 1 비고",
+      "status": "verified",
+      "quantity": {
+        "name": "minChangePct",
+        "value": 7,
+        "unit": "%"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.transition-max-slope-ratio",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 사목 2)",
+      "status": "verified",
+      "quantity": {
+        "name": "maxRatioPct",
+        "value": 50,
+        "unit": "%"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2024-09-20",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      },
+      "note": "7-4의 8번 행(확정, done) 수치를 레코드로 옮김. 별표 1 비고·사목 2) 원문 2026-10-26 재대조(R04 계약 v0.1)"
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curb-wall-offset",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minOffsetMm",
+        "value": 300,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curb-min-height",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "minHeightMm",
+        "value": 100,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.5.curb-max-height",
+      "citation": "주차장법 시행규칙 제6조제1항제5호 다목",
+      "status": "verified",
+      "quantity": {
+        "name": "maxHeightMm",
+        "value": 150,
+        "unit": "mm"
+      },
+      "comparator": "<=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.4.entrance-width",
+      "citation": "주차장법 시행규칙 제6조제1항제4호",
+      "status": "verified",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 3500,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule6.p1.4.large-entrance-width",
+      "citation": "주차장법 시행규칙 제6조제1항제4호",
+      "status": "verified",
+      "basis": "rampSystem.totalStalls",
+      "quantity": {
+        "name": "minWidthMm",
+        "value": 5500,
+        "unit": "mm"
+      },
+      "comparator": ">=",
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.compact",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2000,
+        "depthMm": 3600
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.general",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2500,
+        "depthMm": 5000
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.expanded",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2600,
+        "depthMm": 5200
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.accessible",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 3300,
+        "depthMm": 5000
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.2.motorcycle",
+      "citation": "주차장법 시행규칙 제3조제1항제2호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 1000,
+        "depthMm": 2300
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.1.compact",
+      "citation": "주차장법 시행규칙 제3조제1항제1호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 1700,
+        "depthMm": 4500
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / ALRIS 조회 일치 + 사용자 확인 결정 (2026-10-24)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.1.general",
+      "citation": "주차장법 시행규칙 제3조제1항제1호",
+      "status": "verified",
+      "quantity": {
+        "widthMm": 2000,
+        "depthMm": 6000
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / ALRIS 조회 일치 + 사용자 확인 결정 (2026-10-24)",
+        "secondCheck": "done"
+      }
+    },
+    {
+      "ruleId": "kr.rule3.p1.1.motorcycle",
+      "citation": "주차장법 시행규칙 제3조제1항제1호",
+      "status": "needs-recheck",
+      "quantity": {
+        "widthMm": 1000,
+        "depthMm": 2300
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2019-03-01",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "pending"
+      }
+    },
+    {
+      "ruleId": "kr.rule11.p5.small-attached",
+      "citation": "주차장법 시행규칙 제11조제5항",
+      "status": "unverified",
+      "quantity": {
+        "name": "maxStalls",
+        "value": 8,
+        "unit": "stall"
+      },
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "pending"
+      }
+    },
+    {
+      "ruleId": "kr.rule11.p1.attached-application",
+      "citation": "주차장법 시행규칙 제11조제1항",
+      "status": "verified",
+      "quantity": null,
+      "namespace": "law",
+      "edition": {
+        "name": "국토교통부령 제1604호",
+        "effectiveFrom": "2026-07-27",
+        "effectiveTo": null,
+        "textValidFrom": "2026-03-31",
+        "rampGeometryEffectiveFrom": "2026-03-31"
+      },
+      "source": {
+        "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsId=008238&lsJoLnkSeq=1000128034&print=print",
+        "checkedOn": "2026-10-24",
+        "checkedBy": "Claude Sonnet 5.5 (1차) / 상위 모델 (2차)",
+        "secondCheck": "done"
+      }
+    }
+  ]
+}

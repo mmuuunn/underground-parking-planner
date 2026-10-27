@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "acceptance": "Reference results only; stage 0 awaits user review.",
+  "cases": [
+    {
+      "id": "rectangle",
+      "source": "handoff-69 reference shape",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            80000,
+            0
+          ],
+          [
+            80000,
+            60000
+          ],
+          [
+            0,
+            60000
+          ]
+        ],
+        "ucs": 0,
+        "cores": [],
+        "ramp": {
+          "x": 30000,
+          "y": 52000,
+          "angleDeg": 0,
+          "widthMm": 6000,
+          "lengthMm": 24000
+        },
+        "floorMm": 3800
+      },
+      "expected": {
+        "stallCount": 130,
+        "hasLoop": true,
+        "deadEnds": 0,
+        "dryAreaM2": 1381,
+        "status": "FEASIBLE",
+        "violations": []
+      }
+    },
+    {
+      "id": "l-shape",
+      "source": "handoff-69 reference shape",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            80000,
+            0
+          ],
+          [
+            80000,
+            30000
+          ],
+          [
+            40000,
+            30000
+          ],
+          [
+            40000,
+            70000
+          ],
+          [
+            0,
+            70000
+          ]
+        ],
+        "ucs": 0,
+        "cores": [],
+        "ramp": {
+          "x": 30000,
+          "y": 52000,
+          "angleDeg": 0,
+          "widthMm": 6000,
+          "lengthMm": 24000
+        },
+        "floorMm": 3800
+      },
+      "expected": {
+        "stallCount": 67,
+        "hasLoop": true,
+        "deadEnds": 0,
+        "dryAreaM2": 1639,
+        "status": "CONDITIONAL",
+        "violations": [
+          "RAMP_OFFGRID"
+        ]
+      }
+    },
+    {
+      "id": "diagonal",
+      "source": "handoff-69 reference shape",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            80000,
+            0
+          ],
+          [
+            80000,
+            30000
+          ],
+          [
+            55000,
+            60000
+          ],
+          [
+            0,
+            60000
+          ]
+        ],
+        "ucs": 0,
+        "cores": [],
+        "ramp": {
+          "x": 30000,
+          "y": 52000,
+          "angleDeg": 0,
+          "widthMm": 6000,
+          "lengthMm": 24000
+        },
+        "floorMm": 3800
+      },
+      "expected": {
+        "stallCount": 120,
+        "hasLoop": true,
+        "deadEnds": 0,
+        "dryAreaM2": 1197,
+        "status": "FEASIBLE",
+        "violations": []
+      }
+    },
+    {
+      "id": "nowon-user-snapshot",
+      "source": "handoff userdoc2.txt snapshot, not live browser",
+      "input": {
+        "mass": [
+          [
+            -28477,
+            55974
+          ],
+          [
+            -33700,
+            45170
+          ],
+          [
+            -15694,
+            36465
+          ],
+          [
+            -32232,
+            2253
+          ],
+          [
+            36192,
+            -30824
+          ],
+          [
+            45767,
+            -11017
+          ],
+          [
+            45349,
+            20285
+          ]
+        ],
+        "ucs": -25.8,
+        "cores": [
+          {
+            "c": [
+              23545,
+              11943
+            ],
+            "w": 9000,
+            "d": 9000
+          },
+          {
+            "c": [
+              11391,
+              17819
+            ],
+            "w": 18000,
+            "d": 9000
+          }
+        ],
+        "ramp": {
+          "x": -9481,
+          "y": 40126,
+          "angleDeg": -25.8,
+          "widthMm": 6000,
+          "lengthMm": 24000
+        },
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "wallMm": 400
+        },
+        "floorMm": 3800
+      },
+      "expected": {
+        "stallCount": 105,
+        "hasLoop": true,
+        "deadEnds": 0,
+        "dryAreaM2": 668,
+        "status": "FEASIBLE",
+        "violations": []
+      }
+    },
+    {
+      "id": "narrow-wing",
+      "source": "handoff-69 reference shape",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            100000,
+            0
+          ],
+          [
+            100000,
+            20000
+          ],
+          [
+            60000,
+            20000
+          ],
+          [
+            60000,
+            60000
+          ],
+          [
+            0,
+            60000
+          ]
+        ],
+        "ucs": 0,
+        "cores": [],
+        "ramp": {
+          "x": 30000,
+          "y": 52000,
+          "angleDeg": 0,
+          "widthMm": 6000,
+          "lengthMm": 24000
+        },
+        "floorMm": 3800
+      },
+      "expected": {
+        "stallCount": 122,
+        "hasLoop": true,
+        "deadEnds": 1,
+        "dryAreaM2": 1128,
+        "status": "CONDITIONAL",
+        "violations": [
+          "DEAD_END"
+        ]
+      }
+    },
+    {
+      "id": "all-oblique",
+      "source": "stage-0 five reference masses; six stalls lack aisle frontage pending screen review",
+      "input": {
+        "mass": [[0, 0], [80000, 5000], [72000, 60000], [12000, 64000]],
+        "ucs": 0,
+        "cores": [],
+        "ramp": {"x": 30000, "y": 52000, "angleDeg": 0, "widthMm": 6000, "lengthMm": 24000},
+        "floorMm": 3800
+      },
+      "expected": {
+        "stallCount": 107,
+        "hasLoop": true,
+        "deadEnds": 0,
+        "dryAreaM2": 1025,
+        "status": "CONDITIONAL",
+        "violations": ["STALL_NO_FRONT"]
+      },
+      "expectedNoFront": 15
+    }
+  ]
+}
