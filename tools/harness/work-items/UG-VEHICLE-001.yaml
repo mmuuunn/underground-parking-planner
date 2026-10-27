@@ -1,11 +1,13 @@
 id: UG-VEHICLE-001
-status: USER_GATE
+status: RESCOPE_REQUIRED
 stage: vehicle-circulation
 authority: codex
 owner: codex
 reviewer: claude
 review_result: 위치와 거리 계산에 결함 없음; 두 위반 지점 중 가장 이른 지점을 확인하는 회귀 테스트 추가
 verification_result: 59/59 tests passed
+follow_up: UG-VEHICLE-002
+rescope_reason: Pentagon inner screen merges the route's 91.3-degree stop with a nearby 140.2-degree ring issue, showing the wrong location and reason.
 user_gate: 대표 도면에서 급회전 표시 위치 확인 대기
 verify_profile: vehicle-circulation
 question: L자·전변사선·오각형 안쪽에서 차량이 정확한 위치와 이유로 정지하는가?

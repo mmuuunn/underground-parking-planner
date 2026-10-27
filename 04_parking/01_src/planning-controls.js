@@ -25,7 +25,7 @@
   function issues(r){
     const list=(r?.issues||[]).map(x=>({...x,fixes:x.fixes||[]})),tr=routes(r);
     for(const key of ['entry','exit']){const route=tr?.[key],v=route?.firstIssue;if(!v)continue;
-      const same=v.id==='RAMP_APPROACH'?list.find(x=>x.id==='RAMP_OFFGRID'):v.id==='VEHICLE_SHARP_TURN'?list.find(x=>x.id==='RING_SHARP_TURN'&&x.at&&v.at&&G.len(G.sub(x.at,v.at))<=4712):null;
+      const same=v.id==='RAMP_APPROACH'?list.find(x=>x.id==='RAMP_OFFGRID'):null;
       if(same){same.note+=` · ${key==='entry'?'진입':'진출'} 차량 정지`;same.traffic=key;continue;}
       list.push({id:v.id,note:`${key==='entry'?'진입':'진출'} 차량: ${v.note}`,at:v.at,zone:v.body?[v.body]:[],fixes:['ramp','phase'],traffic:key});}
     return list;

@@ -1,0 +1,39 @@
+id: UG-VEHICLE-002
+status: VERIFYING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: claude
+review_result: PENDING_USER_AUTHORIZATION_FOR_READ_ONLY_DIFF_REVIEW
+verification_result: 59/59 tests passed; pentagon inner 120 stalls and separate 140.2/91.3-degree issues; all-oblique 107 stalls with entry and exit issues shown.
+user_gate: PENDING_REPRESENTATIVE_SCREEN_APPROVAL
+verify_profile: vehicle-circulation
+question: Does the pentagon inner screen show the actual driven route stop separately from the ring geometry issue?
+user_decision: The user approves the representative screen before the vehicle circulation stage closes.
+
+allowed_files:
+  - 04_parking/01_src/planning-controls.js
+
+must_preserve:
+  - The 59 passing calculation checks and existing capacity reference cases.
+  - The route's 91.3-degree stop at 19218,21149 and the ring's 140.2-degree issue at 19950,19834.
+  - Entry and exit path calculations and parking placement.
+
+must_fail_correctly:
+  - Nearby ring and driven route turns with different positions or reasons appear as separate issues.
+  - A user can focus the actual driven route stop on the screen.
+
+not_doing:
+  - Changes to route geometry or feasibility thresholds.
+  - New parking placement or ramp generation.
+  - New display style or animation.
+
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 1
+max_new_production_lines: 80
+
+stop_conditions:
+  - A change outside the allowed files is needed.
+  - Existing capacity or route calculation results change.
+  - The representative screen cannot distinguish the two locations.
