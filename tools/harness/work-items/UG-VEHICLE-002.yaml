@@ -1,12 +1,12 @@
 id: UG-VEHICLE-002
-status: USER_GATE
+status: ACCEPTED
 stage: vehicle-circulation
 authority: codex
 owner: codex
 reviewer: claude
 review_result: PASS; both distinct bend issues retain their own location and reason. A truly identical bend could appear twice; no matching reference case showed this.
 verification_result: 59/59 tests passed; pentagon inner 120 stalls and separate 140.2/91.3-degree issues; all-oblique 107 stalls with entry and exit issues shown.
-user_gate: PENDING_REPRESENTATIVE_SCREEN_APPROVAL
+user_gate: 2026-10-27 user confirmed the marker represents the design-failure point under the vehicle route check.
 verify_profile: vehicle-circulation
 question: Does the pentagon inner screen show the actual driven route stop separately from the ring geometry issue?
 user_decision: The user approves the representative screen before the vehicle circulation stage closes.
