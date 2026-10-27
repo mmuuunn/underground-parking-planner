@@ -12,7 +12,16 @@ test('a rapid multi-bend turn reports the bend that crosses the limit',()=>{
   assert.equal(v.firstIssue.id,'VEHICLE_SHARP_TURN');
   assert.deepEqual(v.firstIssue.at,[4000,3000]);
   assert.equal(v.firstIssue.distanceMm,3000+Math.SQRT2*1000+2000);
-  assert(v.stopDistanceMm>=v.firstIssue.distanceMm-v.vehicle.lengthMm/2-101);
+  assert.equal(v.stopDistanceMm,Math.round(v.firstIssue.distanceMm-v.vehicle.lengthMm/2-100));
+});
+test('when multiple bends violate the limit, the earliest crossing is reported',()=>{
+  const P=[[0,0],[3000,0],[3420,-940],[4186,-297],[3686,569]];
+  const v=E.checkVehiclePath(wide,P);
+  assert.equal(v.state,'blocked');
+  assert.equal(v.firstIssue.id,'VEHICLE_SHARP_TURN');
+  assert.deepEqual(v.firstIssue.at,[3420,-940]);
+  assert.equal(v.firstIssue.distanceMm,3000+Math.hypot(420,-940));
+  assert.equal(v.stopDistanceMm,Math.round(v.firstIssue.distanceMm-v.vehicle.lengthMm/2-100));
 });
 test('P1 gradual 90 and 180 degree arcs stay clear',()=>{
   for(const steps of [30,60]){const P=[[-15000,-6000],[0,-6000]];for(let k=1;k<=steps;k++){const t=-Math.PI/2+k*Math.PI/60;P.push([6000*Math.cos(t),6000*Math.sin(t)].map(Math.round));}P.push(steps===30?[6000,15000]:[-15000,6000]);assert.equal(E.checkVehiclePath(wide,P).state,'clear');}

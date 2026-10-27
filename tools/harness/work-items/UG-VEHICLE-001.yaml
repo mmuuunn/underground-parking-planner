@@ -1,9 +1,12 @@
 id: UG-VEHICLE-001
-status: SCOPED
+status: USER_GATE
 stage: vehicle-circulation
 authority: codex
 owner: codex
 reviewer: claude
+review_result: 위치와 거리 계산에 결함 없음; 두 위반 지점 중 가장 이른 지점을 확인하는 회귀 테스트 추가
+verification_result: 59/59 tests passed
+user_gate: 대표 도면에서 급회전 표시 위치 확인 대기
 verify_profile: vehicle-circulation
 question: L자·전변사선·오각형 안쪽에서 차량이 정확한 위치와 이유로 정지하는가?
 user_decision: 골격을 다시 만들어 대수 변화를 받아들일지 판단할 수 있게 한다.
