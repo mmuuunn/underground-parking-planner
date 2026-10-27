@@ -11,10 +11,13 @@
   function turnIssue(P){
     const segs=[];let passed=0;
     for(let i=1;i<P.length;i++){const d=sub(P[i],P[i-1]),L=len(d);if(L>1)segs.push({a:P[i-1],u:mul(d,1/L),start:passed,end:passed+L});passed+=L;}
+    let first=null;
     for(let i=0;i<segs.length;i++)for(let j=i+1;j<segs.length&&segs[j].start-segs[i].end<=TURN_WINDOW;j++){
       const angle=Math.acos(Math.max(-1,Math.min(1,G.dot(segs[i].u,segs[j].u))))*180/Math.PI;
-      if(angle>TURN_LIMIT)return {id:'VEHICLE_SHARP_TURN',at:segs[i+1].a.map(Math.round),angleDeg:Math.round(angle*10)/10,windowMm:TURN_WINDOW,distanceMm:segs[i].end,note:`경로 4.7m 안에서 진행 방향이 ${angle.toFixed(1)}° 바뀝니다 — 합류 방향과 직선 길이를 조정하세요`};
-    }return null;
+      // The threshold is crossed at the later bend, not the first bend in the window.
+      // Several starting segments can detect it; report the earliest actual crossing.
+      if(angle>TURN_LIMIT&&(!first||segs[j].start<first.distanceMm))first={id:'VEHICLE_SHARP_TURN',at:segs[j].a.map(Math.round),angleDeg:Math.round(angle*10)/10,windowMm:TURN_WINDOW,distanceMm:segs[j].start,note:`경로 4.7m 안에서 진행 방향이 ${angle.toFixed(1)}° 바뀝니다 — 합류 방향과 직선 길이를 조정하세요`};
+    }return first;
   }
   const space=plan=>({allowed:boolOp((plan.aisles||[]).concat(plan.ramp?[plan.ramp.body]:[]),[],CL.ClipType.ctUnion),blockers:(plan.columns||[]).concat((plan.cores||[]).map(c=>c.pts),(plan.occupants||[]).map(c=>c.pts))});
   // True when a length×width body centred on each point (along the local direction) stays in the lane.
