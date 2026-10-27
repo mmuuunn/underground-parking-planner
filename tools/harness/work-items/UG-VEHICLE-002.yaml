@@ -1,10 +1,10 @@
 id: UG-VEHICLE-002
-status: VERIFYING
+status: USER_GATE
 stage: vehicle-circulation
 authority: codex
 owner: codex
 reviewer: claude
-review_result: PENDING_USER_AUTHORIZATION_FOR_READ_ONLY_DIFF_REVIEW
+review_result: PASS; both distinct bend issues retain their own location and reason. A truly identical bend could appear twice; no matching reference case showed this.
 verification_result: 59/59 tests passed; pentagon inner 120 stalls and separate 140.2/91.3-degree issues; all-oblique 107 stalls with entry and exit issues shown.
 user_gate: PENDING_REPRESENTATIVE_SCREEN_APPROVAL
 verify_profile: vehicle-circulation

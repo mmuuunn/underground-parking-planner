@@ -1,5 +1,5 @@
 id: UG-VEHICLE-001
-status: RESCOPE_REQUIRED
+status: USER_GATE
 stage: vehicle-circulation
 authority: codex
 owner: codex
