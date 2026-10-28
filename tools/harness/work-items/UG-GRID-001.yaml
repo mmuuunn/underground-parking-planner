@@ -1,0 +1,40 @@
+id: UG-GRID-001
+status: VERIFYING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required
+verify_profile: vehicle-circulation
+question: 불균등한 구조축을 입력하고 고정 기둥을 삭제하지 않은 채 생성과 충돌 검사를 수행하는가?
+user_context: 2026-10-28 사용자가 공모작 재현에 앞서 불균등 구조 격자의 백엔드 구현을 요청
+scope_decision: 기존 제품 단계와 골든값은 유지; 구조 입력과 소비자 연결을 파일 5개 이하의 두 작업으로 분할
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_grid.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/02_tests/planning-backend.test.cjs
+  - tools/harness/work-items/UG-GRID-001.yaml
+input_contract:
+  - grid.columnAxes.x와 y는 UCS 좌표계의 기둥 중심 축 좌표 배열(mm); 각각 두 개 이상, 엄격한 오름차순
+  - 축의 모든 교점 중 실내 외곽에 완전히 포함되는 기둥을 고정 구조로 사용; 경계에 걸친 기둥은 입력 오류로 반환
+  - 각 축은 최대 128개; 중복·비수치·역순·기둥 폭보다 좁은 간격 거부
+  - grid.gx와 gy 및 phase는 기존 주차·차로 생성 모듈; 고정 구조축에는 적용하지 않음
+  - 이 API는 직교축 교점 전체를 정의하며 개별 기둥 생략이나 전이구조를 추정하지 않음
+acceptance:
+  - 불균등 축의 좌표와 입력 불변성 및 UCS 회전을 검증
+  - 차로·램프에 걸리는 고정 기둥을 삭제하지 않고 기존 검사로 충돌 보고
+  - 가로 주차열은 실제 인접 구조축 사이 폭으로 칸 수 계산
+  - 구조축 미입력 사례의 기하와 기존 기준값 유지
+not_doing:
+  - 공모 도면의 전체 기둥 위치 확정 및 파일럿 데이터 변경
+  - 차로 최적화 또는 UI 편집 기능 추가
+  - 기둥의 구조 안전성 판단
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+results:
+  baseline: 64/64 통과
+  verification: 68/68 통과; 추가 구조축 시험 4개 통과; 희소 배열 거부 추가 후 해당 시험 재확인
+  preservation: 균등 격자 직사각·사선 두 사례의 직렬화된 전체 결과가 변경 전과 일치
+  run_id: 20261028-222934-UG-GRID-001-72d144c8
+  remaining: UG-GRID-002 소비자 연결 및 독립 검토; 제품 단계 종료 또는 공모작 재현 합격이 아님

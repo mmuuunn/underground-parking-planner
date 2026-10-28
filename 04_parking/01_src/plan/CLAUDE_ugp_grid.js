@@ -9,10 +9,26 @@
   const {rot, sub, len, bbox, signedArea, offs, offsP, norm} = Gm;
   const DEFAULTS = Object.freeze({gx: 8100, gy: 8000, columnMm: 600, stallW: 2500, stallD: 5000, wallMm: 400});
 
+  // Explicit structural axes are absolute UCS coordinates, independent of the parking module/phase.
+  function columnAxes(raw, width) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.keys(raw).some(k => !['x', 'y'].includes(k))) throw new RangeError('columnAxes는 x·y 구조축 좌표 배열이어야 합니다');
+    const out = {};
+    for (const axis of ['x', 'y']) {
+      const xs = raw[axis];
+      if (!Array.isArray(xs) || xs.length < 2 || xs.length > 128 || !Array.from(xs).every(Number.isFinite) || xs.some((v, i) => i && v - xs[i - 1] < width)) throw new RangeError(`columnAxes.${axis}: 유한한 좌표 2~128개를 기둥 폭 이상의 간격으로 오름차순 입력하세요`);
+      out[axis] = xs.slice();
+    }
+    return out;
+  }
+
   function normalize(input) {
     if (!input || !Array.isArray(input.mass) || input.mass.length < 3) throw new TypeError('지하층 외곽(mass)이 필요합니다');
     const cfg = {...DEFAULTS, ...(input.grid || {})};
     for (const k of ['gx', 'gy', 'columnMm', 'stallW', 'stallD']) if (!(cfg[k] > 0)) throw new RangeError(k + ' 값이 올바르지 않습니다');
+    if (Object.prototype.hasOwnProperty.call(cfg, 'columnAxes')) {
+      if (!Number.isFinite(cfg.columnMm)) throw new RangeError('columnMm 값이 올바르지 않습니다');
+      cfg.columnAxes = columnAxes(cfg.columnAxes, cfg.columnMm);
+    }
     const a = cfg.aisleMm ?? (2 * cfg.gy - 2 * cfg.stallD), n = Math.floor((cfg.gx - cfg.columnMm) / cfg.stallW);
     if (a < 6000) throw new RangeError(`세로 기둥 간격 ${cfg.gy}mm로는 차로가 ${a}mm라 6m보다 좁습니다`);
     if (n < 1) throw new RangeError('가로 기둥 간격에 칸이 들어가지 않습니다');
@@ -28,6 +44,7 @@
     const lostParts = parts.slice(1).filter((q) => Math.abs(signedArea(q)) > 10e6).map((q) => Math.abs(signedArea(q)) / 1e6);
     const b = bbox(inner);
     const G = {cfg, a, n, ucs, d, gy: cfg.gy, L, W: (p) => rot(p, ucs), inner, b, lostParts, P: 2 * cfg.gy, X0: 0, Y0: 0};
+    G.columnAxes = cfg.columnAxes || null;
     G.lineY = (m) => G.Y0 + m * G.gy;
     G.midX = (i) => G.X0 + (i + .5) * G.cfg.gx;
     return G;
@@ -51,6 +68,8 @@
   function setPhase(G, phase) {
     const {cfg, b} = G; G.X0 = b[0] + phase[0]; G.Y0 = b[1] + phase[1]; G.xLines = [];
     for (let x = G.X0 - Math.ceil((G.X0 - b[0]) / cfg.gx) * cfg.gx; x <= b[2] + cfg.gx; x += cfg.gx) G.xLines.push(x);
+    if (G.columnAxes) G.xLines = G.columnAxes.x.slice();
+    G.xBays = G.columnAxes ? G.xLines.slice(0, -1).map((x, i) => [x, G.xLines[i + 1]]) : G.xLines.map(x => [x, x + cfg.gx]);
   }
   const api = {DEFAULTS, normalize, frame, phaseCands, setPhase};
   if (isNode) module.exports = api; else (root.UGP = root.UGP || {}).grid = api;

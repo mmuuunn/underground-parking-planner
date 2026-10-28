@@ -2,6 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../01_src/plan/CLAUDE_ugp_plan.js'),G=require('../01_src/plan/CLAUDE_ugp_geom.js'),V=require('../01_src/plan/CLAUDE_ugp_verify.js');
 const B=require('../01_src/plan/planning-boundary.js'),Z=require('../01_src/plan/planning-zones.js'),A=require('../01_src/plan/stall-allocation.js');
+const Grid=require('../01_src/plan/CLAUDE_ugp_grid.js'),Layout=require('../01_src/plan/CLAUDE_ugp_layout.js');
 const Gen=require('../../06_core_layout/01_src/core_gen2.js'),Eval=require('../src/underground/evaluators/evaluator-core.js');
 const rules=require('../src/underground/rules/kr-parking-rules-2026-07-27.json');
 const R=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
@@ -9,6 +10,43 @@ const area=P=>Math.abs(G.areaOf(P)),inter=(a,b)=>area(G.boolOp(a,b,G.CL.ClipType
 const mass=R(0,0,80000,60000),base={mass,ucs:0,cores:[],ramp:{x:30000,y:52000,angleDeg:0,widthMm:6000,lengthMm:24000},floorMm:3800};
 const layouts=ev=>Gen.generate({floorHeight:3800,evCount:ev}).alts.filter(a=>a.status==='OK'&&a.candidate!==false).map(a=>({id:a.id,ev,outer:a.outer,t:a.t,rooms:Object.fromEntries(Object.entries(a.rooms).map(([k,v])=>[k,v.rects])),doors:a.doors,stairDraw:a.stairDraw,law:a.review.law}));
 const coreInput={mass:[[0,50000],[101400,50000],[101400,22100],[96300,22100],[96300,0],[20000,0]],ucs:0,cores:[{c:[44400,33600],w:9000,d:8000,layouts:layouts(1)}],ramp:{...base.ramp,x:32000,y:41700},grid:{wallMm:400},floorMm:3800,phase:[7359,1200]};
+const irregularAxes={x:[10000,19000,25000,33400],y:[12000,21000,30000]};
+
+test('explicit structural axes reject malformed and overlapping input without a uniform fallback',()=>{
+  for(const columnAxes of [null,{},[],{x:[1,2]},{x:[0,,9000],y:[0,9000]},{x:[0,9000],y:[0,NaN]},{x:[0,9000],y:[0,Infinity]},{x:[9000,0],y:[0,9000]},{x:[0,0],y:[0,9000]},{x:[0,599],y:[0,9000]},{...irregularAxes,extra:1},{x:Array.from({length:129},(_,i)=>i*9000),y:[0,9000]}]) {
+    assert.throws(()=>E.generate({...base,grid:{columnAxes}}),/columnAxes/);
+  }
+});
+
+test('fixed nonuniform columns survive aisle collisions and parking phase changes without moving',()=>{
+  const input={...base,grid:{columnAxes:irregularAxes},phase:[6000,8000]},before=structuredClone(input);
+  const r=E.generate(input),other=E.generate({...input,phase:[2000,3000]});
+  const centers=r=>r.columns.map(P=>G.bbox(P)).map(b=>[(b[0]+b[2])/2,(b[1]+b[3])/2]);
+  const expected=irregularAxes.x.flatMap(x=>irregularAxes.y.map(y=>[x,y]));
+  assert.deepEqual(centers(r),expected);assert.deepEqual(centers(other),expected);
+  assert.deepEqual(input,before);
+  assert(inter(r.columns,r.aisles)>1e4,'fixture must actually collide');
+  assert(r.violations.some(v=>v.id==='COLUMN_IN_AISLE'));
+  assert.notEqual(r.status,'FEASIBLE');
+  assert(r.stalls.every(s=>inter([s.pts],r.columns)<1e4));
+});
+
+test('explicit structural columns are transformed from UCS and never fabricated outside the declared axes',()=>{
+  const input={...base,grid:{columnAxes:irregularAxes},phase:[6000,8000]};
+  const r=E.generate({...input,ucs:90,mass:mass.map(p=>G.rot(p,90)),ramp:{...base.ramp,x:-52000,y:30000,angleDeg:90}});
+  const expected=irregularAxes.x.flatMap(x=>irregularAxes.y.map(y=>[-y,x]));
+  assert.deepEqual(r.columns.map(P=>G.bbox(P)).map(b=>[(b[0]+b[2])/2,(b[1]+b[3])/2]),expected);
+  assert.throws(()=>E.generate({...input,grid:{columnAxes:{x:[500,19000],y:[12000,21000]}}}),/고정 기둥/);
+});
+
+test('horizontal stall rows use each structural bay width, not the nominal parking module',()=>{
+  const frame=Grid.frame({mass:R(0,0,40000,40000),grid:{columnAxes:{x:[1000,7000,16000,24400],y:[1000,33000]}}});Grid.setPhase(frame,[0,0]);
+  const segs=[{a:[1000,20000],b:[24400,20000],kind:'row',h:20000,v:null}],aisles=[R(1000,17000,23400,6000)];
+  const r=Layout.placeStalls(frame,segs,[frame.inner],aisles,[],[],false);
+  const north=r.stalls.filter(s=>G.bbox(s.poly)[1]>=23000);
+  assert.deepEqual([[1000,7000],[7000,16000],[16000,24400]].map(([lo,hi])=>north.filter(s=>{const b=G.bbox(s.poly);return b[0]>=lo+300&&b[2]<=hi-300;}).length),[2,3,3]);
+  assert.equal(north.length,8);
+});
 function curve(o={}){const c=E.createCurveRamp({id:'R',systemId:'S',operation:'twoWay',landing:[75000,35000],tangent:[-1,0],turn:'left',turnDeg:180,innerRadiusMm:6000,lanes:2,legalLaneWidthMm:6500,straightTopMm:3000,straightBottomMm:3000,transitions:{topMm:1700,bottomMm:1700},levels:{connects:{upperLevelMm:0,lowerLevelMm:-3800}},...o});assert(c.body,JSON.stringify(c.violations));return c;}
 function evaluated(input){
   const draft=E.generate(input),c=draft.ramp.sourceRamp,fx=E.curveEvaluationFixed(draft),b=B.resolve(input,c);

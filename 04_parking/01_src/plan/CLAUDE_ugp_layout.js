@@ -15,7 +15,9 @@
   const coreMargin = (G) => G.a / 2 - 100; // 띠가 코어에 맞닿기만 하면 막힌 것이 아니다
   function snapCores(G, input, segs) {
     const {cfg, gy, L} = G, X0 = G.X0, Y0 = G.Y0, e1 = coreMargin(G);
-    const yCols = (v) => Y0 + (Math.round((v - Y0) / gy - .5) + .5) * gy, xCol = (v) => X0 + Math.round((v - X0) / cfg.gx) * cfg.gx;
+    const nearest = (xs, v) => xs.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a);
+    const yCols = (v) => G.columnAxes ? nearest(G.columnAxes.y, v) : Y0 + (Math.round((v - Y0) / gy - .5) + .5) * gy;
+    const xCol = (v) => G.columnAxes ? nearest(G.columnAxes.x, v) : X0 + Math.round((v - X0) / cfg.gx) * cfg.gx;
     const blocksLane = (r) => segs.some((sg) => clipSeg(sg.a, sg.b, [r[0] - e1, r[1] - e1, r[2] + e1, r[3] + e1]));
     return (input.cores || []).map((c) => {
       // 코어 생성기 안이 있으면 실제 외곽을 구조 격자에 맞춰 앉힌다(core-fit.js). 상자에 들어가는 안이 없으면 아래 상자 방식으로
@@ -53,6 +55,14 @@
   // 기둥: 구조 격자 전체. 차로·램프에 걸리면 두지 않고, 코어 안에는 둔다(코어는 기둥을 품은 벽으로 구획)
   function placeColumns(G, aisleU, rampOut) {
     const {cfg, inner, b, gy, xLines} = G, Y0 = G.Y0, hc = cfg.columnMm / 2, inside = insideOf(inner), columns = [];
+    if (G.columnAxes) {
+      for (const x of xLines) for (const y of G.columnAxes.y) {
+        const r = rectPoly([x - hc, y - hc, x + hc, y + hc]);
+        if (inside(r)) columns.push(r); // Fixed structure must survive even when a generated aisle/ramp collides.
+        else if (hitArea(r, [inner])) throw new RangeError(`고정 기둥 (${x}, ${y})이 실내 외곽에 걸칩니다 — 구조축 또는 외곽을 확인하세요`);
+      }
+      return columns;
+    }
     for (const x of xLines) for (let m = Math.floor((b[1] - Y0) / gy) - 1; Y0 + (m + .5) * gy < b[3]; m++) {
       const y = Y0 + (m + .5) * gy, r = rectPoly([x - hc, y - hc, x + hc, y + hc]);
       if (!inside(r) || hitArea(r, aisleU) || (rampOut && hitArea(r, [rampOut.body]))) continue; // 램프 몸체 안의 격자 기둥은 직선·곡선 모두 뺀다(램프 구간은 전이보로 받는다고 보는 기본계획 가정, 사용자 결정 2026-10-26)
@@ -85,12 +95,15 @@
       const x1 = ln.s - a / 2, x2 = ln.e + a / 2;
       for (const sg of [1, -1]) {
         activeRow = Modules.row(G, options, 'h', ln.k, sg); rows.push({...activeRow,span:[x1,x2]});
-        const w = activeRow.widthMm, d = activeRow.depthMm, n = Math.floor((cfg.gx-cfg.columnMm)/w), margin=(cfg.gx-n*w)/2;
+        const w = activeRow.widthMm, d = activeRow.depthMm;
         if (activeRow.stallType === 'accessible') continue; // location reservation only; shared access is not yet laid out
         const yA = ln.k + sg * a / 2, yB = yA + sg * d;
-        for (const x of xLines) for (let m = 0; m < n; m++) {
+        for (const [x, end] of G.xBays) {
+          const span = end - x, n = Math.floor((span - cfg.columnMm) / w), margin = (span - n * w) / 2;
+          for (let m = 0; m < n; m++) {
           const sx = x + margin + m * w; if (sx < x1 - 1 || sx + w > x2 + 1) continue;
           tryStall(rectPoly([sx, Math.min(yA, yB), sx + w, Math.max(yA, yB)]), [sx + w / 2, yA], [0, -sg], ln.kind);
+          }
         }
       }
     }
