@@ -2,6 +2,31 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../01_src/plan/CLAUDE_ugp_plan.js'),N=require('../01_src/plan/CLAUDE_ugp_network.js');
 const wide={aisles:[[[-20000,-20000],[20000,-20000],[20000,20000],[-20000,20000]]],columns:[],cores:[],occupants:[],graph:{hasLoop:true,rootId:0}};
+test('current rapid turn angle and distance boundaries',()=>{
+  for(const [deg,state] of [[90,'clear'],[90.49,'clear'],[90.5,'clear'],[90.51,'blocked']]){
+    const t=deg*Math.PI/180, v=E.checkVehiclePath(wide,[[-10000,0],[0,0],[10000*Math.cos(t),10000*Math.sin(t)]]);
+    assert.equal(v.state,state,`${deg} degrees`);
+    if(state==='blocked')assert.equal(v.firstIssue.id,'VEHICLE_SHARP_TURN');
+  }
+  for(const [distance,state] of [[4711,'blocked'],[4712,'blocked'],[4713,'clear']]){
+    const t=50*Math.PI/180,u=100*Math.PI/180,p=[[-10000,0],[0,0],[distance*Math.cos(t),distance*Math.sin(t)]];
+    p.push([p[2][0]+10000*Math.cos(u),p[2][1]+10000*Math.sin(u)]);
+    const v=E.checkVehiclePath(wide,p);assert.equal(v.state,state,`${distance} mm`);
+    if(state==='blocked')assert.equal(v.firstIssue.id,'VEHICLE_SHARP_TURN');
+  }
+});
+test('straight and curved ramps use the same 6m approach boundary for one 90 degree turn',()=>{
+  const base={mass:[[0,0],[100000,0],[100000,100000],[0,100000]],ucs:0,cores:[],floorMm:3800,allowExternalRamp:true,phase:[0,0]};
+  for(const [x,accepted] of [[26649,false],[26650,true],[26651,true]]){
+    const landing=[x,35000],tangent=[-1,0];
+    const straight=E.createStraightRamp({landing,tangent,widthMm:6500,lengthMm:24000});
+    const curve=E.createCurveRamp({id:'R',systemId:'S',operation:'twoWay',landing,tangent,turn:'left',turnDeg:180,innerRadiusMm:6000,lanes:2,legalLaneWidthMm:6500,straightTopMm:3000,straightBottomMm:3000,transitions:{topMm:1700,bottomMm:1700},levels:{connects:{upperLevelMm:0,lowerLevelMm:-3800}}});
+    assert.ok(curve.body);
+    const approaches=[straight,curve].map(ramp=>E.generate({...base,ramp}).ramp.approach);
+    for(const a of approaches){assert.equal(a.firstStraightMm,x-20650);assert.deepEqual(a.turnAnglesDeg,[90]);assert.equal(a.accepted,accepted);assert.ok(a.summary.includes(`착지 뒤 ${((x-20650)/1000).toFixed(3)}m 직진`));}
+    assert.deepEqual(approaches[0],approaches[1]);
+  }
+});
 test('F1/F2 a U-turn and a subdivided rapid turn stop for direction change',()=>{
   for(const P of [[[-15000,0],[10000,0],[-15000,500]],[[-15000,0],[0,0],[342,940],[-15000,6540]]]){const v=E.checkVehiclePath(wide,P);assert.equal(v.state,'blocked');assert.equal(v.firstIssue.id,'VEHICLE_SHARP_TURN');assert(v.firstIssue.angleDeg>90);assert(v.stopDistanceMm<v.lengthMm);}
 });
@@ -27,6 +52,17 @@ test('P1 gradual 90 and 180 degree arcs stay clear',()=>{
   for(const steps of [30,60]){const P=[[-15000,-6000],[0,-6000]];for(let k=1;k<=steps;k++){const t=-Math.PI/2+k*Math.PI/60;P.push([6000*Math.cos(t),6000*Math.sin(t)].map(Math.round));}P.push(steps===30?[6000,15000]:[-15000,6000]);assert.equal(E.checkVehiclePath(wide,P).state,'clear');}
 });
 const mass=[[0,18000],[15000,0],[101481,0],[101481,51840],[0,51840]],input={mass,ucs:0,cores:[],phase:[7400,3600],floorMm:3800,allowExternalRamp:true},ramp=y=>({x:11850,y,angleDeg:270,widthMm:6000,lengthMm:24000});
+test('straight ramp suggestions exclude blocked routes even when they have more stalls',()=>{
+  const c=require('./fixtures/underground-golden-cases.json').cases.find(c=>c.id==='l-shape');
+  const base=E.generate(c.input),blocked=E.generate({...c.input,phase:base.grid.phase,ramp:{...c.input.ramp,x:25400,y:65700,angleDeg:0}});
+  assert.equal(blocked.stallCount,81);assert.equal(E.inspectVehicleRoutes(blocked).entry.state,'blocked');
+  const suggestions=E.suggestRamps(c.input,5);assert.ok(suggestions.length);
+  for(const s of suggestions){
+    const plan=E.generate({...c.input,phase:base.grid.phase,ramp:{...c.input.ramp,x:s.x,y:s.y,angleDeg:s.angleDeg}}),routes=E.inspectVehicleRoutes(plan);
+    assert.equal(plan.stallCount,s.stallCount);assert.equal(routes.entry.state,'clear');assert.equal(routes.exit.state,'clear');
+  }
+  assert.equal(suggestions[0].stallCount,78);
+});
 test('F3/F4 both ramp forms report the same short approach and the unresolved 140 degree corner',()=>{
   const a=E.generate({...input,ramp:ramp(26000)}),b=E.generate({...input,ramp:E.createStraightRamp(ramp(26000))});
   for(const p of [a,b]){assert.equal(p.stallCount,120);assert.equal(p.ramp.approach.accepted,false);assert(p.ramp.approach.firstStraightMm<6000);assert(p.violations.some(v=>v.id==='RAMP_OFFGRID'));assert(p.issues.some(v=>v.id==='RING_SHARP_TURN'&&v.at));const routes=E.inspectVehicleRoutes(p);assert.equal(routes.entry.state,'blocked');assert.equal(routes.exit.state,'blocked');}

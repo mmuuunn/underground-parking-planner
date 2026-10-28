@@ -1,0 +1,21 @@
+﻿id: UG-VEHICLE-004
+status: ACCEPTED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: none-display-text-only
+verify_profile: vehicle-circulation
+question: 합류 거리를 반올림해 기준 미달을 기준 충족으로 보이게 하지 않는가?
+verification_result: 변경 전후 하네스 시험과 npm test 61개 통과; 5999mm는 5.999m로 표시
+user_gate: 2026-10-28 사용자가 표시 확인; 핵심 기능 개발 우선 요청
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_ramp.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+must_preserve:
+  - 기존 합류 판정과 기준 주차대수 및 도면 형상
+not_doing:
+  - 판정 기준 및 법규 해석 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 2
+max_new_production_lines: 5

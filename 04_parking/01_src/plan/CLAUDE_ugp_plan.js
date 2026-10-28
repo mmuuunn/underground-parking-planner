@@ -298,6 +298,7 @@
     });
     let r0 = null; try { r0 = generate(input); } catch (e) { /* 지금 자리 성립 안 함 */ }
     const phase = r0 ? r0.grid.phase : autoPhase(input), seen = new Set(), res = [];
+    const routesClear = r => {const routes=VehicleRoutes.routes(r);return routes.entry.state==='clear'&&routes.exit.state==='clear';};
     for (const c of out) {
       const wp = W(c.p);
       try {
@@ -307,13 +308,13 @@
         for (const candidateRamp of cands) {
           if (curveSpec && !candidateRamp.body) continue;
           const r = generate({...input, phase, ramp:candidateRamp});
-          if (!r.graph.hasLoop || !r.ramp) continue;
+          if (!r.graph.hasLoop || !r.ramp || (!curveSpec && !routesClear(r))) continue;
           const key = r.ramp.landing.map((v) => Math.round(v / 1000)).join(',') + ',' + Math.round(c.angleDeg) + (curveSpec ? ',' + curveSpec.turn + candidateRamp.turn : ''); if (seen.has(key)) continue; seen.add(key);
           res.push({x: r.ramp.landing[0], y: r.ramp.landing[1], angleDeg: c.angleDeg, ...(curveSpec ? {kind: 'curve', turn: candidateRamp.turn} : {}), stallCount: r.stallCount, deadEnds: r.graph.deadEnds.length, body: r.ramp.body, score: planScore(r, true)});
         }
       } catch (e) { /* 이 자리는 성립 안 함 */ }
     }
-    const cur = r0 && r0.graph.hasLoop ? planScore(r0, true) : -Infinity;
+    const cur = r0 && r0.graph.hasLoop && (curveSpec || routesClear(r0)) ? planScore(r0, true) : -Infinity;
     // Curve suggestions are screened by the UI with a fresh rule evaluation.
     // Keep lower-count curve positions too: a compliant position can be worth more.
     return res.filter((c) => curveSpec || c.score > cur).sort((x, y) => y.score - x.score).slice(0, count);

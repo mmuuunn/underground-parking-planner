@@ -1,0 +1,23 @@
+﻿id: UG-VEHICLE-003
+status: RESCOPE_REQUIRED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required-for-stage-closure
+verify_profile: vehicle-circulation
+question: 직선과 곡선 램프의 합류 및 급회전 경계값은 현재 어떻게 판정되는가?
+verification_result: 변경 전 59개 및 변경 후 61개 시험 통과; 직선과 곡선에서 5999mm 불합격, 6000mm 합격
+rescope_reason: 단계의 90도 초과 기준과 실제 90.5도 초과 판정이 다름; 5999mm가 화면 설명에서 6.0m로 반올림됨
+remaining: 차이의 근거와 대응 범위 결정, 독립 검토, 사용자 단계 종료 승인
+allowed_files:
+  - 04_parking/02_tests/parking-turns.test.cjs
+must_preserve:
+  - 기존 판정 기준과 기준 주차대수
+  - 제품 코드와 화면 결과
+not_doing:
+  - 법규 수치나 판정 기준 확정
+  - 차량 순환 단계 종료 승인
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 1
+max_new_production_lines: 0

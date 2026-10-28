@@ -35,7 +35,7 @@
       for(let k=0;k<n&&distance<=6000+1;k++){const index=(cornerIndex+sign*k+n*2)%n,q=P[index],r=P[(index+sign+n)%n],next=sub(r,q);if(len(next)<1)continue;const turn=angle(direction,next);if(turn>5)angles.push(turn);direction=next;distance+=len(next);}
     }
     const first=legs.length?Math.round(len(legs[0])):0,turns=angles.map(a=>Math.round(a*10)/10),accepted=!!end&&(turns.length===0||first>=6000&&turns.length===1&&angles[0]<=90.5);
-    return {points:path,firstStraightMm:first,turnAnglesDeg:turns,turnCount:turns.length,accepted,summary:end?`착지 뒤 ${(first/1000).toFixed(1)}m 직진 · ${turns.length?turns.map(a=>a.toFixed(1)+'°').join(' → ')+' 꺾임 '+turns.length+'번':'꺾임 없음'}${accepted?'':' — 합류 모양 확인 필요'}`:'착지에서 차로로 이어지는 길이 없습니다'};
+    return {points:path,firstStraightMm:first,turnAnglesDeg:turns,turnCount:turns.length,accepted,summary:end?`착지 뒤 ${(first/1000).toFixed(3)}m 직진 · ${turns.length?turns.map(a=>a.toFixed(1)+'°').join(' → ')+' 꺾임 '+turns.length+'번':'꺾임 없음'}${accepted?'':' — 합류 모양 확인 필요'}`:'착지에서 차로로 이어지는 길이 없습니다'};
   }
   function joinGeometry(G, input, base, violations) {
     const original=input.ramp;

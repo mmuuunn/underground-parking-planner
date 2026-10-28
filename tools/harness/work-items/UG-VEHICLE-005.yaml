@@ -1,0 +1,24 @@
+﻿id: UG-VEHICLE-005
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required
+verify_profile: vehicle-circulation
+question: 직선 램프 추천이 차량 진입과 진출이 가능한 대안을 우선 제시하는가?
+verification_result: npm test 및 하네스 62개 통과; L자 81대 막힘 제외, 78대 진입 진출 통과 첫 추천
+remaining: 사용자 화면 확인 및 독립 검토; 78대 안의 EMPTY_ISLAND 별도 확인
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+must_preserve:
+  - 기존 배치 생성과 기준 주차대수
+  - 곡선 램프 추천과 별도 판정
+  - 차량 경로 판정 기준과 실패 사유
+not_doing:
+  - 골든 기대값 변경 또는 법규 확정
+  - 주차 배치 생성 알고리즘 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 2
+max_new_production_lines: 30
