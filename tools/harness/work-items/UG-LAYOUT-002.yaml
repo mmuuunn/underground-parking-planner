@@ -1,0 +1,46 @@
+id: UG-LAYOUT-002
+status: RESCOPE_REQUIRED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required-before-acceptance
+verify_profile: vehicle-circulation
+question: 같은 외곽 코어 구조열 램프 조건에서 안전 기준을 유지하며 차로 골격을 개선할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_network.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+must_preserve:
+  - 기준 사례 주차대수와 기존 안전 판정
+  - 동일 입력의 외곽 코어 구조열 램프
+  - 코어 접근과 필요한 연결 및 회차
+acceptance:
+  - 사용자 사례의 배치 대안을 도면과 대수 진입 진출 우회 잔여공간으로 비교
+  - 기존 시험과 하네스 통과 및 사용자 화면 확인
+  - 해당되는 경우 별도 독립 검토 후 수용
+not_doing:
+  - 골든값 안전 기준 완화 또는 도로 접속 확인 주장
+  - 실험 실패를 개선으로 보고
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+experiment_result:
+  - B의 순환 중심선 꼭짓점 하나를 구조 격자 좌표로 1500mm씩 이동하고 기존 기둥 53개를 고정
+  - 82대에서 84대; 검증기 차량 진입과 진출 clear; 코어 입구 차로 접속 유지
+  - 자동 DA PIT 제안 합계 1208.8에서 1179.6 제곱미터; 가장 큰 PIT는 283.5 제곱미터로 그대로
+  - 단순 꼭짓점 제거 88대는 기존 기둥 하나가 사라져 탈락
+  - 고정 기둥 대안은 메모리 실험이며 일반화된 제품 구현 및 독립 검토 전
+remaining:
+  - 사용자가 전후 도면과 개선 폭을 판단
+  - 기둥 선고정과 차로 대안 생성의 일반화 및 안전성 검토
+  - 정밀 주차 궤적 교행 실제 설비 및 도로 접속 미검증user_review_20261028:
+  - 84대 안은 동선이 거의 같고 램프 상단 잔여공간도 해결하지 못해 두 안 모두 비현실적이라고 판단함
+  - 84대 안을 개선안으로 채택하지 않음
+upper_strip_experiment:
+  - 램프 위 차로를 기존 순환선에 연결해 29.4m 연장하고 기존 기둥 53개와 코어 및 램프를 고정
+  - 82대에서 91대; 자동 DA PIT 제안 합계 1208.8에서 904.2 제곱미터; 최대 PIT 283.5에서 165.8 제곱미터
+  - 막다른 차로 1곳과 해당 차로에 면한 11칸 발생; 회차와 후진 조향 교행 미검증
+  - 기본 진입 출구 clear는 주 순환선만 확인하므로 가지 차로의 회차가 가능하다는 증거가 아님
+  - 제품 미반영; 검증되지 않은 회차를 정상으로 취급하지 않음
+rescope_reason: 램프 상단에 접근과 주차를 배치하려면 막다른 끝의 회차 공간과 차량 동작을 함께 설계 검증해야 함
