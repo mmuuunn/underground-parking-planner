@@ -21,12 +21,14 @@
       $('axisSpans'+key).value=xs.slice(1).map((v,j)=>metres(v-xs[j])).join(' ');
     }
   }
-  function seedStructure(){
+  function structureAxes(){
+    if(doc.columnAxes)return {x:doc.columnAxes.x.slice(),y:doc.columnAxes.y.slice()};
     const r=ui.res;if(!r||r.fail||!r.columns?.length)throw Error('가져올 기둥이 없습니다. 첫 축 위치와 간격을 직접 입력하세요.');
     const centers=r.columns.map(P=>{const b=G.bbox(P.map(p=>rot(p,-doc.ucs)));return [(b[0]+b[2])/2,(b[1]+b[3])/2];});
     const unique=i=>[...new Set(centers.map(p=>Math.round(p[i])))].sort((a,b)=>a-b);
-    const axes={x:unique(0),y:unique(1)};writeStructure(axes);
+    return {x:unique(0),y:unique(1)};
   }
+  function seedStructure(){writeStructure(structureAxes());}
   function markStructureDirty(){structureDirty=true;$('applyStructure').disabled=false;structureMessage('아직 적용하지 않은 입력입니다. 현재 배치는 유지됩니다.');}
   function validateStructure(axes){
     if(!axes||!Array.isArray(axes.x)||!Array.isArray(axes.y))throw Error('X·Y 구조축 배열이 필요합니다.');
@@ -54,12 +56,15 @@
   for(const id of ['axisStartX','axisStartY','axisSpansX','axisSpansY'])$(id).oninput=()=>{markStructureDirty();$(id).removeAttribute('aria-invalid');};
   $('seedStructure').onclick=()=>{try{seedStructure();markStructureDirty();}catch(e){structureMessage(e.message,true);}};
   $('revertStructure').onclick=()=>resetStructureForm();
-  $('applyStructure').onclick=()=>{
-    let axes;try{axes=$('structureMode').value==='fixed'?readStructure():null;}catch(e){structureMessage(e.message,true);return;}
+  function applyStructure(axes,message){
+    if(axes)axes=validateStructure(axes);
     if(axes)doc.columnAxes=axes;else delete doc.columnAxes;
     structureDirty=false;structureKey=null;setTool('select');$('ucsList').innerHTML='';
-    commit(axes?'불균등 구조축 적용':'자동 구조 격자로 복원');
+    commit(message||(axes?'불균등 구조축 적용':'자동 구조 격자로 복원'));
     renderStructure();structureMessage(ui.res?.fail?'구조축은 저장됐으나 배치를 계산하지 못했습니다. 결과의 오류를 확인하세요.':'적용했습니다. 기둥·축선과 결과의 문제 위치를 확인하세요.',!!ui.res?.fail);
+  }
+  $('applyStructure').onclick=()=>{
+    try{applyStructure($('structureMode').value==='fixed'?readStructure():null);}catch(e){structureMessage(e.message,true);}
   };
   $('exportStructure').onclick=()=>{
     if(!doc.columnAxes)return structureMessage('직접 입력한 구조축을 먼저 적용하세요.',true);
@@ -217,6 +222,6 @@
     $('pickZone').textContent=ui.zonePick?'도면에서 영역 선택 중 · Esc 취소':'도면에서 영역 선택';
     const tr=routes(r);$('vehicleRouteStates').innerHTML=tr?['entry','exit'].map(key=>{const v=tr[key];return `<div class="traffic-state" data-state="${v.state}"><span>${key==='entry'?'진입 · 파랑':'진출 · 적갈색'}</span><b>${v.state==='clear'?'표시 경로 차체 확인':v.state==='blocked'?'문제 앞 정지':'연결 확인 필요'}</b></div>`;}).join(''):'<p class="note">배치를 놓으면 차량 경로를 확인합니다.</p>';drawScheme();
   }
-  window.UGPlanningUI={render,review,routes,issues,issueHtml,drawZones,drawZoneLabels,highlightRamp,focusField,text};
+  window.UGPlanningUI={render,review,routes,issues,issueHtml,drawZones,drawZoneLabels,highlightRamp,focusField,text,structure:{axes:structureAxes,apply:applyStructure}};
   for(const s of document.querySelectorAll('.legend>span')){const t=s.textContent.trim();if(t==='DA')s.lastChild.textContent='DA · 외기 여유';if(t==='자투리 후보'){s.lastChild.textContent='PIT · 설비 여유';const i=s.querySelector('i');if(i)i.style.background='#ece8df';}}
 })();

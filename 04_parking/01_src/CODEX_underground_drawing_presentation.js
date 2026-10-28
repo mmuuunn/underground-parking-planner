@@ -293,6 +293,69 @@
     // The original editor calls the replaced drawLabels; do not run it twice.
   };
 
+  const axisEdit={active:false,drag:null,entry:null};
+  const axisButton=document.createElement('button');axisButton.id='editStructureCanvas';axisButton.className='mini-btn';axisButton.textContent='구조 편집';axisButton.setAttribute('aria-pressed','false');$('tools').after(axisButton);
+  const sheet=svg.closest('.sheet-area'),axisGuide=document.createElement('div');axisGuide.id='axisCanvasGuide';axisGuide.className='axis-canvas-guide';axisGuide.hidden=true;axisGuide.setAttribute('role','status');sheet.append(axisGuide);
+  const axisForm=document.createElement('form');axisForm.id='axisDimensionEditor';axisForm.className='axis-dimension-editor';axisForm.hidden=true;
+  axisForm.innerHTML='<label for="axisDimensionValue" id="axisDimensionLabel"></label><div class="row"><input id="axisDimensionValue" type="number" step="0.001" min="0.6" required><span>m</span><button type="submit">적용</button><button type="button" id="cancelAxisDimension">취소</button></div><p id="axisDimensionRule"></p><p id="axisDimensionError" role="alert"></p>';sheet.append(axisForm);
+  const axisHelp=message=>{axisGuide.textContent=message||'축 이름 드래그 · 치수 클릭으로 간격 입력 · Esc 취소'+(doc.columnAxes?'':' · 처음 적용하면 모든 축 교점을 기둥으로 고정');};
+  function closeAxisEntry(){axisEdit.entry=null;axisForm.hidden=true;}
+  function cancelAxisDrag(){const d=axisEdit.drag;axisEdit.drag=null;if(d&&svg.hasPointerCapture(d.pointerId))svg.releasePointerCapture(d.pointerId);drawLabels();axisHelp();}
+  axisButton.onclick=()=>{
+    if(ui.busy||ui.drag)return;
+    cancelAxisDrag();closeAxisEntry();axisEdit.active=!axisEdit.active;axisButton.setAttribute('aria-pressed',String(axisEdit.active));axisButton.textContent=axisEdit.active?'구조 편집 완료':'구조 편집';axisGuide.hidden=!axisEdit.active;
+    if(axisEdit.active){setTool('select');ui.sel=null;view.axes=true;$('axesToggle').checked=true;axisHelp();}renderEdit();
+  };
+  function showAxisEntry(axis,index,target){
+    try{
+      const axes=UGPlanningUI.structure.axes(),key=axis.toUpperCase();if(index<1||index>=axes[axis].length)return;
+      closeAxisEntry();axisEdit.entry={axis,index,axes,doc0:JSON.stringify(doc)};
+      $('axisDimensionLabel').textContent=`${key}${index}–${key}${index+1} 간격`;
+      $('axisDimensionValue').value=Number(((axes[axis][index]-axes[axis][index-1])/1000).toFixed(3));
+      $('axisDimensionRule').textContent=`${key}${index} 고정 · ${key}${index+1}만 이동 · 다른 축은 유지`;
+      $('axisDimensionError').textContent='';axisForm.hidden=false;
+      const box=target.getBoundingClientRect(),area=sheet.getBoundingClientRect();
+      axisForm.style.left=Math.max(8,Math.min(box.left-area.left,area.width-axisForm.offsetWidth-8))+'px';
+      axisForm.style.top=Math.max(8,Math.min(box.bottom-area.top+8,area.height-axisForm.offsetHeight-8))+'px';
+      $('axisDimensionValue').focus();$('axisDimensionValue').select();
+    }catch(e){axisHelp(e.message);}
+  }
+  axisForm.onsubmit=e=>{
+    e.preventDefault();const entry=axisEdit.entry;if(!entry)return;
+    try{
+      if(JSON.stringify(doc)!==entry.doc0)throw Error('배치가 변경됐습니다. 취소 후 치수를 다시 선택하세요.');
+      const value=$('axisDimensionValue').valueAsNumber;if(!Number.isFinite(value)||value<.6)throw Error('간격은 0.6m 이상 숫자로 입력하세요.');
+      const axes={x:entry.axes.x.slice(),y:entry.axes.y.slice()};axes[entry.axis][entry.index]=axes[entry.axis][entry.index-1]+Math.round(value*1000);
+      UGPlanningUI.structure.apply(axes,`${entry.axis.toUpperCase()}${entry.index+1} 축 간격 변경`);closeAxisEntry();axisHelp('간격을 적용했습니다. Ctrl+Z로 되돌릴 수 있습니다.');
+    }catch(error){$('axisDimensionError').textContent=error.message;}
+  };
+  $('cancelAxisDimension').onclick=closeAxisEntry;
+  svg.addEventListener('pointerdown',e=>{
+    if(!axisEdit.active||ui.busy||e.button!==0||ui.space)return;
+    const span=e.target.closest('[data-axis-span]'),handle=e.target.closest('[data-axis-handle]');if(!span&&!handle)return;
+    e.preventDefault();e.stopImmediatePropagation();closeAxisEntry();
+    const t=span||handle,axis=t.dataset.axis,index=+t.dataset.index;
+    if(span){showAxisEntry(axis,index,t);return;}
+    try{const axes=UGPlanningUI.structure.axes();axisEdit.drag={axis,index,axes,start:toU(world(e)),delta:0,pointerId:e.pointerId,doc0:JSON.stringify(doc)};svg.setPointerCapture(e.pointerId);drawLabels();axisHelp(`${axis.toUpperCase()}${index+1} 이동 · 0.1m 맞춤 · Alt 자유 이동 · Esc 취소`);}catch(error){axisEdit.drag=null;axisHelp(error.message);}
+  },true);
+  svg.addEventListener('pointermove',e=>{
+    const d=axisEdit.drag;if(!d||d.pointerId!==e.pointerId)return;e.preventDefault();e.stopImmediatePropagation();
+    const step=e.altKey?1:100;d.delta=Math.round((toU(world(e))[d.axis==='x'?0:1]-d.start[d.axis==='x'?0:1])/step)*step;
+    drawLabels();axisHelp(`${d.axis.toUpperCase()}${d.index+1} ${(d.delta/1000).toFixed(3)}m 이동 미리보기 · 놓으면 적용 · Esc 취소`);
+  },true);
+  svg.addEventListener('pointerup',e=>{
+    const d=axisEdit.drag;if(!d||d.pointerId!==e.pointerId)return;e.preventDefault();e.stopImmediatePropagation();axisEdit.drag=null;if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);
+    try{if(d.delta){if(JSON.stringify(doc)!==d.doc0)throw Error('배치가 변경되어 이동을 취소했습니다.');d.axes[d.axis][d.index]+=d.delta;UGPlanningUI.structure.apply(d.axes,`${d.axis.toUpperCase()}${d.index+1} 축 이동`);axisHelp('축 이동을 적용했습니다. Ctrl+Z로 되돌릴 수 있습니다.');}else axisHelp();}catch(error){axisHelp('적용하지 않았습니다: '+error.message);}drawLabels();
+  },true);
+  for(const event of ['pointercancel','lostpointercapture'])svg.addEventListener(event,()=>{if(axisEdit.drag)cancelAxisDrag();});
+  svg.addEventListener('wheel',()=>{closeAxisEntry();if(axisEdit.drag)cancelAxisDrag();},true);
+  window.addEventListener('blur',()=>{if(axisEdit.drag)cancelAxisDrag();});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&(axisEdit.entry||axisEdit.drag)){e.preventDefault();e.stopImmediatePropagation();closeAxisEntry();cancelAxisDrag();return;}
+    if(axisEdit.drag){e.preventDefault();e.stopImmediatePropagation();return;}
+    if(!axisEdit.active)return;const span=e.target.closest?.('[data-axis-span]'),handle=e.target.closest?.('[data-axis-handle]');
+    if((span||handle)&&['Enter',' '].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();const t=span||handle;showAxisEntry(t.dataset.axis,Math.max(1,+t.dataset.index),t);}
+  },true);
   function dimensions(g){
     const k=Math.max(scale(),.0001),M=doc.mass.map(toD),b=bbox(M),pad=23/k,tick=3/k;
     function dimension(a,b2,offset,text){
@@ -311,26 +374,39 @@
       // Actual segment lengths remain on the selected / actively edited geometry.
       if(selectedMass())M.forEach((p,i)=>{const q=M[(i+1)%M.length],L=Math.hypot(...sub(q,p));if(L*k<75)return;const n=unit([q[1]-p[1],p[0]-q[0]]),mid=add(mul(add(p,q),.5),mul(n,11/k));label(g,mid,number(L),{'font-size':9/k,fill:'#8e8e8e','paint-order':'stroke',stroke:'#ffffff','stroke-width':3/k});});
     }
-    const r=current();if(!view.axes||!r||r.fail)return;
+    const r=current();if(!view.axes||!r||r.fail&&!doc.columnAxes)return;
     const columns=r.columns||[];
     const unique=vals=>[...new Set(vals.map(v=>Math.round(v/10)*10))].sort((a,b2)=>a-b2);
-    const fixed=r.grid?.columnAxes;
+    let fixed=doc.columnAxes||r.grid?.columnAxes;
+    if(axisEdit.active){try{fixed=UGPlanningUI.structure.axes();}catch(e){axisHelp(e.message);}}
+    if(axisEdit.drag){fixed={x:axisEdit.drag.axes.x.slice(),y:axisEdit.drag.axes.y.slice()};fixed[axisEdit.drag.axis][axisEdit.drag.index]+=axisEdit.drag.delta;}
     const xs=fixed?fixed.x:unique(columns.map(P=>toD(average(P))[0])),ys=fixed?fixed.y.map(v=>-v).reverse():unique(columns.map(P=>toD(average(P))[1]));
+    const editing=axisEdit.active&&ui.tool==='select'&&!ui.drag;
+    function control(grid,p,width,height,text,attrs){
+      const group=el('g',{'class':'axis-canvas-control','pointer-events':'all',tabindex:0,role:'button',...attrs},grid);
+      el('rect',{x:p[0]-width/2/k,y:p[1]-height/2/k,width:width/k,height:height/k,rx:5/k,fill:'#e9f2ff',stroke:'#317bc8','stroke-width':1,'vector-effect':NSS},group);
+      label(group,p,text,{'font-size':11/k,fill:'#164878','pointer-events':'none'});el('title',{},group).textContent=attrs['aria-label'];return group;
+    }
     function marks(values,axis){
       const grid=layer(`drawingAxes${axis}`,g),minPx=axis==='X'?36:29;
-      const step=Math.max(1,Math.ceil(values.length/(axis==='X'?14:9)));let last=-Infinity;
+      const step=editing?1:Math.max(1,Math.ceil(values.length/(axis==='X'?14:9)));let last=-Infinity;
       values.forEach((v,i)=>{
         const showLabel=i%step===0&&v-last>=minPx/k;if(!fixed&&!showLabel)return;
-        const anchor=axis==='X'?[v,b[1]-52/k]:[b[0]-55/k,v];
+        const index=axis==='Y'?values.length-i-1:i,axisName=axis.toLowerCase();
+        const anchor=axis==='X'?[v,b[1]-(editing?64:52)/k]:[b[0]-(editing?85:55)/k,v];
         const end=axis==='X'?[v,b[3]+8/k]:[b[2]+8/k,v];
         line(grid,anchor,end,{stroke:fixed?'#a9b7c5':'#e0e0e0','stroke-width':fixed?.7:.4,'stroke-dasharray':'9 3 1 3','data-structural-axis':fixed?axis+(axis==='Y'?values.length-i:i+1):''});
-        if(fixed&&i&&Math.abs(v-values[i-1])*k>36){const p=axis==='X'?[(v+values[i-1])/2,b[1]-35/k]:[b[0]-36/k,(v+values[i-1])/2];label(grid,p,`${Number((Math.abs(v-values[i-1])/1000).toFixed(3))}m`,{'font-size':8/k,fill:'#59748d','data-structural-span':axis});}
+        if(fixed&&i&&Math.abs(v-values[i-1])*k>(editing?46:36)){const p=axis==='X'?[(v+values[i-1])/2,b[1]-32/k]:[b[0]-36/k,(v+values[i-1])/2],text=`${Number((Math.abs(v-values[i-1])/1000).toFixed(3))}m`;
+          if(editing){const endIndex=axis==='X'?i:index+1;control(grid,p,44,24,text,{'data-axis-span':axis,'data-structural-span':axis,'data-axis':axisName,'data-index':endIndex,'aria-label':`${axis}${endIndex}–${axis}${endIndex+1} 간격 ${text}, 클릭하여 입력`});}
+          else label(grid,p,text,{'font-size':8/k,fill:'#59748d','data-structural-span':axis});}
         if(!showLabel)return;last=v;
+        if(editing){control(grid,anchor,32,28,axis+(index+1),{'data-axis-handle':axis+(index+1),'data-axis':axisName,'data-index':index,'aria-label':`${axis}${index+1} 축 드래그 이동; Enter로 인접 간격 입력`,style:`cursor:${axis==='X'?'ew':'ns'}-resize`});return;}
         el('circle',{cx:anchor[0],cy:anchor[1],r:7/k,fill:'#ffffff',stroke:'#b1b1b1','stroke-width':.55,'vector-effect':NSS},grid);
-        label(grid,anchor,`${axis}${fixed&&axis==='Y'?values.length-i:i+1}`,{'font-size':7/k,fill:'#929292'});
+        label(grid,anchor,`${axis}${axis==='Y'?values.length-i:i+1}`,{'font-size':7/k,fill:'#929292'});
       });
     }
     if(xs.length)marks(xs,'X');if(ys.length)marks(ys,'Y');
+    if(axisEdit.drag){const d=axisEdit.drag,at=d.axis==='x'?0:1;for(const P of columns){if(Math.abs(toU(average(P))[at]-d.axes[d.axis][d.index])>10)continue;const points=P.map(toD).map(p=>at===0?[p[0]+d.delta,p[1]]:[p[0],p[1]-d.delta]);el('polygon',{points:pts(points),fill:'#4d9aff',stroke:'#125aaf','fill-opacity':.7,'stroke-width':2,'vector-effect':NSS,'data-axis-preview':d.axis},g);}}
     if(fixed){const at=[b[0],b[3]];line(g,[at[0]-7/k,at[1]],[at[0]+7/k,at[1]],{stroke:'#59748d'});line(g,[at[0],at[1]-7/k],[at[0],at[1]+7/k],{stroke:'#59748d'});label(g,[at[0]+30/k,at[1]+16/k],'첫 축 기준',{'font-size':8/k,fill:'#59748d'});}
   }
   const selectedMass=()=>ui.sel&&['mass','edge','vtx'].includes(ui.sel.kind);

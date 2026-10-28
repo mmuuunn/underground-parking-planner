@@ -1,0 +1,54 @@
+id: UG-GRID-UI-002
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending
+verify_profile: vehicle-circulation
+question: 캔버스에서 구조축 드래그와 구간 치수 입력으로 기둥을 직접 조절할 수 있는가?
+user_context: 패널 숫자 나열 대신 X2 축 드래그와 X2-X3 간격의 캔버스 입력 요청
+allowed_files:
+  - 04_parking/01_src/planning-controls.js
+  - 04_parking/01_src/planning-controls.css
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - 04_parking/02_tests/structural-canvas.browser.js
+  - tools/harness/work-items/UG-GRID-UI-002.yaml
+acceptance:
+  - 캔버스 상단에 구조 편집 진입 버튼; 축 손잡이와 편집 가능한 치수 표시
+  - X·Y 축 드래그 시 해당 열·행 미리보기; 놓을 때 한 번 적용 및 계산
+  - 캔버스 치수 입력은 낮은 번호 축을 기준으로 높은 번호 축 하나만 이동; 다른 축·코어·램프 보존
+  - 인접 축 역전·최소 간격·외곽 경계 오류 차단; 잘못된 입력·Escape·pointercancel은 모델 보존
+  - 실행 취소·다시 실행·새로고침 보존 및 기존 패널과 값 연동
+  - 자동 격자에서 처음 편집하면 구조축 고정임을 안내; 편집 시작만으로 문서 변경 없음
+  - 회전된 UCS와 실제 SGHS 화면에서 조작 확인; 기존 계산 시험 유지
+not_doing:
+  - 교점별 기둥 삭제·사선 구조·동선 알고리즘 변경·원안 재현 합격 선언
+  - 사용자 요청 없는 외부 모델 또는 서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+results:
+  implementation: 캔버스 상단 구조 편집 버튼·X/Y 축 드래그·캔버스 치수 입력 구현; 기존 패널과 공통 검증·적용 경로 사용
+  behavior: 선택 축 하나만 이동; 구간 입력은 낮은 번호 축 고정; 드래그 미리보기 후 놓을 때 한 번 계산; 0.1m 맞춤·Alt 자유 이동
+  axis_labels: Y축 번호는 자동·직접 입력 모두 아래에서 위로 증가하도록 통일
+  input_comparison: SGHS 원본 파일·사용자 저장 배치 변경 없음; 별도 브라우저 컨텍스트에서 B1/B2 9m 구간 변경 후 정확한 실행 취소 확인
+  browser_check: 04_parking/02_tests/structural-canvas.browser.js; Playwright browser_run_code_unsafe로 실행; 독립 컨텍스트 사용
+  browser_results: X/Y 드래그·치수 입력·기둥 미리보기·단일 이력·Ctrl+Z/Shift+Z·새로고침·패널 연동·키보드 입력 통과
+  rejection_results: 축 역전·0.6m 미만 간격·외곽 걸침·Escape·pointercancel 시 문서 보존
+  source_grid: 자동 격자 편집 시작은 문서 보존; 첫 유효 변경부터 고정 교점 구조로 전환 및 안내
+  fixture_result: 회전 -25.7815도 시험 문서 초기 12기둥·2대 INFEASIBLE; 원안 재현 성공을 뜻하지 않음
+  pilot_result: SGHS B1/B2 X2-X3를 9m로 바꾸면 X3만 이동하고 코어 보존; 두 층 모두 0대 INFEASIBLE 유지; 실행 취소로 원본 문서 일치
+  visual: 1440x1000 SGHS B1에서 구조 버튼·축 손잡이·치수 입력창 확인; tools/harness/runs/grid-canvas-sghs.png
+  browser_evidence: tools/harness/runs/grid-canvas-browser-evidence.json
+  npm_test: 74/74 통과; tools/harness/runs/grid-canvas-npm-test.log
+  harness_verification: 74/74 통과; npm test와 같은 계산 시험이며 증거 중복 계산 안 함
+  run_id: 20261028-231910-UG-GRID-UI-002-b5b80217
+  static_checks: 변경 JS 구문·git diff --check·파일럿 어댑터 검사 통과; 브라우저 오류 0개
+  scope: 제품 파일 3개·브라우저 시험 1개·작업지시서 1개; 기존 AGENTS.md·README.md·docs 변경 제외
+  independent_review: 미실시; 사용자 요청 없는 다른 모델·서브에이전트 호출 금지 준수; 자체 시험을 독립 검토로 표시하지 않음
+  user_visual_review: 대기; 새로고침 후 상단 구조 편집에서 축 이동과 치수 입력의 사용성 확인
+limitations:
+  - SGHS 원안 전체 구조축 확정과 주차 재현 합격 판정은 미실시
+  - 자동 축을 처음 고정하면 기존에 생략된 교점에도 기둥이 추가될 수 있음; 교점별 기둥 삭제는 미지원
+  - 좁은 구간의 치수는 확대해야 표시; 축 손잡이에 키보드 초점 후 Enter로 인접 간격 입력 가능
