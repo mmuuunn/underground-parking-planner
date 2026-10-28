@@ -50,9 +50,16 @@
     const rowMap=new Map((out.stallRows||[]).map(r=>[r.id,r])),bays=new Map();
     for(const s of kept){
       if(!eligible.has(s)||s.stallType!=='normal')continue;const row=rowMap.get(s.rowId);if(!row||!['h','v'].includes(row.axis))continue;
-      const axis=row.axis==='h'?0:1,bb=bbox(s.pts.map(frame.L)),step=axis===0?frame.cfg.gx:frame.gy,base=axis===0?frame.X0:frame.Y0+frame.gy/2;
-      const bin=Math.floor((bb[axis]-base+1)/step),id=s.rowId+'|'+bin;
-      if(!bays.has(id))bays.set(id,{id,row,axis,step,base:base+bin*step,items:[],boxes:[]});const b=bays.get(id);b.items.push(s);b.boxes.push(bb);
+      const axis=row.axis==='h'?0:1,bb=bbox(s.pts.map(frame.L));
+      let step=axis===0?frame.cfg.gx:frame.gy,base=axis===0?frame.X0:frame.Y0+frame.gy/2,bin=Math.floor((bb[axis]-base+1)/step);
+      if(frame.columnAxes){
+        const lines=axis===0?frame.columnAxes.x:frame.columnAxes.y;
+        bin=lines.findIndex((v,i)=>i<lines.length-1&&bb[axis]>=v-1&&bb[axis+2]<=lines[i+1]+1);
+        if(bin<0)continue; // A stall spanning an axis is not a complete structural bay for conversion.
+        base=lines[bin];step=lines[bin+1]-base;
+      }else base+=bin*step;
+      const id=s.rowId+'|'+bin;
+      if(!bays.has(id))bays.set(id,{id,row,axis,step,base,items:[],boxes:[]});const b=bays.get(id);b.items.push(s);b.boxes.push(bb);
     }
     const blocker=out.aisles.concat(out.columns,out.cores.map(c=>c.pts),(out.occupants||[]).map(c=>c.pts),out.cores.filter(c=>c.plan).map(c=>c.plan.walk),out.ramp?[out.ramp.body]:[],(out.nonParkingZones||[]).flatMap(z=>z.paths));
     const blockBoxes=blocker.map(P=>({P,b:bbox(P)})),allowed=out.parkingInnerPaths||[out.innerOutline];
@@ -66,7 +73,8 @@
       if(spec.widthMm<M.CATALOGUE[key].widthMm||spec.depthMm<M.CATALOGUE[key].depthMm)throw new RangeError(LABEL[key]+' 칸의 폭·깊이가 기본 최소 치수보다 작습니다');
       if(!b.items.every(s=>kept.includes(s)))return null;
       const axis=b.axis,other=1-axis,full=axis===0;
-      if(full&&b.items.length!==frame.n)return null;
+      const normalCount=frame.columnAxes?Math.floor((b.step-frame.cfg.columnMm)/frame.cfg.stallW):frame.n;
+      if(full&&b.items.length!==normalCount)return null;
       const low=full?b.base+frame.cfg.columnMm/2:Math.min(...b.boxes.map(q=>q[axis]));
       const high=full?b.base+b.step-frame.cfg.columnMm/2:Math.max(...b.boxes.map(q=>q[axis+2]));
       const n=Math.floor((high-low+1)/spec.widthMm);if(!n)return null;

@@ -68,7 +68,9 @@
   function fit(G, core, segs) {
     const {cfg, a, gy} = G, q = G.L(core.c), hc = cfg.columnMm / 2, e1 = a / 2 - 100;
     const blocksLane = (r) => segs.some((sg) => clipSeg(sg.a, sg.b, [r[0] - e1, r[1] - e1, r[2] + e1, r[3] + e1]));
-    const colX = G.xLines, colY = (lo, hi) => { const out = []; for (let m = Math.floor((lo - G.Y0) / gy - .5) - 1; G.Y0 + (m + .5) * gy <= hi + gy; m++) out.push(G.Y0 + (m + .5) * gy); return out; };
+    const colX = G.xLines, colY = (lo, hi) => { if (G.columnAxes) return G.columnAxes.y.filter(y => y >= lo && y <= hi); const out = []; for (let m = Math.floor((lo - G.Y0) / gy - .5) - 1; G.Y0 + (m + .5) * gy <= hi + gy; m++) out.push(G.Y0 + (m + .5) * gy); return out; };
+    const maxBay = xs => Math.max(...xs.slice(1).map((v, i) => v - xs[i]));
+    const reachX = G.columnAxes ? maxBay(G.columnAxes.x) : cfg.gx, reachY = G.columnAxes ? maxBay(G.columnAxes.y) : gy;
     // 한 축의 [시작, 끝] 후보: 상자 변 그대로 또는 SNAP 안의 기둥 중심·안쪽 면·바깥 면. 길이는 안의 크기 이상
     //   far: 물러난 경우(상자가 차로를 막음)에는 한 변을 한 칸 안의 기둥에 맞춰 옮겨도 된다(엔진이 자리를 찾는다)
     //   fixed: 홀로 못 늘리는 축 — 안 크기 그대로, 상자 안(±SNAP)에서 미끄러지며 상자 변·가운데·기둥 면에 맞춘다
@@ -91,9 +93,10 @@
       // 입구 방향을 정했으면(core.facing) 그 방향만 본다
       for (const f of ['S', 'N', 'E', 'W'].filter((x) => !core.facing || x === core.facing)) {
         const [w, h] = sizeOf(f, alt0.outer.w, alt0.outer.h); if (w > core.w + 1 || h > core.d + 1) continue;
-        const cys = colY(q[1] - core.d / 2 - 2 * gy, q[1] + core.d / 2 + 2 * gy), sn = f === 'S' || f === 'N', gx = !!stretch(alt0, 'x', 100), gyOk = !!stretch(alt0, 'y', 100), fixX = !(sn ? gx : gyOk), fixY = !(sn ? gyOk : gx);
+        const cys = colY(q[1] - core.d / 2 - 2 * reachY, q[1] + core.d / 2 + 2 * reachY), sn = f === 'S' || f === 'N', gx = !!stretch(alt0, 'x', 100), gyOk = !!stretch(alt0, 'y', 100), fixX = !(sn ? gx : gyOk), fixY = !(sn ? gyOk : gx);
         // 물러나는 순서(own): 0 상자 크기·놓은 자리(변만 SNAP 안에서 붙음) → 1 상자 크기·한 칸 안에서 옮김 → 2 안 자체 크기·한 칸 안에서 옮김. 차로를 막지 않는 첫 단계가 이긴다
-        for (const [own, sw, sd] of [[0, core.w, core.d], [1, core.w, core.d], [2, w, h]]) for (const [x0, x1] of spans(colX, q[0], sw, w, own && cfg.gx, fixX)) for (const [y0, y1] of spans(cys, q[1], sd, h, own && gy, fixY)) {
+        for (const [own, sw, sd] of [[0, core.w, core.d], [1, core.w, core.d], [2, w, h]]) for (const [x0, x1] of spans(colX, q[0], sw, w, own && reachX, fixX)) for (const [y0, y1] of spans(cys, q[1], sd, h, own && reachY, fixY)) {
+          if (G.columnAxes && ((core.keep?.x && (Math.abs(x0-(q[0]-core.w/2))>1 || Math.abs(x1-(q[0]+core.w/2))>1)) || (core.keep?.y && (Math.abs(y0-(q[1]-core.d/2))>1 || Math.abs(y1-(q[1]+core.d/2))>1)))) continue;
           // 늘린 만큼 생성기 축으로 펴기(S·N은 가로 = 생성기 x, E·W는 가로 = 생성기 y)
           const gw = Math.round(x1 - x0 - w), gh = Math.round(y1 - y0 - h), [ux, uy] = f === 'S' || f === 'N' ? [gw, gh] : [gh, gw], ck = `${f}|${ux}|${uy}`;
           if (!cache.has(ck)) { const s1 = stretch(alt0, 'x', ux); cache.set(ck, s1 && stretch(s1, 'y', uy)); }

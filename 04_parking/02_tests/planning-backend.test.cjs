@@ -3,6 +3,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../01_src/plan/CLAUDE_ugp_plan.js'),G=require('../01_src/plan/CLAUDE_ugp_geom.js'),V=require('../01_src/plan/CLAUDE_ugp_verify.js');
 const B=require('../01_src/plan/planning-boundary.js'),Z=require('../01_src/plan/planning-zones.js'),A=require('../01_src/plan/stall-allocation.js');
 const Grid=require('../01_src/plan/CLAUDE_ugp_grid.js'),Layout=require('../01_src/plan/CLAUDE_ugp_layout.js');
+const CoreFit=require('../01_src/plan/core-fit.js');
 const Gen=require('../../06_core_layout/01_src/core_gen2.js'),Eval=require('../src/underground/evaluators/evaluator-core.js');
 const rules=require('../src/underground/rules/kr-parking-rules-2026-07-27.json');
 const R=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
@@ -25,9 +26,12 @@ test('fixed nonuniform columns survive aisle collisions and parking phase change
   const expected=irregularAxes.x.flatMap(x=>irregularAxes.y.map(y=>[x,y]));
   assert.deepEqual(centers(r),expected);assert.deepEqual(centers(other),expected);
   assert.deepEqual(input,before);
-  assert(inter(r.columns,r.aisles)>1e4,'fixture must actually collide');
-  assert(r.violations.some(v=>v.id==='COLUMN_IN_AISLE'));
+  const attempted=E.generate({...base,phase:input.phase});
+  assert(inter(r.columns,attempted.aisles)>1e4,'fixture must actually collide with the proposed route');
+  assert(r.violations.some(v=>v.id==='FIXED_COLUMN_BLOCKS_ROUTE'));
   assert.notEqual(r.status,'FEASIBLE');
+  assert(inter(r.columns,r.aisles)<1e4,'fixed columns must be removed from drivable surface, not from structure');
+  for(const e of r.graph.edges.filter(e=>e.ok))for(const P of r.columns)assert(!G.clipSeg(r.graph.nodes[e.a].p,r.graph.nodes[e.b].p,G.bbox(P)),'column-crossing edge must not certify circulation');
   assert(r.stalls.every(s=>inter([s.pts],r.columns)<1e4));
 });
 
@@ -46,6 +50,65 @@ test('horizontal stall rows use each structural bay width, not the nominal parki
   const north=r.stalls.filter(s=>G.bbox(s.poly)[1]>=23000);
   assert.deepEqual([[1000,7000],[7000,16000],[16000,24400]].map(([lo,hi])=>north.filter(s=>{const b=G.bbox(s.poly);return b[0]>=lo+300&&b[2]<=hi-300;}).length),[2,3,3]);
   assert.equal(north.length,8);
+});
+
+test('fixed-axis metadata is independent of the input and automatic rotation does not move structure',()=>{
+  const input={...base,phase:[6000,8000],grid:{columnAxes:structuredClone(irregularAxes)}};
+  const r=E.generate(input);
+  assert.deepEqual(r.grid.columnAxes,input.grid.columnAxes);assert.equal(r.grid.columnAxesFrame,'ucs');assert.equal(r.grid.phaseScope,'parking-module');
+  r.grid.columnAxes.x[0]=123;assert.equal(input.grid.columnAxes.x[0],10000);
+  assert.deepEqual(E.suggestUcs(input),[]);
+  assert.equal(E.generate({...base,phase:[6000,8000]}).grid.columnAxes,undefined);
+});
+
+test('core snapping and interior fitting read the actual nonuniform column lines',()=>{
+  const columnAxes={x:[10000,39900,48900,80000],y:[4000,29600,37600,44000]};
+  const frame=Grid.frame({...coreInput,grid:{columnAxes}});Grid.setPhase(frame,[0,0]);
+  const snapped=Layout.snapCores(frame,{cores:[{c:[41000,31000],w:4000,d:4000}]},[])[0].r;
+  assert([snapped[0],snapped[2]].some(v=>columnAxes.x.includes(v)));
+  assert([snapped[1],snapped[3]].some(v=>columnAxes.y.includes(v)));
+  const fit=CoreFit.fit(frame,coreInput.cores[0],[]);
+  assert(fit&&fit.cols.length,'fixture must fit a core and encounter structure');
+  assert(fit.cols.every(([x,y])=>columnAxes.x.includes(x)&&columnAxes.y.includes(y)));
+  const fixed={...coreInput.cores[0],keep:{x:true,y:true}};
+  const c=Layout.snapCores(frame,{cores:[fixed]},[])[0];
+  assert.deepEqual(c.r,[39900,29600,48900,37600]);
+});
+
+test('parking type conversion respects a six-metre structural bay rather than requiring three normal stalls',()=>{
+  const input={mass:R(0,0,40000,40000),grid:{columnAxes:{x:[1000,7000,16000,24400],y:[1000,33000]}},parkingOptions:{expanded:{mode:'count',value:2}}};
+  const frame=Grid.frame(input);Grid.setPhase(frame,[0,0]);
+  const placed=Layout.placeStalls(frame,[{a:[1000,20000],b:[7000,20000],kind:'row',h:20000,v:null}],[frame.inner],[R(1000,17000,6000,6000)],[],[],false);
+  const stalls=placed.stalls.filter(s=>G.bbox(s.poly)[1]>=23000).map(s=>({pts:s.poly,stallType:s.stallType,rowId:s.rowId,kind:s.kind}));
+  assert.equal(stalls.length,2);
+  const out={stalls,stallRows:placed.rows,cores:[],occupants:[],columns:[],aisles:[],innerOutline:frame.inner,graph:{nodes:[],edges:[]}};
+  const r=A.allocate(frame,out,['ok','ok'],input);
+  assert.equal(r.summary.requirements.expanded.short,0);assert.equal(r.stalls.length,2);assert.equal(r.changes.length,1);
+  for(const s of r.stalls){const b=G.bbox(s.pts);assert(b[0]>=1300&&b[2]<=6700);assert.equal(b[2]-b[0],2600);}
+});
+
+test('a ramp through explicit structural columns is infeasible and cannot erase those columns',()=>{
+  const input={...base,phase:[6000,8000],grid:{columnAxes:{x:[10000,19000],y:[50000,58000]}}};
+  const r=E.generate(input);
+  assert.equal(r.columns.length,4);assert(inter(r.columns,[r.ramp.body])>1e4);
+  assert(r.violations.some(v=>v.id==='COLUMN_IN_AISLE'));assert.equal(r.status,'INFEASIBLE');assert.equal(r.report.status,'INFEASIBLE');
+});
+
+test('fixed-axis core move proposals use actual axis offsets and preserve all fixed columns',()=>{
+  const input={...base,phase:[6000,8000],grid:{columnAxes:irregularAxes},cores:[{c:[19000,21000],w:3000,d:4000,keep:{x:true,y:true}}]};
+  const before=E.generate(input),moves=E.suggestCoreMoves(input,0,3);
+  assert(moves.length>0);
+  for(const m of moves){assert(irregularAxes.x.includes(m.c[0])&&irregularAxes.y.includes(m.c[1]));const r=E.generate({...input,cores:[{...input.cores[0],c:m.c}]});assert.deepEqual(r.columns,before.columns);}
+});
+
+test('fixed-axis phase selection considers cores and does not reuse the empty-core phase cache',()=>{
+  const input={...base,grid:{columnAxes:irregularAxes}};
+  const empty=E.generate(input),withCore={...input,cores:[{c:[19000,21000],w:6000,d:12000,keep:{x:true,y:true}}]};
+  const r=E.generate(withCore),ranked=E.suggestPhases(withCore,1);
+  assert(ranked.length);assert.deepEqual(r.grid.phase,ranked[0].phase);
+  assert.notDeepEqual(r.grid.phase,empty.grid.phase,'fixture must require a different parking module position');
+  assert.deepEqual(E.generate(input).grid.phase,empty.grid.phase);
+  assert.deepEqual(r.columns,empty.columns);
 });
 function curve(o={}){const c=E.createCurveRamp({id:'R',systemId:'S',operation:'twoWay',landing:[75000,35000],tangent:[-1,0],turn:'left',turnDeg:180,innerRadiusMm:6000,lanes:2,legalLaneWidthMm:6500,straightTopMm:3000,straightBottomMm:3000,transitions:{topMm:1700,bottomMm:1700},levels:{connects:{upperLevelMm:0,lowerLevelMm:-3800}},...o});assert(c.body,JSON.stringify(c.violations));return c;}
 function evaluated(input){

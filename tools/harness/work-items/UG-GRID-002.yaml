@@ -1,0 +1,50 @@
+id: UG-GRID-002
+status: VERIFYING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required
+verify_profile: vehicle-circulation
+question: 코어 배치와 주차 유형 재배치 및 결과 메타데이터가 같은 고정 구조축을 사용하는가?
+dependency: UG-GRID-001 구현과 기준 시험 통과 후 시작
+allowed_files:
+  - 04_parking/01_src/plan/core-fit.js
+  - 04_parking/01_src/plan/stall-allocation.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/planning-backend.test.cjs
+  - tools/harness/work-items/UG-GRID-002.yaml
+acceptance:
+  - 고정 기둥이 막는 차로 구간을 그래프에서 제외하고 정지 이유를 표시; 기둥은 보존
+  - 코어 내부 배치 및 기둥 충돌 계산에서 입력한 구조축을 사용
+  - 경형·확장형 등 주차 유형 전환은 구간별 실제 구조 폭을 사용
+  - 출력은 고정 구조축과 주차·차로 모듈을 구분하고 원본 입력과 독립된 배열 반환
+  - 코어 이동 후보는 균등 모듈 대신 실제 구조축 사이 이동량을 사용
+  - 기존 균등 격자와 자동 위치선정 결과 유지
+input_example: 'grid: {gx: 8400, gy: 9000, aisleMm: 6000, columnAxes: {x: [11000, 20000, 26000, 29000, 37400], y: [4800, 13800, 22800, 31800, 40800]}}'
+input_note: 예시 좌표는 API 사용 예시이며 SGHS 기둥 전체의 확정 좌표가 아님; UCS 절대 좌표(mm), 모든 교점 적용
+separation: 주차·차로 후보 생성은 기존 gx·gy·phase를 사용하고 구조축은 이동하지 않음; 최적 동선 탐색 확대는 후속 작업
+not_doing:
+  - UI 입력 편집 및 원안 동선 재현 합격 선언
+  - 구조축을 이동시키는 자동 대안 생성
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+results:
+  implementation: 완료; 활성 백엔드에 적용, 기본 화면 입력과 SGHS 파일럿 데이터는 변경하지 않음
+  harness_verification: 74/74 통과; 기존 64개와 구조 관련 신규 10개
+  npm_test: 최종 코드 기준 74/74 통과; tools/harness/runs/grid-final-npm.log
+  run_id: 20261028-223612-UG-GRID-002-8ee1242f
+  uniform_preservation: 직사각·사선 두 사례의 직렬화된 전체 결과가 변경 전과 일치
+  variable_bays: 6m·9m·8.4m 가로 구간에서 일반 주차칸 2·3·3개; 6m 구간 확장형 2개 전환 확인
+  fixed_structure: 주차 모듈 위치 변경과 코어 이동 후보에도 기둥 좌표 보존; UCS 90도 변환 확인
+  route_blockage: 고정 기둥 차단 구간은 유효 동선에서 제외; 램프와 고정 기둥 충돌은 INFEASIBLE
+  core_and_cache: 코어 내부 배치는 실제 축을 사용; 고정 구조 입력의 위치선정은 코어를 포함하고 코어 변경 시 캐시 분리
+  input_validation: 누락·중복·역순·비수치·희소 배열·과밀·초과 길이 거부; 외곽에 걸친 고정 기둥은 오류
+  independent_review: 미실시; 사용자 지침에 따라 서브에이전트 또는 다른 모델을 임의 호출하지 않음; 자체 점검을 독립 검토로 표기하지 않음
+  user_visual_review: 미실시; 구조축을 입력한 실제 파일럿 화면과 재현 합격은 후속 검증 대상
+limitations:
+  - 현재 API는 불균등 간격의 직교축 교점 전체를 표현; 개별 교점 생략·비직교 구조·기둥별 크기 차이는 지원하지 않음
+  - 고정 구조를 우회하는 최적 동선을 새로 탐색하지 않으며 충돌로 인해 대수 감소 또는 불성립이 나올 수 있음
+  - 브라우저 문서의 입력·저장 UI는 이번 작업 범위 밖; generate에 grid.columnAxes를 전달해야 기능 적용
+  - 공모작 재현 성공과 제품 단계 종료를 선언하지 않음

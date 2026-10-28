@@ -69,7 +69,17 @@
       if(routing.created.length)warnings.push(`막힌 구간 ${routing.created.length}곳에 우회 차로를 만들었습니다`);
       if(routing.failed.length||(routing.blockedCount&&!routing.created.length))violations.push({id:'BYPASS_UNAVAILABLE',note:`차로 폭을 확보할 수 없는 우회 ${routing.failed.length||routing.blockedCount}곳은 만들지 못했습니다`,at:W(routing.failed[0]?.a||segs[0].a).map(Math.round)});
     }else pieces=originalPieces;
-    let aisleU = Lay.aisleSurface(G, ringCL, pieces, area, obstacles);
+    let aisleObstacles = obstacles;
+    if (G.columnAxes) {
+      const fixed = columns.map(P => ({r:Gm.bbox(P)})), margin = a / 2 - 100;
+      const blocking = fixed.filter(c => pieces.some(s => Gm.clipSeg(s.a,s.b,[c.r[0]-margin,c.r[1]-margin,c.r[2]+margin,c.r[3]+margin])));
+      if (blocking.length) violations.push({id:'FIXED_COLUMN_BLOCKS_ROUTE',note:`고정 기둥 ${blocking.length}개가 막는 차로 구간을 동선에서 제외했습니다 — 구조를 유지한 차로 재배치가 필요합니다`,at:W([(blocking[0].r[0]+blocking[0].r[2])/2,(blocking[0].r[1]+blocking[0].r[3])/2]).map(Math.round)});
+      const cutRings = new Set(pieces.filter(p=>p.kind==='ring'&&p.cut).map(p=>p.ri));
+      pieces = Lay.cutByCores(G,pieces,fixed,[]);
+      pieces.forEach(p=>{if(p.kind==='ring'&&cutRings.has(p.ri))p.cut=true;});
+      aisleObstacles = obstacles.concat(fixed);
+    }
+    let aisleU = Lay.aisleSurface(G, ringCL, pieces, area, aisleObstacles);
     if (alternative) {
       const bay=rectPoly(alternative.bounds), blocks=columns.concat(obstacles.map(c=>rectPoly(c.r)));
       aisleU=boolOp(boolOp(boolOp(aisleU.concat([bay]),[],CL.ClipType.ctUnion),area,CL.ClipType.ctIntersection),blocks,CL.ClipType.ctDifference);
@@ -91,7 +101,7 @@
       occupantRouting:{policy,created:routing.created.map(path=>path.map(p=>W(p).map(Math.round))),failed:routing.failed.map(s=>({a:W(s.a).map(Math.round),b:W(s.b).map(Math.round)}))},
       ramp: rampOut && {...(rampOut.kind === 'curve' ? {kind: 'curve', id: rampOut.id, sourceRamp:rampOut.sourceRamp} : {}), body: Wp(rampOut.body), landing: W(rampOut.landing).map(Math.round), tangent: W(rampOut.u), widthMm: rampOut.widthMm, approach:{points:(rampOut.approach||[]).map(p=>W(p).map(Math.round)),widthMm:a,...(rampOut.approachInfo?{firstStraightMm:rampOut.approachInfo.firstStraightMm,turnAnglesDeg:rampOut.approachInfo.turnAnglesDeg,turnCount:rampOut.approachInfo.turnCount,accepted:rampOut.approachInfo.accepted,summary:rampOut.approachInfo.summary}:{})}, start: rampOut.start?W(rampOut.start).map(Math.round):null, slopePct: rampOut.slopePct, lengthMm: rampOut.lengthMm, shiftMm: rampOut.shiftMm},
       graph: {nodes: graph.nodes.map((nd) => ({id: nd.id, p: W(nd.p).map(Math.round)})), edges: graph.edges},
-      grid: {gx: cfg.gx, gy: cfg.gy, aisleMm: a, angleDeg: G.ucs, phase: [Math.round(G.X0 - b[0]), Math.round(G.Y0 - b[1])]},
+      grid: {gx: cfg.gx, gy: cfg.gy, aisleMm: a, angleDeg: G.ucs, phase: [Math.round(G.X0 - b[0]), Math.round(G.Y0 - b[1])],...(G.columnAxes?{columnAxes:{x:G.columnAxes.x.slice(),y:G.columnAxes.y.slice()},columnAxesFrame:'ucs',phaseScope:'parking-module'}:{})},
     };
     const placementReport=Ver.check(out,input),sourceStalls=out.stalls;
     const allocated=Allocation.allocate(G,out,placementReport.stallState,input);out.stalls=allocated.stalls;
@@ -126,6 +136,7 @@
     //   실제 공모 평면에서 고리가 도는 섬은 코어 섬·주차 섬뿐이었다(04_docs CLAUDE_V2_도메인교차검토 106–127행). 자동 우회 고침은 재현 장면을 받은 뒤
     for (const isl of emptyIslands(out, kept)) violations.push({id: 'EMPTY_ISLAND', note: `칸이 ${isl.n}대뿐인 섬(${isl.areaM2}㎡)을 차로가 돌아 나갑니다 — 실제 평면에는 없는 동선입니다. 램프 자리·구조열 위치를 바꿔 보세요`, at: isl.at, zone: [isl.poly]});
     const innerArea = Math.abs(areaOf(out.parkingInnerPaths)) / 1e6, allV = [...new Map(violations.concat(rep.violations).map(v=>[v.id+'|'+(v.parkingType||'')+'|'+v.note,v])).values()];
+    if (G.columnAxes && rep.violations.some(v=>v.id==='COLUMN_IN_AISLE')) rep={...rep,status:'INFEASIBLE'};
     const sourceRejected=sourceStalls.filter((s,i)=>!['ok','deadSide'].includes(placementReport.stallState[i])),rejected=sourceRejected.concat(finalRejected);
     return Object.assign(out, {
       status: rep.status === 'INFEASIBLE' ? 'INFEASIBLE' : allV.length ? 'CONDITIONAL' : 'FEASIBLE', report: rep,placementReport,parkingSummary,allocationChanges:allocated.changes,areas:zoning.areas,keptZones:zoning.keptZones,unmatchedZoneAssignments:zoning.unmatchedAssignments,unassignedFree:zoning.remaining,rampReview:rampOut?.kind==='curve'?rampReview(input.rampEvaluation,rampOut.id):[],
@@ -242,7 +253,7 @@
   function rankPhases(input) {
     const G = Grid.frame(input), even = (g, n) => Array.from({length: n}, (_, i) => Math.round(i * g / n));
     const xs = Grid.phaseCands(G, true), ys = Grid.phaseCands(G, false), X = xs.length ? xs : even(G.cfg.gx, 9), Y = ys.length ? ys : even(G.gy, 8);
-    const probe = {...input, cores: [], debug: false,autoZones:false,zoneAssignments:[]}, seen = new Map();
+    const probe = {...input, cores: G.columnAxes ? input.cores : [], debug: false,autoZones:false,zoneAssignments:[]}, seen = new Map();
     const ev = (x, y) => {
       const k = x + ',' + y;
       if (!seen.has(k)) { let v; try { const r = build(probe, [x, y]); v = {phase: [x, y], stallCount: r.stallCount, hasLoop: r.graph.hasLoop, deadEnds: r.graph.deadEnds.length, score: planScore(r, !!input.ramp)}; } catch (e) { v = {phase: [x, y], stallCount: 0, hasLoop: false, deadEnds: 0, score: -Infinity}; } seen.set(k, v); }
@@ -266,7 +277,7 @@
     const G = Grid.frame(input), {b, L} = G, r = input.ramp;
     const rp=p=>L(p).map((v,i)=>Math.round(v-b[i]));
     const rampKey=r?.body?[r.body.map(rp),rp(r.landing),L(r.tangent),r.widthMm,r.lengthMm]:r?[rp([r.x,r.y]),Math.round(((r.angleDeg-G.ucs)%360+360)%360/90)%4,r.widthMm,r.lengthMm]:null;
-    const key = JSON.stringify([G.inner.map(([x, y]) => [x - b[0], y - b[1]]), G.cfg, input.stallModules, input.stallRowTypes, input.stallType, rampKey,(input.massHoles||[]).map(P=>P.map(rp)),(input.nonParkingZones||[]).map(z=>[z.kind,z.paths.map(P=>P.map(rp))]),input.parkingOptions]);
+    const key = JSON.stringify([G.inner.map(([x, y]) => [x - b[0], y - b[1]]), G.cfg, input.stallModules, input.stallRowTypes, input.stallType, rampKey,(input.massHoles||[]).map(P=>P.map(rp)),(input.nonParkingZones||[]).map(z=>[z.kind,z.paths.map(P=>P.map(rp))]),input.parkingOptions,...(G.columnAxes?[input.cores,input.occupants,input.occupantPolicy]:[])]);
     if (!PHASE.has(key)) { PHASE.set(key, rankPhases(input)[0].phase); if (PHASE.size > 50) PHASE.delete(PHASE.keys().next().value); }
     return PHASE.get(key);
   }
@@ -355,16 +366,19 @@
   function suggestCoreMoves(input, i, count = 3) {
     const r0 = generate(input), {gx, gy} = r0.grid, ucs = r0.grid.angleDeg, c0 = input.cores[i], phase = r0.grid.phase, out = [];
     const bad = (r) => r.issues.some((x) => x.core === i);
-    for (let m = -2; m <= 2; m++) for (let k = -2; k <= 2; k++) {
-      if (!m && !k) continue;
-      const c = add(c0.c, Gm.rot([m * gx, k * gy], ucs)).map(Math.round), cores = input.cores.map((x, j) => (j === i ? {...x, c} : x));
-      try { const r = generate({...input, cores, phase}); if (!bad(r)) out.push({c, stallCount: r.stallCount, status: r.status, moveMm: Math.round(Math.hypot(m * gx, k * gy))}); } catch (e) { /* 이 자리는 성립 안 함 */ }
+    const axes = r0.grid.columnAxes, q = Gm.rot(c0.c,-ucs);
+    const offsets = (xs,v,step) => {if(!xs)return [-2,-1,0,1,2].map(n=>n*step);const i=xs.reduce((best,x,j)=>Math.abs(x-v)<Math.abs(xs[best]-v)?j:best,0);return xs.slice(Math.max(0,i-2),i+3).map(x=>x-xs[i]);};
+    for (const dx of offsets(axes?.x,q[0],gx)) for (const dy of offsets(axes?.y,q[1],gy)) {
+      if (!dx && !dy) continue;
+      const c = add(c0.c, Gm.rot([dx, dy], ucs)).map(Math.round), cores = input.cores.map((x, j) => (j === i ? {...x, c} : x));
+      try { const r = generate({...input, cores, phase}); if (!bad(r)) out.push({c, stallCount: r.stallCount, status: r.status, moveMm: Math.round(Math.hypot(dx, dy))}); } catch (e) { /* 이 자리는 성립 안 함 */ }
     }
     return out.sort((p, q) => q.stallCount - p.stallCount || p.moveMm - q.moveMm).slice(0, count);
   }
   // UCS 제안: 매스 변 방향(5m 넘는 변, 90° 주기로 같은 방향은 하나)마다 격자를 돌려(위상도 그 방향에서 새로 골라) 계산해 대수 순으로 돌려준다.
   // ponytail: 매스 하나에 격자 하나 — 날개마다 다른 방향 격자(여러 구역)는 로드맵 단계 0 이후 과제
   function suggestUcs(input) {
+    if (input.grid?.columnAxes) { Grid.frame(input); return []; } // Rotating the parking module must not rotate fixed structure.
     const angs = []; input.mass.forEach((p, i) => { const q = input.mass[(i + 1) % input.mass.length]; if (len(sub(q, p)) < 5000) return; let t = Math.atan2(q[1] - p[1], q[0] - p[0]) * 180 / Math.PI; t = ((t % 90) + 90) % 90; if (t > 45) t -= 90; t = Math.round(t * 10) / 10; if (!angs.some((x) => Math.abs(x - t) < 1)) angs.push(t); });
     const rampAngle=input.ramp?.tangent?Math.atan2(input.ramp.tangent[1],input.ramp.tangent[0])*180/Math.PI:input.ramp?.angleDeg;
     const k = input.ramp ? Math.round((((rampAngle - (input.ucs || 0)) % 360) + 360) % 360 / 90) % 4 : 0, out = [];
