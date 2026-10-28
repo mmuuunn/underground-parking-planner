@@ -33,7 +33,7 @@
   </main>
   <aside aria-label="주차 계획 설정">
     <div class="panel-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="planTab" aria-controls="planningPanel" aria-selected="true" class="active">계획</button><button role="tab" id="appearanceTab" aria-controls="appearancePanel" aria-selected="false">도면 표현</button></div>
-    <section class="result-section"><div class="section-title"><h2>주차 계획</h2><span id="reviewBadge" class="review-badge">검토 초안</span></div><div id="stats" aria-live="polite"></div></section>
+    <section class="result-section"><div class="section-title"><h2>주차 계획</h2><span id="reviewBadge" class="review-badge">검토 초안</span></div><div id="stats" aria-live="polite"></div><div id="turnBayNotice" hidden><p class="note">회차 공간 실험안 · 막다른 차로의 회차와 교행은 검토가 필요합니다.</p><button class="mini-btn" id="turnBayOff">실험안 해제</button> <button class="mini-btn" id="turnBayRestore">이전 장면 복원</button></div></section>
     <section id="curveReview" class="curve-review" aria-label="곡선 램프 판정" hidden>
       <div class="section-title"><h2>곡선 램프 검토</h2><span id="curveReviewSummary" class="review-badge"></span></div>
       <p id="curveMetrics" class="curve-metrics"></p><p id="curveConditions" class="note"></p>

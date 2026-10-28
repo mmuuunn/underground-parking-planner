@@ -1,0 +1,32 @@
+id: UG-LAYOUT-004
+status: VERIFYING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required-before-acceptance
+verify_profile: vehicle-circulation
+question: 사용자 Chrome 생성기 화면에서 같은 87대 조건부 장면을 새로고침 후에도 재현할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/underground-compare.html
+must_preserve:
+  - 기존 장면 백업 및 복구 가능성
+  - 다른 일반 입력의 기존 배치 생성과 기준 시험
+  - 막다른 차로 경고 및 회차 미검증 상태
+acceptance:
+  - 사용자가 지정한 화면에서 87대 장면으로 한 번 설정하고 새로고침 후 동일하게 유지
+  - 사용자 설정을 변경하면 기존 대안 상태를 무조건 합격으로 표시하지 않음
+  - 기존 계산 시험과 화면 재현 검사 통과
+not_doing:
+  - 일반 기본 장면이나 골든값 변경
+  - 회차 미검증의 안전 판정 승격
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 3
+max_new_production_lines: 120
+result:
+  - 장면 주소를 통해 사용자 사례 외곽 코어 램프 구조열 및 회차 공간 대안을 저장
+  - 시험용 Chrome에서 87대 및 막다른 차로 경고와 새로고침 후 유지 확인
+  - 이전 장면 복원과 실험안 해제 및 곡선 램프 충돌 방지 확인
+  - npm test 및 하네스 각 64개 통과
+  - 사용자 Chrome의 브라우저 접근 호스트 연결 오류로 실제 창 조작 및 확인은 미완료

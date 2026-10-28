@@ -111,6 +111,28 @@ function validDoc(d) {
 function load() { try { const d = JSON.parse(localStorage.getItem(STORE)); return validDoc(d) ? d : null; } catch (e) { return null; } }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(doc)); } catch (e) { /* 저장 불가: 무시 */ } }
 let doc = load() || defaultDoc();
+const REVIEW_BACKUP = STORE + ':before-turn-bay';
+let reviewLoadError = '';
+if (new URL(location.href).searchParams.get('scene') === 'turn87') {
+  const previous = load();
+  let backupReady=true;
+  if (previous && previous.layoutAlternative !== 'turnBay') {
+    try { localStorage.setItem(REVIEW_BACKUP, JSON.stringify(previous)); } catch (e) { backupReady=false; }
+  }
+  if (!backupReady) reviewLoadError='이전 장면을 보관할 수 없어 실험안을 불러오지 않았습니다. 브라우저 저장 공간을 확인하세요.';
+  if (backupReady) {
+    doc = {v:2, mass:[[-30089,8981],[-26923,-11428],[23749,-35903],[49409,17223],[-11822,46799]], ucs:-25.7815,
+      cores:[{c:[22127,184],w:9489,d:5981,doors:{ENT:100}}], ramp:{p:[3395,19905],k:0,len:24000,w:6000},
+      snap:1000,module:'wide',floorMm:3800,allowExternalRamp:true,layoutAlternative:'turnBay'};
+    doc.phase={key:JSON.stringify([doc.mass,doc.ucs,doc.module]),p:[4000,0]};
+    save();
+    try {
+      if (localStorage.getItem(STORE) === JSON.stringify(doc)) {
+        const clean=new URL(location.href);clean.searchParams.delete('scene');history.replaceState(null,'',clean.href);
+      }
+    } catch (e) { /* keep the scene link when storage is unavailable */ }
+  }
+}
 const hist = {stack: [], i: -1};
 function pushHist() { const j = JSON.stringify(doc); if (hist.stack[hist.i] === j) return false; hist.stack.length = hist.i + 1; hist.stack.push(j); hist.i++; if (hist.stack.length > 80) { hist.stack.shift(); hist.i--; } updUndo(); return true; }
 function commit(label) { ui.ghosts = null; if (pushHist()) { save(); recompute(label); } else renderEdit(); }
@@ -252,14 +274,20 @@ function suggestCurvePositions(input) {
   return reviewed.sort((a,b)=>(order[a.status]??3)-(order[b.status]??3)||b.stallCount-a.stallCount).slice(0,5);
 }
 function solve() {
+  if (reviewLoadError) return {fail:reviewLoadError};
   const mass = doc.mass;
   if (selfCrossing(mass)) return {fail: '매스 외곽선이 서로 엇갈립니다'};
   // ponytail: 크기 상한 — 엔진이 동기 계산이라 거대한 매스는 화면을 멈춘다. 계산을 Worker로 옮기면 올릴 수 있다
   if (area(mass) > 60000e6) return {fail: `매스가 ${fmt(area(mass) / 1e6)}㎡로 너무 큽니다(한 층 6만㎡까지)`};
   const input=planInput();
+  if(curveMode()&&doc.layoutAlternative==='turnBay')return {fail:'직선 램프 회차 공간 실험안을 해제한 뒤 곡선 램프를 선택하세요.'};
   if(curveMode()&&!input.ramp.body)return {fail:'곡선 램프 입력을 확인해 주세요',curveRamp:input.ramp,violations:input.ramp.violations};
   try {
-    if(!curveMode()){const r=UGPlan.generate(input);return {...r,planMass:r.planningBoundary.floorMass};}
+    if(!curveMode()){
+      const r=doc.layoutAlternative==='turnBay' ? UGPlan.suggestTurnBay(input)?.plan : UGPlan.generate(input);
+      if(!r)return {fail:'현재 조건에서는 회차 공간 대안을 만들 수 없습니다. 대안을 해제하거나 조건을 조정하세요.'};
+      return {...r,planMass:r.planningBoundary.floorMass};
+    }
     return solveCurveInput(input);
   } catch (e) { return {fail:e.message,curveRamp:curveMode()?input.ramp:null}; }
 }
@@ -481,6 +509,9 @@ function renderRampCandidates() {
   box.querySelectorAll('[data-candidate]').forEach(button=>button.onclick=()=>applyRampGhost(+button.dataset.candidate));
 }
 function renderPanel() {
+  const reviewNotice=$('turnBayNotice');
+  if(reviewNotice)reviewNotice.hidden=doc.layoutAlternative!=='turnBay';
+  if($('turnBayRestore')){try{$('turnBayRestore').hidden=!localStorage.getItem(REVIEW_BACKUP);}catch(e){$('turnBayRestore').hidden=true;}}
   const M = doc.mass, A = area(M) / 1e6, ortho = M.every((a, i) => { const t = (edgeAngle(a, M[(i + 1) % M.length]) - doc.ucs + 360) % 90; return t < .5 || t > 89.5; });
   const boundary=planningMass(rampSpec(doc.ramp));
   $('massInfo').innerHTML = `입력 외곽 ${fmt(A)}㎡${boundary.joined?` · 램프 포함 ${fmt(area(boundary.mass)/1e6)}㎡`:''} · 꼭짓점 ${M.length}개 · ${ortho ? 'UCS와 직교' : '사선 변 있음'}` + (ui.sel && ui.sel.kind === 'edge' ? ` · 선택한 변 ${(Math.hypot(...sub(M[(ui.sel.i + 1) % M.length], M[ui.sel.i])) / 1000).toFixed(2)} m` : '');
@@ -740,6 +771,12 @@ $('undoBtn').onclick = () => jump(hist.i - 1);
 $('redoBtn').onclick = () => jump(hist.i + 1);
 $('fitBtn').onclick = fit;
 $('resetBtn').onclick = () => { if (!confirm('매스·코어·램프를 처음 상태로 되돌릴까요? (실행 취소로 다시 돌아올 수 있습니다)')) return; doc = defaultDoc(); ui.sel = null; commit('처음 상태로'); fit(); };
+if($('turnBayOff'))$('turnBayOff').onclick=()=>{delete doc.layoutAlternative;commit('회차 공간 실험안 해제');};
+if($('turnBayRestore'))$('turnBayRestore').onclick=()=>{
+  let previous=null;try{previous=JSON.parse(localStorage.getItem(REVIEW_BACKUP));}catch(e){/* no saved scene */}
+  if(!validDoc(previous))return flash('복원할 이전 장면이 없습니다');
+  doc=previous;ui.sel=null;commit('이전 장면 복원');fit();
+};
 $('ucsPick').onclick = () => setTool(ui.tool === 'ucs' ? 'select' : 'ucs');
 $('ucsSuggest').onclick = () => withCalculationNotice(() => {
   const list = curveMode()?suggestCurveUcs():UGPlan.suggestUcs(planInput()); if (!list.length) return flash('성립하는 방향을 찾지 못했습니다');
