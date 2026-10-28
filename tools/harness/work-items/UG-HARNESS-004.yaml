@@ -1,0 +1,37 @@
+id: UG-HARNESS-004
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex
+verify_profile: vehicle-circulation
+question: 사용자에게 같은 기준의 제품 점수와 근거 및 전후 변화를 보여줄 수 있는가?
+allowed_files:
+  - tools/harness/dashboard.html
+  - tools/harness/scripts/dashboard.cjs
+  - tools/harness/scripts/dashboard.test.cjs
+  - tools/harness/progress.json
+  - tools/harness/README.md
+must_preserve:
+  - 시험과 사용자 확인 및 미검증의 구분
+  - 제품 목표 안전 기준과 기존 사용자 변경
+acceptance:
+  - 이전에 제안한 52점을 잠정 최초 평가로 표시하고 과거 변화를 지어내지 않는다
+  - 동일 기준의 후속 평가가 있을 때 날짜 점수 변화 근거를 표시한다
+  - 평가 기록 누락과 연결 실패를 명확히 표시한다
+  - 공통 시험과 기록 읽기 및 화면 확인을 수행한다
+not_doing:
+  - 하네스 화면 개선을 제품 성능 개선으로 자동 환산
+  - 사용자 승인 또는 주행 안전을 점수로 대체
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+verification_result:
+  - 공통 계산 시험 64개 통과; 대시보드 단위 시험 4개 통과
+  - 최초 잠정 52점과 항목별 근거 및 비교 기록 부재를 화면에서 확인
+  - 가상의 후속 평가로 점수 증감을 확인하고 실제 기록에는 저장하지 않음
+  - 점수 자동 상승은 없으며 후속 작업 완료 시 동일 기준과 증거를 기록해야 반영됨
+remaining:
+  - 사용자 화면 확인 대기
+  - B 순환 대안 및 실제 주행 확인은 별도 제품 작업

@@ -17,6 +17,19 @@ function parseItem(text) {
   return { id: scalar('id'), name: scalar('name'), currentStage: scalar('current_stage'), status: scalar('status'), stage: scalar('stage'), question: scalar('question'), reviewer: scalar('reviewer'), userGate: scalar('user_gate'), reviewResult: scalar('review_result'), remaining: list('remaining'), acceptance: list('acceptance') };
 }
 
+function readProgress(dir) {
+  const progress = JSON.parse(fs.readFileSync(path.join(dir, 'progress.json'), 'utf8').replace(/^\uFEFF/, ''));
+  if (!progress.rubric || !Array.isArray(progress.categories) || !progress.categories.length || !Array.isArray(progress.snapshots)) throw Error('평가표 형식 오류');
+  const ids = progress.categories.map(c => c.id);
+  if (new Set(ids).size !== ids.length || progress.categories.some(c => !c.id || !c.label || !Number.isFinite(c.max) || c.max <= 0) || progress.categories.reduce((n,c) => n+c.max,0) !== 100) throw Error('평가 항목 또는 배점 오류');
+  for (const s of progress.snapshots) {
+    if (!s.date || !Number.isFinite(Date.parse(s.date)) || !s.status || !s.title || !s.scores || !s.evidence || !Array.isArray(s.changes) || !Array.isArray(s.limitations)) throw Error('평가 기록 형식 오류');
+    for (const c of progress.categories) if (!Number.isFinite(s.scores[c.id]) || s.scores[c.id] < 0 || s.scores[c.id] > c.max || typeof s.evidence[c.id] !== 'string' || !s.evidence[c.id].trim()) throw Error('점수 또는 근거 누락');
+  }
+  progress.snapshots.sort((a,b) => Date.parse(a.date)-Date.parse(b.date));
+  return progress;
+}
+
 function readDashboard(dir = root) {
   const warnings = [], items = [], runs = [];
   for (const name of fs.readdirSync(path.join(dir, 'work-items')).filter(n => n.endsWith('.yaml'))) {
@@ -42,7 +55,9 @@ function readDashboard(dir = root) {
   const stageFile = fs.readdirSync(path.join(dir, 'stages')).find(n => n.endsWith('_' + policy.currentStage + '.yaml'));
   if (!stageFile) throw Error('Current stage file missing: ' + policy.currentStage);
   const stage = parseItem(fs.readFileSync(path.join(dir, 'stages', stageFile), 'utf8'));
-  return {stage, items, runs, warnings, checkedAt: new Date().toISOString()};
+  let progress = null;
+  try { progress = readProgress(dir); } catch (error) { warnings.push('평가 기록: ' + error.message); }
+  return {stage, items, runs, progress, warnings, checkedAt: new Date().toISOString()};
 }
 
 function start(port = 8765) {
@@ -59,4 +74,4 @@ function start(port = 8765) {
   }).listen(port, '127.0.0.1', () => console.log('Harness dashboard: http://127.0.0.1:' + port));
 }
 if (require.main === module) start(Number(process.env.HARNESS_DASHBOARD_PORT || 8765));
-module.exports = {parseItem, readDashboard, start};
+module.exports = {parseItem, readProgress, readDashboard, start};

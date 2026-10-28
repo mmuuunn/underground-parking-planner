@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const {parseItem, readDashboard} = require('./dashboard.cjs');
+const {parseItem, readProgress, readDashboard} = require('./dashboard.cjs');
 
 test('top-level state and lists remain separate from nested records', () => {
   const item = parseItem('\uFEFFid: X\nstatus: RESCOPE_REQUIRED\nquestion: test?\nremaining:\n  - first\n  - second\nother:\n  status: ACCEPTED\n');
@@ -35,4 +35,17 @@ test('layout experiment source contains no Japanese text', () => {
   const text = fs.readFileSync(path.join(__dirname, '../work-items/UG-LAYOUT-005.yaml'), 'utf8');
   assert.doesNotMatch(text, /[\u3040-\u30ff\u4e00-\u9fff]/);
   assert.match(parseItem(text).question, /B/);
+});
+
+
+test('progress rejects unsupported scores and missing evidence', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-score-'));
+  try {
+    const p = {rubric:'v1', categories:[{id:'x',label:'X',max:100}], snapshots:[{date:'2026-10-28T20:49:00+09:00',status:'provisional',title:'baseline',scores:{x:52},evidence:{x:'evidence'},changes:[],limitations:[]}]};
+    const file = path.join(dir,'progress.json');
+    fs.writeFileSync(file,JSON.stringify(p));
+    assert.equal(readProgress(dir).snapshots[0].scores.x,52);
+    p.snapshots[0].scores.x=101; fs.writeFileSync(file,JSON.stringify(p)); assert.throws(()=>readProgress(dir));
+    p.snapshots[0].scores.x=52; p.snapshots[0].evidence.x=''; fs.writeFileSync(file,JSON.stringify(p)); assert.throws(()=>readProgress(dir));
+  } finally { fs.rmSync(dir,{recursive:true,force:true}); }
 });
