@@ -1,0 +1,26 @@
+﻿id: UG-SCENE-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex
+verify_profile: vehicle-circulation
+question: 사용자가 현재 배치 입력을 쉽게 복사하여 에이전트에게 전달할 수 있는가?
+verification_result: 변경 전후 63개 시험 통과; 브라우저에서 상단 버튼 및 복사 완료 안내 확인
+user_gate: 상단 버튼 위치 및 장면 전달 사용성 확인 대기
+allowed_files:
+  - 04_parking/underground-compare.html
+must_preserve:
+  - 기존 장면 복사 기능과 복사 데이터
+  - 도면 생성과 계산 기준 및 사용자의 저장된 장면
+acceptance:
+  - 도면 상단에서 장면 복사 버튼을 찾을 수 있다
+  - 기존 복사 기능이 한 번만 연결되고 전달 방법을 알 수 있다
+  - 사용자 화면 확인을 거친다
+not_doing:
+  - 배치 알고리즘과 결과 변경
+  - 장면을 외부로 자동 전송
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 1
+max_new_production_lines: 0
