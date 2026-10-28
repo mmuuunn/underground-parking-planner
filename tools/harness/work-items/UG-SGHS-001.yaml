@@ -1,0 +1,67 @@
+id: UG-SGHS-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: SGHS 지하 두 층의 도면 관찰·추정 입력과 자동 생성 결과를 구분하여 나란히 검토할 수 있는가?
+user_context: 2026-10-29 활성 저장소에서 기존 불균등 구조축·캔버스 편집으로 원안 재현 보완 요청
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - tools/harness/work-items/UG-SGHS-001.yaml
+acceptance:
+  - 원도 치수열·원본 파일·좌표 기준과 추정·미확인을 입력에 기록
+  - B1/B2 불균등축·코어·실 경계·램프 노출 구간 보완; 모든 교점 기둥 가정을 명시
+  - 원도 추적 주차열과 추정 연결선은 자동 생성 대수·검사 결과와 분리
+  - 원도 나란히 보기·층 전환·보완 전후 입력 전환·기존 캔버스 편집·저장·실행 취소 확인
+  - 주차 수·상태·진입·진출·고정 요소 이동·실패 사유를 사례별 기록
+  - 기존 공통 시험 유지; 원본 파일과 기본 장면 저장값 보존
+not_doing:
+  - 생성·차량·법규 알고리즘 변경; 개별 교점 생략 기능; 골든 기준 변경
+  - 실제 도로 진입·층간 램프·정밀 조향·법규 합격·재현 성공 선언
+  - 사용자 요청 없는 서브에이전트·외부 모델 호출; 원도 바이너리 Git 반입
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: O; 차량 진입·순환 실패를 원도 입력과 대조
+  reference_change: O; 기존 여섯 골든·사용자 A/B 입력 유지; SGHS 실험 입력만 별도 보완
+  excluded_scope: O; 두 층을 별도 단층으로 비교하고 다층 연결·코어 UI 확장 안 함
+results:
+  implementation: 원도 치수열 기반 8개 X축·5개 Y축, 코어·연결 홀·B2 설비실 꺾임과 램프 노출부 보완; 원도 나란히 비교·층·입력 버전 전환·기존 편집 연결
+  screen: http://127.0.0.1:8874/04_parking/sghs-compare.html
+  source: 레거시 SGHS DG-80514_plan_06.jpg 및 plan_07.jpg를 직접 시각 대조; 읽기 전용 기존 파일럿 8873 source 마운트로 표시
+  coordinates: 기존 로컬 원점 X+8400·Y+1200mm 유지; Y는 도면 위쪽이며 북향 미확인 표시·N 화살표 생략
+  input_comparison: 외곽·대지 유지; 보완 전 코어 3개와 램프 전체 길이 가정 재현; 보완 입력만 불균등축·홀 외곽·실·노출 램프 형상 변경
+  B1_before: 0대 INFEASIBLE; 자동 기둥 28개; 진입·진출 unconnected; 순환 없음; 코어·램프 이동 0mm
+  B1_revised: 0대 INFEASIBLE; 고정 기둥 39개; 진입·진출 unconnected; 순환 없음; 코어·램프 이동 0mm
+  B2_before: 0대 INFEASIBLE; 자동 기둥 30개; 진입·진출 unconnected; 순환 없음; 코어·램프 이동 0mm
+  B2_revised: 0대 INFEASIBLE; 고정 기둥 39개; 진입·진출 unconnected; 순환 없음; 코어·램프 이동 0mm
+  failures: RAMP_OFFGRID·CORE_IN_AISLE·FIXED_COLUMN_BLOCKS_ROUTE·COLUMN_IN_AISLE·EDGE_OFF_AISLE·LANDING 등; B2는 급회전 문제도 남음
+  limited_search: 두 층 각각 기존 report/bypass 정책과 각 4개 구조열 위상 후보를 확인; 모두 0대·순환 없음; 가능한 모든 배치를 탐색한 것은 아님
+  trace_separation: 주차열 범위·주차 방향 관계·실 경계는 수동 추적; 내부 연결은 추정선·방향 미확인; 자동 생성 도면과 대수·검사 결과에 합성하지 않음
+  ramp_scope: B1 약 20.2m·B2 약 16.8m는 보이는 구간의 근사; 전체 경사·완화·층간 연결 미확인이라 보완 입력의 경사 산정 보류; B2 사선 단부는 사각형 근사
+  source_preservation: 두 원도 SHA256이 기존 inventory.json과 일치; 원도·기존 파일럿 데이터·사용자 기본 저장 장면 보존
+  fixture_checks: node 04_parking/01_src/sghs-reference.js; 네 입력의 대수·상태, 축·코어 보존, 경사 미확인, 반복 일치, 입력 불변, 잘못된 외곽·축 거부 확인
+  browser_checks: 두 층·두 입력 버전·원도 표시·한 축 치수 변경·코어/램프 보존·취소/다시 실행·새로고침·버전별 초기 복원·일반 장면 저장 보존 확인
+  existing_canvas_checks: 기존 structural-canvas.browser.js의 회전 UCS·X/Y 드래그·미리보기·키보드·축 역전/경계 거부·취소·자동→고정 전환 검사 유지
+  browser_errors: pageerror 0개; HTTP 오류 0개; 720px 가로 넘침 없음; SVG 표시 전환 오류는 수정 후 재확인
+  common_tests: 변경 전 npm test 74/74; preflight 기준 74/74; 최종 verify 74/74; 같은 시험의 반복 실행이므로 독립 증거로 중복 계산하지 않음
+  static_checks: 변경 JS 구문·git diff --check·기존 파일럿 마운트/어댑터 검사 통과
+  run_id: 20261029-000306-UG-SGHS-001-f979886d
+  evidence: tools/harness/runs/sghs-engine-evidence.json; sghs-browser-evidence.json; sghs-source-hashes.json; sghs-B1/B2-trace/auto.png
+  independent_review: 미실시; 사용자 요청 없는 서브에이전트·외부 모델 호출 금지 준수; 자체 확인은 독립 검토가 아님
+  user_visual_review: 대기; 두 층의 추적 코어·실·램프·주차열 해석과 전교점 기둥 가정을 원도와 대조할 차례
+  conclusion: 입력 해석과 비교·편집 화면은 보완했으나 자동 재현 미달; 차량 순환 단계 종료·원안 불가능·재현 성공으로 판정하지 않음
+  scope: 허용 파일 5개만 변경; 기존 AGENTS.md·README.md·docs/COMPLETION_BASELINE.md 변경은 본 작업과 별개로 보존
+limitations:
+  - 모든 구조축 교점의 기둥은 가정이며 원도 기둥 전체의 존재·크기 일치를 확정하지 않음
+  - 외곽 곡선·코어/실 끝점·주차열 범위는 비례 추적; 원안 총 주차대수 미확인
+  - 실제 도로 진입·B1↔B2 연결·차량별 조향·칸 입출차·후진·교행·법규/구조/보행 미검증
+  - 원도 표시는 기존 8873 파일럿 서버, 제품과 비교 화면은 기존 8874 정적 서버에 의존
+  - 앱 내부 브라우저 호스트 연결 불가; 별도 검증 브라우저 캡처와 로컬 링크로 전달

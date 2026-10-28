@@ -74,7 +74,8 @@
     const roomLabel=(p,value,color='#42525b')=>{const t=el('text',{x:0,y:0,transform:`translate(${p[0]} ${p[1]}) scale(1,-1)`,fill:color,'font-size':8/k,'text-anchor':'middle','dominant-baseline':'middle','pointer-events':'none'},g);t.textContent=value;};
     doc.cores.forEach((core,i)=>{
       if(plans[i]?.plan)return drawCorePlan(g,plans[i],i,k);
-      roomLabel(core.c,'선택한 코어 구성이 들어갈 크기를 확보하세요','#a05237');
+      if(referenceScene&&core.referenceEnvelopeOnly)roomLabel(core.c,'원도 코어·홀 외곽 · 상세 생략','#a05237');
+      else roomLabel(core.c,'선택한 코어 구성이 들어갈 크기를 확보하세요','#a05237');
     });
   }
 
@@ -92,7 +93,7 @@
     const poly=(P,closed,color,extra={})=>el('path',{d:'M'+P.map(p=>p.join(',')).join('L')+(closed?'Z':''),fill:'none',stroke:color,'stroke-width':1.1,'stroke-linejoin':'round','vector-effect':NSS,...extra},route);
     const dashed=(P,closed,color)=>poly(P,closed,color,{'class':moving?'ug-flow':'ug-route-static','stroke-dasharray':'4 12','stroke-linecap':'round','data-flow-path':'true'});
     C.loops.forEach(P=>{dashed(P,true,BLUE);along(P,true,BLUE,12000,6000);});
-    for(const [P,name,color] of [[C.entry,'진입 ↓ B1',BLUE],[C.exit,'진출 ↑',RED]]){
+    for(const [P,name,color] of [[C.entry,referenceScene?('진입 ↓ '+referenceScene.floor):'진입 ↓ B1',BLUE],[C.exit,'진출 ↑',RED]]){
       if(!P||P.length<2)continue;
       dashed(P,false,color);along(P,false,color,6000,2500);
       // Label at the ramp's upper end: the start of 진입, the end of 진출.

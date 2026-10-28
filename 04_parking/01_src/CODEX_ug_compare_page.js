@@ -9,7 +9,9 @@
  */
 'use strict';
 const SITE = [[-49338,64968],[-43711,65645],[67007,12166],[67742,7397],[37015,-34457],[30224,-30255],[26582,-31258],[23369,-32143],[20185,-34285],[-4356,-39324],[-11075,-40704],[-25459,-52254],[-39885,16502],[-48960,63033]];
-const WALL = 400, FLOOR = 3800, STORE = 'ug-compare:v2';
+const referenceQuery = new URL(location.href).searchParams;
+const referenceScene = referenceQuery.get('reference') === 'sghs' ? {floor:referenceQuery.get('floor')||'B1',revision:referenceQuery.get('revision')||'revised'} : null;
+const WALL = 400, FLOOR = 3800, STORE = referenceScene ? `ug-sghs:2026-10-29-r1:${referenceScene.floor}:${referenceScene.revision}` : 'ug-compare:v2';
 const $ = (id) => document.getElementById(id);
 
 // ── 기하 ──
@@ -236,7 +238,7 @@ function changeCoreEv(i,ev){
 }
 const planInput = () => {
   const ramp=rampSpec(doc.ramp),boundary=planningMass(ramp);
-  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return l?{...fixed,layouts:l}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.columnAxes?{columnAxes:doc.columnAxes}:{})},floorMm:projectFloor(),phase:docPhase()};
+  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const selected=referenceScene&&c.referenceEnvelopeOnly?null:l;const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return selected?{...fixed,layouts:selected}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.columnAxes?{columnAxes:doc.columnAxes}:{})},floorMm:referenceScene&&doc.ramp.referenceVisibleOnly?undefined:projectFloor(),phase:docPhase()};
 };
 function solveCurveInput(input) {
   let draft,placedCurve=input.ramp;
@@ -318,7 +320,7 @@ function recomputeNow(label) {
   if (!r.fail) {
     const moved = [];
     r.cores.forEach((c, i) => { if (doc.cores[i] && c.shiftMm > 0) { doc.cores[i].c = c.center; moved.push(`코어 ${i + 1} ${(c.shiftMm / 1000).toFixed(1)}m`); } });
-    if (r.ramp && r.ramp.shiftMm > 0) { doc.ramp.p = r.ramp.landing; moved.push(`램프 ${(r.ramp.shiftMm / 1000).toFixed(1)}m`); }
+    if (r.ramp && r.ramp.shiftMm > 0 && !referenceScene) { doc.ramp.p = r.ramp.landing; moved.push(`램프 ${(r.ramp.shiftMm / 1000).toFixed(1)}m`); }
     const fresh = r.grid.phaseFrom === 'auto'; if (fresh) doc.phase = {key: phaseKey(), p: r.grid.phase};
     if (moved.length || fresh) { hist.stack[hist.i] = JSON.stringify(doc); save(); }
     if (moved.length) flash(`구조열·차로 축에 맞춰 붙였습니다: ${moved.join(', ')}`);
@@ -880,5 +882,28 @@ for(const field of document.querySelectorAll('[data-curve-field]')){
   };
 }
 
-if (!MODULES[doc.module]) doc.module = 'normal';
-pushHist(); renderAll(); fit(); recompute(null);
+async function startPlan(){
+  if(referenceScene){
+    await import('./sghs-reference.js');
+    const data=window.SGHSReference,f=data.floors.find(f=>f.id===referenceScene.floor);
+    if(!f||!['before','revised'].includes(referenceScene.revision))throw Error('SGHS 층 또는 입력 버전을 확인하세요');
+    MODULES.sghs={name:'SGHS 시험 모듈 · 칸·벽·기둥 치수는 가정',grid:data.grid};
+    SITE.splice(0,SITE.length,...structuredClone(data.site));
+    doc=load()||structuredClone(f[referenceScene.revision]);
+    if(!validDoc(doc))throw Error('SGHS 저장 입력을 읽을 수 없습니다');
+    document.title='SGHS '+f.label+' · 원도 대조';
+    document.querySelector('.project .eyebrow').textContent='동대문구 구민회관 · SGHS';
+    document.querySelector('.floor-tab').textContent=f.id+' '+f.label+' 평면도';
+    document.querySelector('.sheet-heading h1').textContent=f.label+' 평면도';
+    document.querySelector('.sheet-heading p').textContent='SGHS · '+(referenceScene.revision==='before'?'보완 전 입력':'보완 입력')+' / 추정 치수 포함';
+    document.querySelector('.sheet-caption strong').textContent=f.label+' 평면도';
+    $('north').style.display='none'; // Drawing-up is not a verified geographic north direction.
+    $('plan').setAttribute('aria-label','편집 가능한 SGHS '+f.label+' 주차 평면도');
+    $('resetBtn').onclick=()=>{doc=structuredClone(f[referenceScene.revision]);ui.sel=null;commit('SGHS 선택 버전의 입력 복원');fit();};
+    window.sghsScene={floor:f.id,revision:referenceScene.revision,snapshot:()=>({input:structuredClone(doc),result:ui.res,routes:ui.res&&!ui.res.fail?UGPlan.inspectVehicleRoutes(ui.res):null})};
+  }
+  if (!MODULES[doc.module]) doc.module = 'normal';
+  pushHist(); renderAll(); fit(); recompute(null);
+  if(referenceScene)save();
+}
+startPlan().catch(e=>{reviewLoadError=e.message;ui.res={fail:e.message};renderAll();});
