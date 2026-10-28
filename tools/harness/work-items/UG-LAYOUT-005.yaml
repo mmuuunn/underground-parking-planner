@@ -5,19 +5,19 @@ authority: codex
 owner: codex
 reviewer: independent-review-required-before-acceptance
 verify_profile: vehicle-circulation
-question: Bの外形コア柱ランプを固定し行き止まりを作らずランプ上部の利用を改善できるか?
+question: B의 외곽·코어·기둥·램프를 고정하고 막다른 길 없이 램프 위 공간을 더 활용할 수 있는가?
 allowed_files:
   - docs/COMPLETION_BASELINE.md
 must_preserve:
-  - 元の外形コア柱53本ランプと安全基準
-  - ゴールデンケースと既存製品
+  - 기존 외곽·코어·기둥 53개·램프와 안전 기준
+  - 골든 사례와 기존 제품
 acceptance:
-  - 試行範囲と失敗理由または同一条件の候補を記録
-  - 大数と車路と残余空間と新規問題を比較
-  - 新規車路の利用と運転及び画面の未確認を明示
+  - 시도 범위와 실패 이유 또는 같은 조건의 후보를 기록
+  - 주차대수·차로·잔여공간과 새 문제를 비교
+  - 새 차로의 이용과 운전 및 화면의 미확인 사항을 명시
 not_doing:
-  - 実験の未検証を実用可能と断定
-  - 独立検討とユーザー確認前の採用
+  - 실험의 미검증 사항을 실용 가능으로 단정
+  - 독립 검토와 사용자 확인 전 채택
 max_implementation_rounds: 2
 max_reviewer_calls: 1
 max_changed_files: 1

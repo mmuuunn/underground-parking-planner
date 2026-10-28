@@ -1,0 +1,33 @@
+id: UG-HARNESS-003
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex
+verify_profile: vehicle-circulation
+question: 하네스 작업 흐름을 한국어와 연결된 반복 다이어그램으로 표시하는가?
+allowed_files:
+  - tools/harness/dashboard.html
+  - tools/harness/work-items/UG-LAYOUT-005.yaml
+  - tools/harness/scripts/dashboard.test.cjs
+must_preserve:
+  - 읽기 전용 자동 갱신과 실제 작업 상태 및 사용자 승인 권한
+  - B 실험 결과와 안전 기준
+acceptance:
+  - B 작업의 일본어 원문을 같은 의미의 한국어로 수정
+  - 8단계와 순환 경로를 연결선으로 명확히 표시하고 선택 및 상태 변경 반영
+  - 데스크톱 모바일 화면과 공통 시험 확인
+not_doing:
+  - 계획 결과 골든값 및 하네스 상태 자동 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 3
+max_new_production_lines: 200
+verification_result:
+  - 원인 일본어가 B 작업지시서에 입력되어 그대로 표시됨; 한국어로 원문 수정
+  - 원인 단계 사이 작은 기호만 있어 전체 진행 및 반복 경로가 표현되지 않음; 선과 화살표로 연결
+  - 변경 전과 변경 후 공통 계산 시험 각각 64개 통과; 대시보드 시험 3개 통과
+  - 데스크톱 및 모바일에서 8개 단계 연결과 재검토 반복선 표시 확인
+  - 사용자 B와 대지 도로 작업 선택 시 각각 범위 재설계와 초안 단계가 강조됨
+remaining:
+  - 사용자의 화면 확인 대기

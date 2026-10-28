@@ -30,3 +30,9 @@ test('selects actual work states and orders evidence without promoting baseline 
     assert.equal(readDashboard(dir).items[0].status, 'IMPLEMENTING');
   } finally { fs.rmSync(dir, {recursive:true, force:true}); }
 });
+
+test('layout experiment source contains no Japanese text', () => {
+  const text = fs.readFileSync(path.join(__dirname, '../work-items/UG-LAYOUT-005.yaml'), 'utf8');
+  assert.doesNotMatch(text, /[\u3040-\u30ff\u4e00-\u9fff]/);
+  assert.match(parseItem(text).question, /B/);
+});
