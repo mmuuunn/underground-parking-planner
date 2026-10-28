@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>지하주차 하네스 · 작업 흐름</title>
+<style>
+:root{color-scheme:light;--ink:#172e2b;--muted:#677b75;--line:#dce6df;--accent:#277b65;--orange:#b95d35;--bg:#f2f5ef;--panel:#fff;--dark:#153d34}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Malgun Gothic", "Apple SD Gothic Neo",sans-serif}button,select{font:inherit}header{background:var(--dark);color:#fff;padding:28px max(24px,calc((100vw - 1280px)/2));}header .top{display:flex;align-items:center;justify-content:space-between;gap:20px}.eyebrow{font-size:11px;letter-spacing:.16em;font-weight:700;text-transform:uppercase;color:#9fd5c2}h1{font-size:clamp(24px,3vw,36px);margin:4px 0 4px;line-height:1.2;letter-spacing:-.04em}header p{color:#bfd2c9;margin:0;font-size:13px}.live{border:1px solid #658c7f;border-radius:30px;padding:7px 13px;color:#d8efe3;font-size:12px;white-space:nowrap}.live:before{content:"";display:inline-block;width:7px;height:7px;background:#8ce7b9;border-radius:50%;margin-right:8px}.live.off:before{background:#ffb492}
+main{max-width:1280px;margin:auto;padding:24px}.toolbar{display:flex;align-items:end;gap:12px;margin-bottom:20px;flex-wrap:wrap}.toolbar label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px}.toolbar select{min-width:260px;max-width:100%;background:white;border:1px solid #cbdad0;border-radius:10px;padding:10px 34px 10px 12px;color:var(--ink)}.toolbar button{border:1px solid #cbdad0;background:#fff;border-radius:10px;padding:10px 16px;cursor:pointer}.meta{margin-left:auto;color:var(--muted);font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:23px;box-shadow:0 3px 18px #173a2e08}.card+.card{margin-top:16px}.section-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.kicker{color:var(--accent);font-size:11px;letter-spacing:.12em;font-weight:800}.card h2{margin:3px 0 5px;font-size:20px;letter-spacing:-.03em}.sub{color:var(--muted);font-size:13px;margin:0}.pill{background:#fff0e8;color:#9b4b29;font-size:12px;padding:5px 10px;border-radius:20px;font-weight:bold;white-space:nowrap}.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:24px}.node{background:#f7faf7;border:1px solid #dce8df;border-radius:12px;text-align:left;padding:14px;min-height:112px;color:var(--ink);cursor:pointer;position:relative}.node:not(:nth-child(4n)):after{content:"\2192";position:absolute;right:-12px;top:45%;color:#9ab9aa;z-index:1}.node:hover,.node:focus-visible{border-color:#73ab93;outline:none}.node.active{background:#e0f2e8;border:2px solid #26815f;padding:13px;box-shadow:0 0 0 4px #d6eddf}.node.alert{background:#fff0e8;border-color:#c26d44}.node.active.alert{box-shadow:0 0 0 4px #fae5d8}.num{display:block;color:#7a9a8d;font-size:11px;font-weight:bold;letter-spacing:.08em}.node strong{display:block;font-size:14px;margin:5px 0 3px}.node small{color:#6c8179;font-size:11px;line-height:1.4;display:block}.node.active .num{color:#237657}.loop{margin-top:13px;background:#edf5ee;border-radius:10px;padding:10px 13px;color:#527669;font-size:12px}.loop b{color:#28694f}.explain{border-top:1px solid var(--line);margin-top:20px;padding-top:17px;min-height:74px}.explain h3{margin:0 0 4px;font-size:15px}.explain p{color:var(--muted);margin:0;font-size:13px}.details dl{margin:16px 0 0}.details dt{font-size:11px;color:#788d84;font-weight:bold;margin:12px 0 3px}.details dd{margin:0;font-size:13px;word-break:break-word}.details ul{padding-left:18px;margin:5px 0 0}.details li{margin-bottom:6px}.evidence{display:grid;gap:9px;margin-top:16px}.ev{border:1px solid var(--line);border-radius:10px;padding:11px 12px}.ev strong{display:block;font-size:12px}.ev span{font-size:12px;color:var(--muted)}.ev.warn{background:#fff8f3}.notice{margin-top:16px;padding:12px 15px;border-radius:10px;background:#f3f6ee;color:#536c5f;font-size:12px}.error{display:none;margin:0 0 16px;background:#fff0e8;color:#9b4b29;border:1px solid #efc1a8;border-radius:10px;padding:12px}.foot{color:#80918a;font-size:11px;margin:18px 0}.empty{color:#889b92}
+@media(max-width:900px){.node:not(:nth-child(4n)):after{content:none}.node:nth-child(odd):after{content:"\2192";position:absolute;right:-9px;top:45%;color:#9ab9aa;z-index:1}.layout{grid-template-columns:1fr}.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.meta{margin-left:0}}@media(max-width:520px){main{padding:15px}header{padding:22px 18px}.top{align-items:flex-start!important}.live{font-size:0;padding:8px}.live:before{margin:0}.flow{gap:8px}.card{padding:17px}.node{min-height:106px}}
+</style>
+</head>
+<body>
+<header><div class="top"><div><div class="eyebrow">Underground parking / harness</div><h1>작업 흐름과 현재 위치</h1><p>작업지시서와 실행 기록으로 읽는 지하주차 개발 과정</p></div><div class="live" id="connection">연결 중</div></div></header>
+<main>
+<div class="toolbar"><div><label for="work">살펴볼 작업</label><select id="work" aria-label="살펴볼 작업"><option>기록 읽는 중</option></select></div><button id="refresh" type="button">지금 새로고침</button><span class="meta" id="updated">아직 갱신되지 않음</span></div>
+<div id="error" class="error" role="alert"></div>
+<div class="layout">
+<section>
+<div class="card"><div class="section-head"><div><div class="kicker">01 / PROCESS MAP</div><h2>한 작업이 지나가는 과정</h2><p class="sub">카드를 눌러 각 단계의 의미를 살펴보세요. 강조된 카드는 기록된 현재 상태입니다.</p></div><span class="pill" id="status">기록 읽는 중</span></div>
+<div class="flow" id="flow"></div>
+<div class="loop"><b>↶ 결과가 부족하면</b> 원인을 확인하고 작업 범위를 다시 정한 뒤, 기준 확인부터 이어갑니다.</div>
+<div class="explain" aria-live="polite"><h3 id="node-title">단계를 선택하세요</h3><p id="node-description">상태 표시는 작업지시서에 기록된 상태를 따릅니다.</p></div></div>
+<div class="card"><div class="kicker">02 / EVIDENCE</div><h2>무엇이 확인됐나요?</h2><p class="sub">아래 항목들은 서로 다른 증거입니다. 하나가 나머지를 대신하지 않습니다.</p><div class="evidence" id="evidence"></div></div>
+</section>
+<aside><div class="card details"><div class="kicker">CURRENT WORK ITEM</div><h2 id="item-id">기록 읽는 중</h2><p class="sub" id="item-question"></p><dl><dt>현재 제품 단계</dt><dd><span id="stage-name"></span> <span id="stage-state"></span></dd><dt>작업 기록 상태</dt><dd id="item-state">—</dd><dt>남은 일</dt><dd id="remaining" class="empty">기록 없음</dd><dt>작업별 합격 조건</dt><dd id="acceptance" class="empty">기록 없음</dd></dl><div class="notice">이 화면은 기록을 읽기만 합니다. 승인이나 작업 상태를 변경하지 않습니다.</div></div>
+<div class="foot">출처: tools/harness/work-items 및 runs의 기록<br>자동 갱신 3초 · 저장되지 않은 구두 진행 상황은 표시되지 않습니다.</div></aside>
+</div></main>
+<script>
+'use strict';
+const nodes=[
+{id:'scope',number:'01',title:'목표와 범위',short:'질문과 합격 조건 정하기',description:'한 작업의 목표, 허용 파일, 합격 조건을 정합니다. 초안은 구현을 시작할 수 없습니다.'},
+{id:'preflight',number:'02',title:'시작 전 점검',short:'작업지시서·준비 상태 확인',description:'작업 상태와 필수 파일, 실행 환경을 확인합니다. 이 점검은 실제 작업 합격을 뜻하지 않습니다.'},
+{id:'baseline',number:'03',title:'변경 전 기준',short:'기존 결과와 공통 시험 재현',description:'변경 전에 기준 장면과 공통 시험 결과를 재현합니다.'},
+{id:'implement',number:'04',title:'구현·실험',short:'정해진 범위에서 작업',description:'기준과 안전 조건을 유지하면서 한 작업을 구현하거나 실험합니다.'},
+{id:'verify',number:'05',title:'결과 검증',short:'반례·공통 시험·차이 확인',description:'작업별 조건과 전후 차이를 확인합니다. 공통 시험 통과는 작업별 합격을 보장하지 않습니다.'},
+{id:'review',number:'06',title:'독립 검토',short:'필요한 경우 별도로 검토',description:'위험 조건에 해당하면 구현과 분리된 검토가 필요합니다. 자동 시험이 대신하지 않습니다.'},
+{id:'user',number:'07',title:'사용자 확인',short:'제품 방향과 화면 판단',description:'화면이나 대수 등 확인이 필요한 변경은 사용자가 판단합니다.'},
+{id:'decision',number:'08',title:'판정과 다음 작업',short:'수용하거나 범위 재설계',description:'조건이 충족되면 수용하고, 문제가 남으면 원인을 살핀 뒤 범위를 다시 정합니다.'}];
+const stateMap={DRAFT:['초안','scope'],SCOPED:['범위 확정 · 기준 확인 전','preflight'],BASELINED:['변경 전 기준 확인','baseline'],IMPLEMENTING:['구현·실험 중','implement'],VERIFYING:['검증 중','verify'],USER_GATE:['사용자 확인 대기','user'],ACCEPTED:['수용됨','decision'],RESCOPE_REQUIRED:['범위 재설계 필요','decision']};
+let data=null, selectedNode=null, pinned=false, userPickedNode=false, lastSignature=null;
+const byId=id=>document.getElementById(id);
+function text(id,value){byId(id).textContent=value}
+function list(id,values){const e=byId(id);e.replaceChildren();e.classList.toggle('empty',!values.length);if(!values.length){e.textContent='기록 없음';return}const u=document.createElement('ul');for(const value of values){const li=document.createElement('li');li.textContent=value;u.append(li)}e.append(u)}
+function evidence(title,body,warning){const e=document.createElement('div');e.className='ev'+(warning?' warn':'');const s=document.createElement('strong'),d=document.createElement('span');s.textContent=title;d.textContent=body;e.append(s,d);return e}
+function describe(id){const n=nodes.find(x=>x.id===id);if(!n)return;selectedNode=id;text('node-title',n.number+'  '+n.title);text('node-description',n.description)}
+function render(){
+ if(!data||!data.items.length)return;
+ const select=byId('work');
+ let id=select.value;
+ if(!pinned){const recent=data.runs.find(r=>r.item!=='UG-HARNESS-002'&&data.items.some(i=>i.id===r.item));id=recent?recent.item:(data.items.find(i=>i.id==='UG-LAYOUT-005')||data.items[0]).id;}
+ if(!data.items.some(i=>i.id===id))id=data.items[0].id;
+ select.replaceChildren(...data.items.map(i=>{const o=document.createElement('option');o.value=i.id;o.textContent=i.id+' · '+(stateMap[i.status]||[i.status])[0];return o}));select.value=id;
+ const item=data.items.find(i=>i.id===id), status=stateMap[item.status]||['알 수 없는 상태: '+item.status,null],run=data.runs.find(r=>r.item===id);
+ text('stage-name',data.stage.name||data.stage.id||'Unknown');text('status',status[0]);text('item-id',item.id);text('item-question',item.question||'작업 질문 기록 없음');text('item-state',status[0]+' ('+item.status+')');text('stage-state',data.stage.status==='ACTIVE'?'· 진행 중':'· '+(data.stage.status||'기록 없음'));
+ list('remaining',item.remaining||[]);list('acceptance',item.acceptance||[]);
+ const flow=byId('flow');flow.replaceChildren();for(const n of nodes){const b=document.createElement('button');b.type='button';b.className='node'+(n.id===status[1]?' active':'')+(n.id===status[1]&&item.status==='RESCOPE_REQUIRED'?' alert':'');b.setAttribute('aria-label',n.number+' '+n.title+(n.id===status[1]?' 현재 상태':''));const k=document.createElement('span'),t=document.createElement('strong'),s=document.createElement('small');k.className='num';k.textContent=n.number+(n.id===status[1]?' / 현재':'');t.textContent=n.title;s.textContent=n.short;b.append(k,t,s);b.addEventListener('click',()=>{userPickedNode=true;describe(n.id)});flow.append(b)}
+ if(!userPickedNode)describe(status[1]||'scope');
+ const ev=byId('evidence');ev.replaceChildren();const v=run&&run.verification;
+ let vtext='실행 영수증에 공통 시험 결과가 없습니다.';
+ if(v){const mode=v.mode==='BASELINE'?'변경 전 기준 시험':v.mode==='VERIFY'?'변경 후 공통 시험':String(v.mode||'시험');const counts=(v.pass!=null&&v.tests!=null)?' · '+v.pass+'/'+v.tests+'개':'';vtext=mode+' · '+(v.passed?'통과':'실패')+counts+' · '+(run.startedAt||'시각 미기록')}
+ ev.append(evidence('공통 계산 시험',vtext,!!v&&!v.passed));
+ ev.append(evidence('작업별 합격 조건','작업 기록과 결과를 별도로 확인해야 합니다. 공통 시험만으로 판정하지 않습니다.',true));
+ ev.append(evidence('독립 검토',item.reviewResult||('기록된 검토 방식: '+(item.reviewer||'미기록')+' · 검토 완료 여부는 별도 확인'),true));
+ ev.append(evidence('사용자 확인',item.userGate||('실행 영수증: '+(run&&run.userGate?String(run.userGate.status||'미기록'):'미기록')+' · 사용자 승인 여부는 별도 확인'),true));
+ text('updated','기록 확인 '+new Date(data.checkedAt).toLocaleTimeString('ko-KR')+(run?' · 최근 실행 '+run.id:' · 실행 기록 없음'));
+}
+function updateTime(run){text('updated','기록 확인 '+new Date(data.checkedAt).toLocaleTimeString('ko-KR')+(run?' · 최근 실행 '+run.id:' · 실행 기록 없음'))}
+async function refresh(){
+ try{const res=await fetch('/api/status',{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);data=await res.json();if(data.error)throw Error(data.error);text('connection','연결됨 · 자동 갱신');byId('connection').classList.remove('off');const error=byId('error');if(data.warnings.length){error.style.display='block';error.textContent='일부 기록을 읽지 못했습니다: '+data.warnings.join(' / ')}else{error.style.display='none'}const signature=JSON.stringify([data.stage,data.items,data.runs,data.warnings]);if(signature!==lastSignature){lastSignature=signature;render()}else updateTime(data.runs.find(r=>r.item===byId('work').value))}
+ catch(e){text('connection','연결 끊김');byId('connection').classList.add('off');const el=byId('error');el.style.display='block';el.textContent='실시간 기록에 연결할 수 없습니다. 저장된 화면은 최신 상태가 아닙니다. 터미널에서 node tools/harness/scripts/dashboard.cjs 를 실행한 뒤 http://127.0.0.1:8765/ 로 열어주세요.'}
+}
+byId('work').addEventListener('change',()=>{pinned=true;selectedNode=null;userPickedNode=false;render()});byId('refresh').addEventListener('click',refresh);refresh();setInterval(refresh,3000);
+</script>
+</body></html>

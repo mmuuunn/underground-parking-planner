@@ -1,0 +1,36 @@
+id: UG-HARNESS-002
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex
+verify_profile: vehicle-circulation
+question: 하네스 단계와 작업 상태 및 검증 기록을 실제 자료와 연결해 읽기 전용으로 보여주는가?
+allowed_files:
+  - tools/harness/dashboard.html
+  - tools/harness/scripts/dashboard.cjs
+  - tools/harness/scripts/dashboard.test.cjs
+must_preserve:
+  - 제품 계산과 기존 작업 기록 및 승인 권한
+  - 공통 시험과 사용자 승인 및 독립 검토의 구분
+acceptance:
+  - 작업 선택과 단계 상태 및 최신 실행 증거를 실제 파일에 맞춰 표시
+  - 작업 상태가 바뀌면 자동 갱신하고 미기록 및 연결 실패를 명확히 표시
+  - 읽기 전용이며 화면에서 작업이나 승인을 조작하지 않음
+  - 공통 시험과 데이터 읽기 시험 및 화면 검증
+not_doing:
+  - 자동 에이전트 호출 또는 임의 상태 변경
+  - 공통 시험을 작업 합격이나 사용자 승인으로 표현
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 3
+max_new_production_lines: 400
+verification_result:
+  - 변경 전과 변경 후 공통 계산 시험 각각 64개 통과
+  - 데이터 파싱 및 상태 변경 반영 시험 2개 통과; UTF-8 BOM과 누락 결과 처리 확인
+  - 현재 작업지시서 15개 읽기 및 사용자 B와 대지 도로 작업 상태 표시 확인
+  - 작업 기록을 범위 확정에서 검증 중으로 변경했을 때 화면 자동 전환 확인
+  - 모바일 너비 390픽셀에서 가로 넘침 없음
+remaining:
+  - 사용자의 화면과 표현 확인 대기
+  - 기록되지 않은 진행 상황은 자동으로 알 수 없음
