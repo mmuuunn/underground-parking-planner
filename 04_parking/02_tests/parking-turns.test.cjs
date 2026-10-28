@@ -103,3 +103,13 @@ test('P2b junction joins do not invent stops on the baselines',()=>{
   // Inside the pentagon the nearest problem is reported first: the short merge on entry, the 140 degree ring corner on exit.
   const inside=E.inspectVehicleRoutes(E.generate({...input,ramp:ramp(26000)}));assert.equal(inside.entry.firstIssue.id,'RAMP_APPROACH');assert.equal(inside.exit.firstIssue.id,'VEHICLE_SHARP_TURN');
 });
+test('turn-bay proposal preserves the scene and reports the unverified dead end',()=>{
+  const C=require('../../06_core_layout/01_src/core_gen2.js');
+  const layouts=[1,2,3,4].flatMap(ev=>{const g=C.generate({floorHeight:3800,evCount:ev});return g.ok?g.alts.filter(a=>a.status==='OK'&&a.candidate!==false).map(a=>({id:a.id,ev,name:a.name,outer:a.outer,t:a.t,rooms:Object.fromEntries(Object.entries(a.rooms).map(([k,v])=>[k,v.rects])),doors:a.doors,stairDraw:a.stairDraw,law:a.review?.law,lawNote:a.review?.lawItems?.find(x=>x.status==='FAIL')?.note})):[];});
+  const input={mass:[[-30089,8981],[-26923,-11428],[23749,-35903],[49409,17223],[-11822,46799]],ucs:-25.7815,cores:[{c:[22127,184],w:9489,d:5981,doors:{ENT:100},layouts}],grid:{gx:8400,gy:8200,stallW:2600,stallD:5200,wallMm:400},floorMm:3800,phase:[4000,0],allowExternalRamp:true,ramp:{x:3395,y:19905,angleDeg:-25.7815,widthMm:6000,lengthMm:24000}};
+  const before=E.generate(input),result=E.suggestTurnBay(input);assert.ok(result);const after=result.plan;
+  assert.equal(before.stallCount,82);assert.equal(after.stallCount,87);assert.equal(after.status,'CONDITIONAL');assert.equal(result.turning,'UNVERIFIED');
+  assert.equal(after.deadSideCount,7);assert(after.violations.some(v=>v.id==='DEAD_END'));assert.deepEqual(after.columns,before.columns);assert.deepEqual(after.cores,before.cores);assert.deepEqual(after.ramp.body,before.ramp.body);
+  const routes=E.inspectVehicleRoutes(after);assert.equal(routes.entry.state,'clear');assert.equal(routes.exit.state,'clear');assert(after.areas.nonParkingM2<before.areas.nonParkingM2-300);
+  assert.deepEqual(E.generate(input),before);assert.equal(E.suggestTurnBay({...input,ramp:null}),null);assert.equal(E.suggestTurnBay({...input,ramp:{...input.ramp,angleDeg:input.ramp.angleDeg+90}}),null);
+});

@@ -24,7 +24,7 @@
   const {CL, add, sub, mul, len, rectPoly, signedArea, boolOp, areaOf, offsP} = Gm;
 
   // 위상 하나로 계획 전체. phase = 실내 면 상자(UCS 좌표) 기준 [x, y] mm
-  function build(input, phase) {
+  function build(input, phase, alternative = null) {
     input={...input,mass:Boundary.outer(input.parkingMass||input.mass)};
     const G = Grid.frame(input), {cfg, a, d, W, L, inner, b} = G, warnings = [], violations = [];
     if (G.lostParts.length) violations.push({id: 'SPLIT_INNER', note: `외벽 두께를 빼면 실내 면이 ${G.lostParts.length + 1}조각으로 갈라집니다 — 가장 큰 조각만 계산했고 ${G.lostParts.map((x) => Math.round(x)).join('·')}㎡는 빠졌습니다`});
@@ -40,6 +40,7 @@
     const holeLocal=(input.massHoles||[]).map(P=>Boundary.outer(P).map(L)),innerHoles=holeLocal.length?offsP(holeLocal,cfg.wallMm):[];
     const area=boolOp(baseArea,innerHoles.concat(zoneLocal),CL.ClipType.ctDifference);
     const {ringCL, segs} = lanesOut;
+    if (alternative) segs.push({a: [alternative.attach, alternative.y], b: [alternative.end, alternative.y], kind: 'spur', h: alternative.y, v: null});
     for(const t of lanesOut.unresolvedTurns||[])violations.push({id:'RING_SHARP_TURN',at:W(t.at).map(Math.round),angleDeg:t.angleDeg,note:`순환 차로에서 진행 방향이 ${t.angleDeg.toFixed(1)}° 바뀝니다 — 이 구간을 지나지 않도록 차로·램프 자리를 조정하세요`});
     if (!ringCL.length) throw new RangeError('램프를 빼고 나니 순환 차로를 둘 자리가 없습니다');
     // 점유물(코어) → 동선 자르기 → S5 차로 면
@@ -61,14 +62,18 @@
     // 우회 전 구조를 먼저 고정한다. 새 차로와 겹친다는 이유로 기둥을 지우지 않는다.
     const originalPieces=Lay.cutByCores(G,segs,obstacles,policy==='report'?violations:[]);
     const originalAisle=Lay.aisleSurface(G,ringCL,originalPieces,area,obstacles);
-    const columns=Lay.placeColumns(G,originalAisle,rampOut);
+    const columns=alternative ? alternative.columns.map(poly=>poly.map(L)) : Lay.placeColumns(G,originalAisle,rampOut);
     let pieces,routing={created:[],failed:[]};
     if(policy==='bypass'&&obstacles.length){
       routing=Routing.bypass(G,segs,area,obstacles,columns);pieces=routing.pieces;
       if(routing.created.length)warnings.push(`막힌 구간 ${routing.created.length}곳에 우회 차로를 만들었습니다`);
       if(routing.failed.length||(routing.blockedCount&&!routing.created.length))violations.push({id:'BYPASS_UNAVAILABLE',note:`차로 폭을 확보할 수 없는 우회 ${routing.failed.length||routing.blockedCount}곳은 만들지 못했습니다`,at:W(routing.failed[0]?.a||segs[0].a).map(Math.round)});
     }else pieces=originalPieces;
-    const aisleU = Lay.aisleSurface(G, ringCL, pieces, area, obstacles);
+    let aisleU = Lay.aisleSurface(G, ringCL, pieces, area, obstacles);
+    if (alternative) {
+      const bay=rectPoly(alternative.bounds), blocks=columns.concat(obstacles.map(c=>rectPoly(c.r)));
+      aisleU=boolOp(boolOp(boolOp(aisleU.concat([bay]),[],CL.ClipType.ctUnion),area,CL.ClipType.ctIntersection),blocks,CL.ClipType.ctDifference);
+    }
     const graph = Net.buildGraph(pieces);
     // 기둥 · S6 칸
     const blockedStatic = [...obstacles.map((c) => rectPoly(c.r)), ...cores.filter((c) => c.geo).map((c) => c.geo.walk), ...innerHoles,...zoneLocal,...(rampOut ? [rampOut.body] : [])];
@@ -274,6 +279,33 @@
     r.grid.phaseFrom = given ? 'input' : 'auto';
     return r;
   }
+  // Experimental, conditional alternative: the returned dead end still needs turning and traffic review.
+  // shortcut: only positive grid-aligned straight ramps; expand after other orientations are verified.
+  function suggestTurnBay(input) {
+    if (!input.ramp || input.ramp.body || input.parkingMass || input.massHoles?.length || input.nonParkingZones?.length || input.occupants?.length || input.occupantPolicy === 'bypass') return null;
+    const original=generate({...input,debug:true}), frame=Grid.frame(input);
+    if (!original.ramp || original.status === 'INFEASIBLE') return null;
+    Grid.setPhase(frame,original.grid.phase);
+    const ramp=original.ramp.body.map(frame.L), rb=Gm.bbox(ramp), bb=Gm.bbox(frame.inner), tangent=frame.L(original.ramp.tangent), a=frame.a;
+    if (Math.abs(tangent[1])>.01 || tangent[0]<.99) return null;
+    const edges=(original.debugSegs||[]).filter(s=>s.kind==='ring').map(s=>({a:frame.L(s.a),b:frame.L(s.b)}))
+      .filter(s=>Gm.isH(s.a,s.b)&&Math.abs(s.a[1]-(rb[3]+a/2))<4000)
+      .sort((s,t)=>Math.abs(Math.min(s.a[0],s.b[0])-rb[2])-Math.abs(Math.min(t.a[0],t.b[0])-rb[2]));
+    if (!edges.length) return null;
+    const edge=edges[0],y=(edge.a[1]+edge.b[1])/2,attach=Math.min(edge.a[0],edge.b[0]),end=bb[0]+a/2+1000;
+    if (attach-end<2*frame.cfg.gx || y<rb[3]+a/2-50 || bb[3]-y<a/2+frame.d-50) return null;
+    const bounds=[bb[0]+100,y-a/2,end+a+1600,bb[3]-200];
+    if (bounds[2]>=attach || bounds[2]<=bounds[0] || bounds[3]<=bounds[1]) return null;
+    const candidate=build({...input,phase:original.grid.phase,debug:true},original.grid.phase,{attach,end,y,bounds,columns:original.columns});
+    candidate.grid.phaseFrom=original.grid.phaseFrom;
+    const routes=VehicleRoutes.routes(candidate), oldIssues=new Set(original.violations.map(v=>v.id+'|'+v.note));
+    const newIssues=candidate.violations.filter(v=>!oldIssues.has(v.id+'|'+v.note)&&v.id!=='DEAD_END');
+    const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
+    if (candidate.stallCount<=original.stallCount || candidate.status!=='CONDITIONAL' || !candidate.violations.some(v=>v.id==='DEAD_END') ||
+        routes.entry.state!=='clear' || routes.exit.state!=='clear' || newIssues.length || !same(original.columns,candidate.columns) ||
+        !same(original.ramp.body,candidate.ramp.body) || !same(original.ramp.landing,candidate.ramp.landing) || !same(original.cores,candidate.cores)) return null;
+    return {plan:candidate,baseline:original,turning:'UNVERIFIED'};
+  }
   // 위상 다시 고르기(화면의 선택 목록): 좋은 순 count개를 실제 입력(코어 포함)으로 다시 계산한 대수
   function suggestPhases(input, count = 4) {
     return rankPhases(input).slice(0, count).map((c) => { try { const r = build(input, c.phase); return {phase: c.phase, stallCount: r.stallCount, hasLoop: r.graph.hasLoop, deadEnds: r.graph.deadEnds.length}; } catch (e) { return null; } }).filter(Boolean);
@@ -348,6 +380,6 @@
     const r = generate(input);
     return {cores: r.cores.map((c) => c.center), ramp: r.ramp ? r.ramp.landing : null};
   }
-  const api = {_emptyIslands: emptyIslands, generate, snap, suggestPhases, suggestRamps, suggestUcs, suggestCoreMoves, configureCore:CoreFit.configure,planningBoundary:Boundary.resolve,rampReview,inspectVehicleRoutes:VehicleRoutes.routes,checkVehiclePath:VehicleRoutes.check,curveEvaluationFixed, curveEvaluationSource, createStraightRamp:Ramp.createStraight, createCurveRamp:Curve.createCurve, DEFAULTS: Grid.DEFAULTS, STALL_MODULES: Modules.CATALOGUE};
+  const api = {_emptyIslands: emptyIslands, generate, snap, suggestTurnBay, suggestPhases, suggestRamps, suggestUcs, suggestCoreMoves, configureCore:CoreFit.configure,planningBoundary:Boundary.resolve,rampReview,inspectVehicleRoutes:VehicleRoutes.routes,checkVehiclePath:VehicleRoutes.check,curveEvaluationFixed, curveEvaluationSource, createStraightRamp:Ramp.createStraight, createCurveRamp:Curve.createCurve, DEFAULTS: Grid.DEFAULTS, STALL_MODULES: Modules.CATALOGUE};
   if (isNode) module.exports = api; else root.UGPlan = api;
 })(this);

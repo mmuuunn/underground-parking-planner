@@ -1,0 +1,47 @@
+id: UG-LAYOUT-003
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required-before-acceptance
+verify_profile: vehicle-circulation
+question: 램프 위 잔여공간에 주차와 접근 차로 회차를 함께 계획할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_network.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+must_preserve:
+  - 기존 기준 사례 기대값과 안전 판정
+  - 같은 외곽 코어 램프와 기존 기둥
+  - 코어 접근과 차량 진입 진출
+acceptance:
+  - 램프 위 잔여공간을 실제로 줄이고 주차 이용 가능성을 도면으로 제시
+  - 막다른 곳 차량의 주차 접근과 회차 또는 후진 경로를 구체적으로 검증하고 미검증 항목을 밝힘
+  - 기존 시험과 사용자 화면 확인 및 필요한 독립 검토
+not_doing:
+  - 기준 완화 또는 회차 미검증 상태를 합격으로 표시
+  - 주 순환 경로 통과를 가지 차로 회차 검증으로 대체
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+result:
+  - 동일 외곽 구조열 기둥 53개 코어 및 램프에서 B 기존 82대와 램프 위 차로 회차 공간 실험 87대 비교
+  - 기존 4칸 제거 신규 9칸 추가; 램프 상부 막다른 차로에 면한 칸 7개
+  - 자동 DA PIT 제안 전체 1208.8에서 886.5 제곱미터; 가장 큰 PIT 제안 283.5에서 165.8 제곱미터
+  - 램프 상단의 지정 비교 영역에서 자동 제안 영역은 338.6에서 68.2 제곱미터
+  - 기존 순환 진입 진출 clear; 기존 엔진 상태는 DEAD_END가 남는 CONDITIONAL
+  - 4.6m x 1.9m 차량 단순 기구학 모형에서 회차와 7칸 각각의 입차 출차 경로를 샘플링; 최소 여유 약 0.177m
+  - 4.9m x 2.0m 차량 별도 실험에서는 최소 여유 약 0.06m로 줄어 사용성 판단 주의
+  - 회차 공간 제거 반례에서 기존 경로는 충돌하여 부정 시험 통과
+  - 생성 후보 실험에서 좌표 회전 이동 30건 중 29건 재현 1건 ZONE_CONFLICT로 제외
+  - 조건부 대안 생성 API 구현; 기존 제품 화면에는 연결하지 않았고 독립 검토 및 사용자 확인 전
+remaining:
+  - 사용자에게 전후 도면과 입차 출차 재현 화면을 보여주고 계획상 가치 판단
+  - 6m 차로의 교행 운영 및 운전자의 조향 제어 실제 차량별 성능과 법규는 미검증
+  - 회전 시 자동 PIT 충돌 표시가 생기는 한 사례의 원인과 수치 정밀도 조사
+  - 후보 생성 방법의 일반화와 제품 적용 전 독립 검토implementation:
+  - suggestTurnBay는 후보를 명시적으로 요청할 때만 생성하며 기존 기본 배치는 바꾸지 않음
+  - 램프와 코어 기둥 형상을 보존하고 새 충돌 및 기존 경로 악화를 거부
+  - 후보는 CONDITIONAL과 turning UNVERIFIED로 반환하며 회차를 검증된 것으로 취급하지 않음
+  - npm test 64개와 하네스 64개 통과; 대표 화면과 독립 검토는 아직 진행 중
