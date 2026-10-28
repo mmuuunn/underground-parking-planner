@@ -6,6 +6,87 @@
   const segmentNames={'top-transition':'위층 바닥의 경사 완충','top-straight':'위층 진입 직선',arc:'곡선 구간','bottom-straight':'아래층 도착 직선','bottom-transition':'아래층 바닥의 경사 완충'};
   const fields={curveRadius:['안쪽 회전 여유 (m)','램프 안쪽 연석을 기준으로 회전 반경을 조정합니다.'],curveWidth:['차량이 지나는 유효 폭 (m)','벽·연석을 포함한 전체 폭과 구분하는 차로 폭입니다.'],curveTop:['위층 진입 직선 (m)','위층에서 곡선으로 들어가기 전 길이입니다. 위층 바닥의 경사 완충을 포함합니다.'],curveBottom:['아래층 도착 직선 (m)','곡선에서 나온 뒤 아래층 바닥에 닿기까지 길이입니다. 바닥 이후의 평평한 합류 직선 6m와 별개입니다.'],curveUpper:['위층 바닥 높이 (m)','높이 기준점입니다. 아래층 높이와의 차를 램프와 코어 계단에 같이 적용합니다.'],curveLower:['아래층 바닥 높이 (m)','위층보다 낮은 바닥 높이입니다. 기본 입력의 층간 높이 차와 연결됩니다.'],curveTransitionTop:['위층 경사 완충 (m)','위층 진입 직선 안에 포함됩니다. 평평한 바닥과 주경사 사이의 경사 변화를 완화합니다.'],curveTransitionBottom:['아래층 경사 완충 (m)','아래층 도착 직선 안에 포함됩니다. 경사 길이에 추가로 더하는 값이 아닙니다.'],curveCurbInner:['안쪽 연석 폭 (m)','차로 안쪽 연석의 실제 폭입니다. 모르면 비워 둡니다.'],curveCurbOuter:['바깥 연석 폭 (m)','차로 바깥쪽 연석의 실제 폭입니다. 모르면 비워 둡니다.']};
   let selectedZone=null,activeField=null;const routeCache=new WeakMap(),anchors=new WeakMap();
+  const structure=document.createElement('div');structure.className='structure-editor';structure.id='structureEditor';
+  structure.innerHTML=`<label class="field-label" for="structureMode">기둥 구조</label><select id="structureMode" class="full-select"><option value="auto">자동 · 균등 격자</option><option value="fixed">직접 입력 · 불균등 격자</option></select><div id="structureFields" hidden><p class="note">도면의 왼쪽 아래 외곽을 기준으로 첫 축 위치를 입력합니다. X는 오른쪽, Y는 위쪽입니다. 모든 축 교점에 기둥을 두며, 외곽 밖 교점은 제외합니다.</p><div class="structure-origins"><label for="axisStartX">X 첫 축 (m)<input id="axisStartX" type="number" step="0.001"></label><label for="axisStartY">Y 첫 축 (m)<input id="axisStartY" type="number" step="0.001"></label></div><label for="axisSpansX">X 축 간격 (m)</label><textarea id="axisSpansX" rows="2" placeholder="6 9 8.4" spellcheck="false"></textarea><label for="axisSpansY">Y 축 간격 (m)</label><textarea id="axisSpansY" rows="2" placeholder="9 9 8.4" spellcheck="false"></textarea><p class="note">간격은 공백·쉼표·줄바꿈으로 구분합니다. 축은 방향별 2~128개, 최소 간격은 기둥 폭 0.6m입니다.</p><button id="seedStructure" class="mini-btn">현재 결과의 기둥 축 가져오기</button><p class="note">가져온 값은 편집 시작값입니다. 원도 치수와 비교한 뒤 적용하세요.</p></div><p id="structureSummary" class="note"></p><p id="structureMessage" class="structure-message" role="status" aria-live="polite"></p><div class="row"><button id="applyStructure" class="mini-btn">구조 적용</button><button id="revertStructure" class="mini-btn">입력 되돌리기</button></div><details class="setting-details"><summary>구조축 파일</summary><div class="row"><button id="exportStructure" class="mini-btn">JSON 저장</button><button id="importStructure" class="mini-btn">JSON 불러오기</button></div><input id="structureFile" type="file" accept=".json,application/json" hidden><p class="note">구조축만 저장합니다. 전체 배치를 피드백하려면 상단의 ‘장면 복사’를 사용하세요.</p></details>`;
+  $('moduleSel').closest('section').appendChild(structure);
+  let structureKey=null,structureDirty=false;
+  const structureBase=()=>G.bbox(doc.mass.map(p=>rot(p,-doc.ucs))).slice(0,2);
+  const metres=v=>Number((v/1000).toFixed(3));
+  function structureMessage(message,error=false){$('structureMessage').textContent=message;$('structureMessage').classList.toggle('error',error);}
+  function writeStructure(axes){
+    const base=structureBase();
+    for(const [i,axis]of ['x','y'].entries()){
+      const key=axis.toUpperCase(),xs=axes?.[axis]||[];
+      $('axisStart'+key).value=xs.length?metres(xs[0]-base[i]):'';
+      $('axisSpans'+key).value=xs.slice(1).map((v,j)=>metres(v-xs[j])).join(' ');
+    }
+  }
+  function seedStructure(){
+    const r=ui.res;if(!r||r.fail||!r.columns?.length)throw Error('가져올 기둥이 없습니다. 첫 축 위치와 간격을 직접 입력하세요.');
+    const centers=r.columns.map(P=>{const b=G.bbox(P.map(p=>rot(p,-doc.ucs)));return [(b[0]+b[2])/2,(b[1]+b[3])/2];});
+    const unique=i=>[...new Set(centers.map(p=>Math.round(p[i])))].sort((a,b)=>a-b);
+    const axes={x:unique(0),y:unique(1)};writeStructure(axes);
+  }
+  function markStructureDirty(){structureDirty=true;$('applyStructure').disabled=false;structureMessage('아직 적용하지 않은 입력입니다. 현재 배치는 유지됩니다.');}
+  function validateStructure(axes){
+    if(!axes||!Array.isArray(axes.x)||!Array.isArray(axes.y))throw Error('X·Y 구조축 배열이 필요합니다.');
+    const input=planInput(),frame=UGP.grid.frame({...input,grid:{...input.grid,columnAxes:axes}});
+    UGP.grid.setPhase(frame,[0,0]);UGP.layout.placeColumns(frame,[],null);
+    return frame.columnAxes;
+  }
+  function readStructure(){
+    const base=structureBase(),axes={};
+    for(const [i,axis]of ['x','y'].entries()){
+      const key=axis.toUpperCase(),start=$('axisStart'+key),raw=$('axisSpans'+key).value.trim();
+      if(!start.value||!Number.isFinite(start.valueAsNumber))throw Error(key+' 첫 축 위치를 숫자로 입력하세요.');
+      if(!raw)throw Error(key+' 축 간격을 하나 이상 입력하세요.');
+      const values=raw.split(/[\s,;]+/).map(Number);
+      if(values.length>127||values.some(v=>!Number.isFinite(v)||v<.6))throw Error(key+' 간격은 0.6m 이상 숫자로 최대 127개 입력하세요.');
+      const xs=[Math.round(base[i]+start.valueAsNumber*1000)];for(const v of values)xs.push(xs.at(-1)+Math.round(v*1000));axes[axis]=xs;
+    }
+    return validateStructure(axes);
+  }
+  function resetStructureForm(){
+    $('structureMode').value=doc.columnAxes?'fixed':'auto';$('structureFields').hidden=!doc.columnAxes;
+    writeStructure(doc.columnAxes);structureDirty=false;$('applyStructure').disabled=true;structureMessage('');
+  }
+  $('structureMode').onchange=()=>{const fixed=$('structureMode').value==='fixed';$('structureFields').hidden=!fixed;markStructureDirty();if(fixed&&!$('axisSpansX').value){try{seedStructure();}catch(e){structureMessage(e.message,true);}};};
+  for(const id of ['axisStartX','axisStartY','axisSpansX','axisSpansY'])$(id).oninput=()=>{markStructureDirty();$(id).removeAttribute('aria-invalid');};
+  $('seedStructure').onclick=()=>{try{seedStructure();markStructureDirty();}catch(e){structureMessage(e.message,true);}};
+  $('revertStructure').onclick=()=>resetStructureForm();
+  $('applyStructure').onclick=()=>{
+    let axes;try{axes=$('structureMode').value==='fixed'?readStructure():null;}catch(e){structureMessage(e.message,true);return;}
+    if(axes)doc.columnAxes=axes;else delete doc.columnAxes;
+    structureDirty=false;structureKey=null;setTool('select');$('ucsList').innerHTML='';
+    commit(axes?'불균등 구조축 적용':'자동 구조 격자로 복원');
+    renderStructure();structureMessage(ui.res?.fail?'구조축은 저장됐으나 배치를 계산하지 못했습니다. 결과의 오류를 확인하세요.':'적용했습니다. 기둥·축선과 결과의 문제 위치를 확인하세요.',!!ui.res?.fail);
+  };
+  $('exportStructure').onclick=()=>{
+    if(!doc.columnAxes)return structureMessage('직접 입력한 구조축을 먼저 적용하세요.',true);
+    const value={schema:'ug-column-axes/1',unit:'mm',ucs:doc.ucs,columnAxes:doc.columnAxes},url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'})),a=document.createElement('a');
+    a.href=url;a.download='parking-column-axes.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+  $('importStructure').onclick=()=>$('structureFile').click();
+  $('structureFile').onchange=async()=>{
+    const file=$('structureFile').files[0];if(!file)return;
+    try{
+      if(file.size>65536)throw Error('구조축 JSON은 64KB 이하 파일만 읽습니다.');
+      const value=JSON.parse(await file.text());
+      if(value?.schema!=='ug-column-axes/1'||value.unit!=='mm'||!Number.isFinite(value.ucs)||Math.abs(value.ucs-doc.ucs)>.001)throw Error('구조축 파일 형식 또는 도면 방향이 다릅니다. 같은 방향에서 저장한 파일을 사용하세요.');
+      const axes=validateStructure(value.columnAxes);$('structureMode').value='fixed';$('structureFields').hidden=false;writeStructure(axes);markStructureDirty();structureMessage('파일을 읽었습니다. 위치와 간격을 확인한 뒤 구조 적용을 누르세요.');
+    }catch(e){structureMessage('불러오지 못했습니다: '+e.message,true);}finally{$('structureFile').value='';}
+  };
+  function renderStructure(){
+    const key=JSON.stringify([doc.columnAxes,doc.mass,doc.ucs]);if(key!==structureKey){structureKey=key;resetStructureForm();}
+    const fixed=!!doc.columnAxes;
+    for(const id of ['ucsPick','ucsLong','ucsSuggest'])$(id).disabled=fixed;
+    $('phaseSuggest').textContent=fixed?'주차 모듈 위치 비교':'구조열 위치 제안';
+    document.querySelector('label[for="moduleSel"]').textContent=fixed?'주차구획 · 차로 모듈 (기둥은 고정)':'주차구획 · 기둥 간격';
+    $('structureSummary').textContent=fixed?`적용 중 · X ${doc.columnAxes.x.length}축 / Y ${doc.columnAxes.y.length}축 · 기둥 ${ui.res?.columns?.length??'—'}개. 기둥·코어 위치를 유지하며 주차·차로를 계산합니다. 코어는 직접 끌어 옮길 수 있습니다.`:'적용 중 · 균등 격자. 직접 입력으로 바꾸면 구간별 간격을 편집할 수 있습니다.';
+    $('exportStructure').disabled=!fixed;$('applyStructure').disabled=!structureDirty;
+    if(fixed)$('ucsInfo').textContent=`구조 방향 ${doc.ucs.toFixed(1)}° 고정 · 첫 축 위치는 이 방향의 외곽 왼쪽 아래 기준`;
+    if(fixed&&$('detail').firstElementChild)$('detail').firstElementChild.textContent=`직접 입력 구조 · X ${doc.columnAxes.x.length}축 / Y ${doc.columnAxes.y.length}축 · 주차 모듈과 구조축은 별도`;
+  }
   const text=s=>Object.entries({...segmentNames,upperLevelMm:'위층 바닥 높이',lowerLevelMm:'아래층 바닥 높이',innerRadiusMm:'안쪽 회전 여유',legalLaneWidthMm:'차로 유효 폭',straightTopMm:'위층 진입 직선',straightBottomMm:'아래층 도착 직선'}).reduce((s,[id,n])=>s.replaceAll(id,n),String(s||'')).replace(/core-(\d+)/g,(_,n)=>'코어 '+(+n+1)).replace(/column-(\d+)/g,(_,n)=>'기둥 '+(+n+1));
   const fmt=n=>Number.isFinite(n)?Number(n.toFixed(2)).toLocaleString('ko-KR'):'미입력';
   function review(q){
@@ -120,6 +201,7 @@
   }
   const traffic=document.createElement('section');traffic.id='vehicleReview';traffic.innerHTML='<h2>차량 동선 확인</h2><div id="vehicleRouteStates"></div><p class="note">차체 4.6×1.9m의 평면 확인입니다. 첫 문제 앞에서 멈추며, 조향·후진·교행 검토는 별도입니다.</p>';$('planningAreas').after(traffic);
   function render(r){
+    renderStructure();
     if(document.activeElement!==$('rampDrop'))$('rampDrop').value=fmt((curveSettings().upperLevelMm-curveSettings().lowerLevelMm)/1000).replaceAll(',','');
     for(const key of Object.keys(names)){
       const cfg=doc.parkingOptions?.[key],q=r?.parkingSummary?.requirements[key],mode=cfg?.mode||(key==='accessible'?'default':'off'),v=$('quota-'+key+'-value'),m=$('quota-'+key+'-mode');m.value=mode;

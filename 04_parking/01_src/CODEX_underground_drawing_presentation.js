@@ -314,19 +314,24 @@
     const r=current();if(!view.axes||!r||r.fail)return;
     const columns=r.columns||[];
     const unique=vals=>[...new Set(vals.map(v=>Math.round(v/10)*10))].sort((a,b2)=>a-b2);
-    const xs=unique(columns.map(P=>toD(average(P))[0])),ys=unique(columns.map(P=>toD(average(P))[1]));
+    const fixed=r.grid?.columnAxes;
+    const xs=fixed?fixed.x:unique(columns.map(P=>toD(average(P))[0])),ys=fixed?fixed.y.map(v=>-v).reverse():unique(columns.map(P=>toD(average(P))[1]));
     function marks(values,axis){
       const grid=layer(`drawingAxes${axis}`,g),minPx=axis==='X'?36:29;
       const step=Math.max(1,Math.ceil(values.length/(axis==='X'?14:9)));let last=-Infinity;
-      values.forEach((v,i)=>{if(i%step!==0||v-last<minPx/k)return;last=v;
+      values.forEach((v,i)=>{
+        const showLabel=i%step===0&&v-last>=minPx/k;if(!fixed&&!showLabel)return;
         const anchor=axis==='X'?[v,b[1]-52/k]:[b[0]-55/k,v];
         const end=axis==='X'?[v,b[3]+8/k]:[b[2]+8/k,v];
-        line(grid,anchor,end,{stroke:'#e0e0e0','stroke-width':.4,'stroke-dasharray':'9 3 1 3'});
+        line(grid,anchor,end,{stroke:fixed?'#a9b7c5':'#e0e0e0','stroke-width':fixed?.7:.4,'stroke-dasharray':'9 3 1 3','data-structural-axis':fixed?axis+(axis==='Y'?values.length-i:i+1):''});
+        if(fixed&&i&&Math.abs(v-values[i-1])*k>36){const p=axis==='X'?[(v+values[i-1])/2,b[1]-35/k]:[b[0]-36/k,(v+values[i-1])/2];label(grid,p,`${Number((Math.abs(v-values[i-1])/1000).toFixed(3))}m`,{'font-size':8/k,fill:'#59748d','data-structural-span':axis});}
+        if(!showLabel)return;last=v;
         el('circle',{cx:anchor[0],cy:anchor[1],r:7/k,fill:'#ffffff',stroke:'#b1b1b1','stroke-width':.55,'vector-effect':NSS},grid);
-        label(grid,anchor,`${axis}${i+1}`,{'font-size':7/k,fill:'#929292'});
+        label(grid,anchor,`${axis}${fixed&&axis==='Y'?values.length-i:i+1}`,{'font-size':7/k,fill:'#929292'});
       });
     }
     if(xs.length)marks(xs,'X');if(ys.length)marks(ys,'Y');
+    if(fixed){const at=[b[0],b[3]];line(g,[at[0]-7/k,at[1]],[at[0]+7/k,at[1]],{stroke:'#59748d'});line(g,[at[0],at[1]-7/k],[at[0],at[1]+7/k],{stroke:'#59748d'});label(g,[at[0]+30/k,at[1]+16/k],'첫 축 기준',{'font-size':8/k,fill:'#59748d'});}
   }
   const selectedMass=()=>ui.sel&&['mass','edge','vtx'].includes(ui.sel.kind);
   drawLabels = function(){

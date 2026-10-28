@@ -1,0 +1,53 @@
+id: UG-GRID-UI-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending
+verify_profile: vehicle-circulation
+question: 사용자가 불균등 구조축을 편집하고 적용·취소·저장·복원하며 도면과 충돌 결과에 피드백할 수 있는가?
+user_context: 프론트엔드 수정을 시작하고 사용자 피드백이 가능한 완성도에서 보고하라는 요청
+allowed_files:
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/01_src/planning-controls.js
+  - 04_parking/01_src/planning-controls.css
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - tools/harness/work-items/UG-GRID-UI-001.yaml
+acceptance:
+  - 자동 구조와 직접 입력 구조 구분; 첫 축 위치와 구간별 간격을 m 단위로 편집
+  - 적용 전 입력 오류 표시; 오류 입력으로 현재 문서·결과·저장값을 바꾸지 않음
+  - 실행 취소·다시 실행·새로고침·구조축 JSON 저장과 불러오기 지원
+  - 실제 구조축과 구간 치수를 도면에 표시; 주차 모듈 변경으로 고정 구조가 이동하지 않음
+  - 고정 구조 상태에서 UCS 자동 회전 차단; 주차 모듈 위치 제안은 구조 이동과 구분
+  - 자동 구조의 기존 결과 유지; 실제 브라우저 클릭·입력·스크린샷 검사
+  - SGHS 도면과 나란히 비교하는 기존 파일럿에서도 같은 편집 기능 제공
+not_doing:
+  - 당선작 기둥 전체를 추정값으로 확정하거나 재현 합격 선언
+  - 비직교 구조·교점별 기둥 생략·백엔드 판정 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+results:
+  implementation: 사용자 피드백용 구현 완료; 제품 단계 종료와 공모작 재현 합격은 미판정
+  input_comparison: SGHS 원본 근사 외곽·코어·램프·대지 입력 유지; 별도 8874 테스트 화면에서만 불균등축 적용 시험
+  browser_checks: 오류 입력·경계 걸침·잘못된 JSON은 문서 보존; 적용·입력 취소·실행 취소·다시 실행·새로고침·JSON 왕복 통과
+  fixed_structure: 주차 모듈 변경에도 축과 코어 위치 유지; 직접 입력 중 방향 변경 차단; 실제 축선과 구간 치수 표시
+  core_position: 직접 구조 입력 시 백엔드에 코어 위치 고정을 전달하여 재계산 때 자동 맞춤 이동 방지; 사용자 직접 이동은 허용
+  reference_result: 별도 기본 사례 균등 입력 126대 CONDITIONAL; X 간격 6·9·8.4m 및 Y 간격 9·9·9m 시험은 12기둥·25대; SGHS 재현 성과가 아님
+  pilot_result: SGHS B1 기존 0대 INFEASIBLE 유지; B1·B2 편집창 및 원도 나란히 보기 연결 확인; 실제 원안 구조축 미입력
+  viewport: 1440x1000에서 입력창 가로 넘침 없음; 브라우저 콘솔 오류 0개
+  npm_test: 74/74 통과; tools/harness/runs/grid-ui-npm-test.log
+  harness_verification: 74/74 통과; npm test와 같은 계산 시험이며 별도 합격 증거로 중복 계산하지 않음
+  run_id: 20261028-225411-UG-GRID-UI-001-fa70eeab
+  other_checks: 변경 JS 3개 구문 검사·git diff --check·serve-pilot.py --check 통과
+  browser_evidence: tools/harness/runs/grid-ui-browser-evidence.json
+  browser_self_check: tools/harness/runs/grid-ui-self-check.js; 별도 기본 문서 테스트 화면에서 Playwright browser_run_code_unsafe로 실행
+  screenshot: tools/harness/runs/grid-ui-sghs.png
+  scope: 제품 파일 4개와 작업지시서 1개만 변경; 기존 AGENTS.md·README.md·docs/COMPLETION_BASELINE.md 변경은 제외
+  independent_review: 미실시; 다른 담당·모델의 검토 없이 자체 점검만 수행; 사용자 요청 없는 서브에이전트 호출 금지 준수
+  user_visual_review: 대기; 간격 입력 방식·축선 가독성·오류 안내를 사용자 화면에서 확인할 단계
+limitations:
+  - SGHS 원안의 실제 구조축 적용과 지하주차 재현 재시험은 미실시
+  - 불균등 직교축의 모든 교점에 기둥 생성; 개별 교점 생략·비직교축·기둥별 크기 차이는 미지원
+  - 고정 기둥과 기존 차로가 충돌하면 대수가 줄거나 배치 불가가 될 수 있음; 최적 동선 탐색 확대는 포함하지 않음

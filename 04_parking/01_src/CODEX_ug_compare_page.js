@@ -105,6 +105,7 @@ function defaultDoc() {
     cores: [{c: W([-5, 25]), w: 9000, d: 7000}, {c: W([20, 0]), w: 9000, d: 7000}], ramp: {p: W([-22, 34.2]), k: 0, len: 24000, w: 6000}, snap: 1000, module: 'normal'};
 }
 function validDoc(d) {
+  if(d?.columnAxes!==undefined){try{UGP.grid.normalize({mass:d.mass,grid:{columnAxes:d.columnAxes}});}catch(e){return false;}}
   const ok = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
   return d && d.v === 2 && Number.isFinite(d.ucs) && Array.isArray(d.mass) && d.mass.length >= 3 && d.mass.every(ok) && Array.isArray(d.cores) && d.cores.every((c) => ok(c.c) && c.w > 0 && c.d > 0) && d.ramp && ok(d.ramp.p) && d.ramp.len > 0 && d.ramp.w > 0 && (d.ramp.alignedAngleDeg === undefined || Number.isFinite(d.ramp.alignedAngleDeg));
 }
@@ -207,7 +208,7 @@ function evaluateCurveRamp(curve,plan,mass=doc.mass) {
 }
 // 구조열(격자 위상): 매스·UCS·모듈이 바뀌어 확정될 때만 엔진이 다시 고르고(실제 대수 비교) 문서에 적는다.
 //   코어·램프를 고치는 동안과 끄는 중 미리 보기는 적어 둔 위상을 그대로 쓴다(설계안 결정 ②). 실행 취소하면 위상도 같이 돌아간다
-const phaseKey = () => JSON.stringify([doc.mass,doc.ucs,doc.module]);
+const phaseKey = () => JSON.stringify([doc.mass,doc.ucs,doc.module,...(doc.columnAxes?[doc.columnAxes]:[])]);
 const phaseMatches = () => {if(doc.phase?.key===phaseKey())return true;try{const old=JSON.parse(doc.phase?.key);return Array.isArray(old)&&old.length===5&&JSON.stringify(old.slice(0,3))===phaseKey();}catch(e){return false;}};
 const docPhase = () => (doc.phase && (ui.drag || phaseMatches()) ? doc.phase.p : undefined);
 function planningMass(ramp) {
@@ -235,7 +236,7 @@ function changeCoreEv(i,ev){
 }
 const planInput = () => {
   const ramp=rampSpec(doc.ramp),boundary=planningMass(ramp);
-  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');return l?{...c,layouts:l}:c;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL},floorMm:projectFloor(),phase:docPhase()};
+  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return l?{...fixed,layouts:l}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.columnAxes?{columnAxes:doc.columnAxes}:{})},floorMm:projectFloor(),phase:docPhase()};
 };
 function solveCurveInput(input) {
   let draft,placedCurve=input.ramp;
@@ -484,7 +485,7 @@ const TOOLS = [['select', '선택·편집', 'V'], ['draw', '다각형 매스', '
 const HINT = {select: '매스를 누르면 꼭짓점(■)이 나타납니다 · 변을 끌면 늘이고 줄이기(E: 이 변만 돌출) · 변을 두 번 누르면 그 자리에 꼭짓점 추가 · 안쪽을 끌면 매스 통째로(코어·램프 함께) 이동 · 코어를 누르면 변 손잡이로 크기 조절(끄는 중 숫자+Enter = 새 길이 mm)',
   draw: '클릭으로 꼭짓점 찍기(직교 고정, Shift 해제) · 숫자+Enter 길이 지정 · 첫 점 클릭 또는 Enter로 닫기 · Backspace 마지막 점 지우기 · Esc 취소',
   rect: '끌어서 사각형 매스를 그립니다(UCS 축 기준)', ucs: '수평으로 둘 매스 변(파랑) 또는 대지 변(회색)을 누르세요 · Esc 취소'};
-function setTool(t) { ui.tool = t; if(t!=='select')ui.alignRamp=false; ui.draw = t === 'draw' ? {pts: []} : null; ui.rect = null; ui.typed = ''; if (t !== 'select') ui.sel = null; renderTools(); renderEdit(); }
+function setTool(t) { if(t==='ucs'&&doc.columnAxes)return flash('직접 입력 구조는 방향이 고정됩니다. 구조 입력을 해제한 뒤 방향을 바꾸세요.'); ui.tool = t; if(t!=='select')ui.alignRamp=false; ui.draw = t === 'draw' ? {pts: []} : null; ui.rect = null; ui.typed = ''; if (t !== 'select') ui.sel = null; renderTools(); renderEdit(); }
 function renderTools() {
   const T = $('tools'); T.innerHTML = '';
   for (const [t, label, key] of TOOLS) { const b = document.createElement('button'); b.innerHTML = `${label}<kbd>${key}</kbd>`; if (ui.tool === t) b.className = 'on'; b.onclick = () => setTool(t); T.appendChild(b); }
@@ -543,7 +544,7 @@ function renderPanel() {
   renderRampCandidates();
   $('snapRow').innerHTML = '';
   for (const v of [0, 100, 500, 1000, 5000]) { const b = document.createElement('button'); b.className = 'mini-btn' + (doc.snap === v ? ' on' : ''); b.textContent = v ? v / 1000 + ' m' : '끔'; b.onclick = () => { doc.snap = v; save(); renderPanel(); }; $('snapRow').appendChild(b); }
-  $('moduleSel').innerHTML = Object.entries(MODULES).map(([k, m]) => `<option value="${k}"${doc.module === k ? ' selected' : ''}>${m.name}</option>`).join('');
+  $('moduleSel').innerHTML = Object.entries(MODULES).map(([k, m]) => `<option value="${k}"${doc.module === k ? ' selected' : ''}>${doc.columnAxes?m.name.replace('기둥','주차 모듈'):m.name}</option>`).join('');
   renderStats(ui.res, false);
   const r = ui.res;
   $('detail').innerHTML = r && !r.fail ? `<div>엔진: ${r.schema} · 격자 ${(+r.grid.angleDeg).toFixed(1)}° · 기둥 ${r.grid.gx}×${r.grid.gy} · 차로 ${r.grid.aisleMm}mm</div><ul>${r.warnings.map((w) => `<li>${w}</li>`).join('') || '<li>검사 항목 위반 없음</li>'}</ul><div>뺀 칸: 실내 면 밖 ${r.excluded.wall} · 차로·램프·코어·기둥과 겹침 ${r.excluded.blocked} · 다른 칸과 겹침 ${r.excluded.overlap} · 갈 수 없는 차로 ${r.excluded.unreachable} · 독립 검사에서 뺀 칸 ${r.excluded.check || 0}(겹침 허용오차 ${r.report ? r.report.tolerance.areaMm2 / 1e6 : 0.01}㎡)</div><div>확인하지 않는 것: 회전 궤적, 일방통행 방향, 법정 대수, 장애인·확장형 비율, 램프 완화 구간, 설비·피난. 벽 쪽 세로·사선 칸 줄에는 기둥을 두지 않았습니다(외벽이 받는다고 가정).</div>` : (r ? r.fail : '');
@@ -779,6 +780,7 @@ if($('turnBayRestore'))$('turnBayRestore').onclick=()=>{
 };
 $('ucsPick').onclick = () => setTool(ui.tool === 'ucs' ? 'select' : 'ucs');
 $('ucsSuggest').onclick = () => withCalculationNotice(() => {
+  if(doc.columnAxes)return flash('직접 입력한 구조축은 자동으로 회전하지 않습니다.');
   const list = curveMode()?suggestCurveUcs():UGPlan.suggestUcs(planInput()); if (!list.length) return flash('성립하는 방향을 찾지 못했습니다');
   const best = list[0], cur = ui.res && !ui.res.fail ? ui.res.stallCount : null;
   $('ucsList').innerHTML = list.map((c) => `<button class="mini-btn${Math.abs(c.ucs - doc.ucs) < .2 ? ' on' : ''}" data-ucs="${c.ucs}">${c.ucs.toFixed(1)}° · ${c.stallCount}대${c.hasLoop ? '' : ' (순환 없음)'}</button>`).join('');
@@ -799,7 +801,7 @@ if($('phaseSuggest'))$('phaseSuggest').onclick=()=>withCalculationNotice(()=>{
   container.appendChild(b);
  });
 });
-$('ucsLong').onclick = () => { doc.ucs = longestEdgeAngle(doc.mass); commit(`UCS ${doc.ucs.toFixed(1)}°`); fit(); };
+$('ucsLong').onclick = () => { if(doc.columnAxes)return flash('직접 입력 구조의 방향은 고정됩니다.'); doc.ucs = longestEdgeAngle(doc.mass); commit(`UCS ${doc.ucs.toFixed(1)}°`); fit(); };
 $('addCore').onclick = () => { const v = ui.view, D = [v[0] + v[2] / 2, v[1] + v[3] / 2]; doc.cores.push({c: fromU([D[0], -D[1]]).map(Math.round), w: 8000, d: 8000}); ui.sel = {kind: 'core', i: doc.cores.length - 1}; commit('코어 추가'); renderAll(); };
 if($('bypassBtn'))$('bypassBtn').onclick=()=>{doc.occupantPolicy=doc.occupantPolicy==='bypass'?'report':'bypass';commit(doc.occupantPolicy==='bypass'?'코어 차단 구간 우회':'우회 해제');};
 $('moduleSel').onchange = () => { doc.module = $('moduleSel').value; commit(`모듈 ${MODULES[doc.module].name}`); };
