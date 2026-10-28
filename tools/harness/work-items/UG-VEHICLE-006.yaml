@@ -1,5 +1,5 @@
 ﻿id: UG-VEHICLE-006
-status: USER_GATE
+status: RESCOPE_REQUIRED
 stage: vehicle-circulation
 authority: codex
 owner: codex
@@ -7,7 +7,7 @@ reviewer: codex
 verify_profile: vehicle-circulation
 question: 직선 램프 추천에 각 후보의 계획 상태와 문제 이유가 표시되는가?
 verification_result: npm test 및 하네스 63개 통과; 78대 조건부 빈 섬과 133대 배치 불가 경계 위반 사유 전달 확인
-user_gate: 후보별 상태와 문제 사유 화면 확인 대기
+user_gate: 2026-10-28 사용자 확인 결과 기초조건의 의미가 불명확하고 큰 미활용 공간이 있어 재범위 필요
 allowed_files:
   - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
   - 04_parking/02_tests/parking-turns.test.cjs

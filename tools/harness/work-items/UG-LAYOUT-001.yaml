@@ -1,0 +1,35 @@
+﻿id: UG-LAYOUT-001
+status: DRAFT
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required
+verify_profile: vehicle-circulation
+question: 차로 골격이 주차 이용 없이 기둥만 도는 구간을 만들거나 과도한 미활용 공간을 남기는가?
+user_inputs:
+  mass: [[-30089,8981],[-26923,-11428],[23749,-35903],[49409,17223],[-11822,46799]]
+  ucs: -25.7815
+  core: {c: [22127,184], w: 9489, d: 5981, doors: {ENT: 100}}
+  module: wide
+  phase: [4000,0]
+  ramp_a: {p: [-3738,5137], k: 0, len: 24000, w: 6000}
+  ramp_b: {p: [3395,19905], k: 0, len: 24000, w: 6000}
+observations_not_golden:
+  - A는 93대, 진입 진출 clear, STALL_NO_FRONT 2대, 자동 DA PIT 약 818㎡
+  - B는 82대, 진입 진출 clear, FEASIBLE, 자동 DA PIT 약 1209㎡, 가장 큰 PIT 제안 약 283.5㎡
+  - 두 배치는 코어와 램프 착지가 자동으로 이동하지 않았으며 동일한 구조열을 사용한다
+  - A의 기둥 주변 57.1㎡는 닫힌 섬만 찾는 기존 검사에 기록되지 않는다
+  - 16개 구조열 간이 비교에서 B의 큰 PIT는 238㎡부터 722㎡까지 변동했으나 막힌 경로와 다른 조건부 안이 섞여 있다
+  - B에서 기존 램프 추천이 A 위치 93대 CONDITIONAL을 제안하지만 동일 위치가 실제 도로에 연결되는지는 미검증이다
+requirements_to_scope:
+  - 차로와 램프의 폐곡선 구멍만 찾는 방식을 넘어 주차 기능 없는 막힌 홈과 기둥 구간의 생성 원인을 검토한다
+  - 코어, 시설, 필요한 회차나 진입 및 연결 차로는 잘못 제거하지 않는다
+  - 같은 외곽 코어 격자 조건과 별도 도로 미검증 상태에서 A B 대안과 원인을 비교한다
+  - 차로 구조가 바뀌면 주차대수와 진입 진출, 대안의 잔여공간 차이를 검증한다
+  - 불가피하다고 결론낼 때는 조사한 대안 범위와 미검증 사항을 표시한다
+  - 기존 안전 기준과 골든값은 승인 없이 완화하지 않는다
+limits:
+  max_implementation_rounds: 2
+  max_reviewer_calls: 1
+  max_changed_files: 5
+  max_new_production_lines: 400
