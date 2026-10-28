@@ -1,0 +1,34 @@
+id: UG-GRID-UI-003
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-style-only
+verify_profile: vehicle-circulation
+question: 구조축·치수 편집 요소의 디자인이 기존 회색 UI와 통일되는가?
+user_context: 캔버스 편집 사용성은 유지하면서 밝은 파란 상자의 디자인 통일 요청
+allowed_files:
+  - 04_parking/01_src/planning-controls.css
+  - tools/harness/work-items/UG-GRID-UI-003.yaml
+acceptance:
+  - 축·치수 상자·입력창·편집 버튼·안내를 기존 짙은 회색 팔레트와 얇은 테두리로 통일
+  - hover·키보드 초점·오류 표시 구분 유지; 조작 크기와 위치 유지
+  - 기존 구조 편집 동작과 배치 문서 보존; 실제 화면 검사 및 기존 시험 통과
+not_doing:
+  - 배치 계산·구조축 좌표·드래그 동작·입력 형식 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 2
+max_new_production_lines: 40
+results:
+  implementation: CSS만 수정; 축·치수 상자·입력창·편집 버튼·안내를 기존 회색 팔레트로 통일
+  visual: SGHS B1 1440x1000 확인; 기본 상자 #2c2d30·hover #4a4b4e·키보드 초점 #eee 2px; 입력창 #232426
+  screenshot: tools/harness/runs/grid-style-sghs.png
+  preservation: 화면 검사 전후 문서 동일; SGHS B1 기존 0대 INFEASIBLE 유지
+  browser_regression: 기존 structural-canvas.browser.js 통과; 드래그·치수 입력·취소·저장 복원·오류 거부·키보드 조작 유지; 콘솔 오류 없음
+  npm_test: 74/74 통과; tools/harness/runs/grid-style-npm-test.log
+  harness_verification: 74/74 통과; npm test와 동일 시험이므로 별개 합격 근거로 중복 계산하지 않음
+  run_id: 20261028-233730-UG-GRID-UI-003-94b0f332
+  independent_review: 스타일만 변경하여 별도 독립 검토 미실시
+  user_visual_review: 대기; 기존 화면 새로고침 후 통일감 확인
+  not_checked: 인쇄 화면
