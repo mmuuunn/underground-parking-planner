@@ -310,7 +310,7 @@
           const r = generate({...input, phase, ramp:candidateRamp});
           if (!r.graph.hasLoop || !r.ramp || (!curveSpec && !routesClear(r))) continue;
           const key = r.ramp.landing.map((v) => Math.round(v / 1000)).join(',') + ',' + Math.round(c.angleDeg) + (curveSpec ? ',' + curveSpec.turn + candidateRamp.turn : ''); if (seen.has(key)) continue; seen.add(key);
-          res.push({x: r.ramp.landing[0], y: r.ramp.landing[1], angleDeg: c.angleDeg, ...(curveSpec ? {kind: 'curve', turn: candidateRamp.turn} : {}), stallCount: r.stallCount, deadEnds: r.graph.deadEnds.length, body: r.ramp.body, score: planScore(r, true)});
+          res.push({x: r.ramp.landing[0], y: r.ramp.landing[1], angleDeg: c.angleDeg, ...(curveSpec ? {kind: 'curve', turn: candidateRamp.turn} : {status:r.status,issues:[...new Set(r.violations.map(v=>v.note||v.id))]}), stallCount: r.stallCount, deadEnds: r.graph.deadEnds.length, body: r.ramp.body, score: planScore(r, true)});
         }
       } catch (e) { /* 이 자리는 성립 안 함 */ }
     }

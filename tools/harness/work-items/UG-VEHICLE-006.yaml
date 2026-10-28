@@ -1,0 +1,29 @@
+﻿id: UG-VEHICLE-006
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex
+verify_profile: vehicle-circulation
+question: 직선 램프 추천에 각 후보의 계획 상태와 문제 이유가 표시되는가?
+verification_result: npm test 및 하네스 63개 통과; 78대 조건부 빈 섬과 133대 배치 불가 경계 위반 사유 전달 확인
+user_gate: 후보별 상태와 문제 사유 화면 확인 대기
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+must_preserve:
+  - 후보 생성 및 기존 차량 경로 검사와 추천 순위
+  - 기준 도면 대수와 계산 상태
+  - 곡선 램프 후보 재판정
+  - 통과, 실패, 미검증의 구분
+acceptance:
+  - L자 78대 후보는 조건부 및 빈 섬 이유를 표시할 데이터를 반환한다
+  - 허용 경계 위반 후보는 배치 불가 및 이유를 표시할 데이터를 반환한다
+  - 오류 사유가 없으면 빈 목록을 반환하고 법규 승인으로 표현하지 않는다
+not_doing:
+  - 대지 도로 입력 구현 또는 법규 판단
+  - 차량 램프 판정 기준 및 골든값 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 2
+max_new_production_lines: 30

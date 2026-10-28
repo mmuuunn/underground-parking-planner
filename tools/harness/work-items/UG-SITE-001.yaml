@@ -1,0 +1,33 @@
+﻿id: UG-SITE-001
+status: DRAFT
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-required
+verify_profile: vehicle-circulation
+question: 사용자가 입력한 출입 조건을 기준으로 램프 대안을 비교할 수 있는가?
+precondition: UG-VEHICLE-005 독립 검토 및 범위 확정 후 preflight
+user_context: 2026-10-28 사용자는 대지와 도로 조건 없는 배치 대안의 합리성을 판단하기 어렵다고 설명
+reference_case: L자 기준 형상; 가상의 출입 조건을 표시하고 실제 대지 사례로 주장하지 않는다
+existing_capabilities:
+  - 대지 표시선 SITE는 고정 예시이며 입력된 실제 대지로 취급하지 않는다
+  - allowedBoundary는 바닥 외곽의 허용 경계 검사이며 도로 연결을 뜻하지 않는다
+  - 직선 램프는 시작점과 착지점을 가지며 현재 후보는 일부 외곽에서 1400mm 안쪽에 시작한다
+acceptance_to_scope:
+  - 사용자가 제공한 도로 및 출입 가능 구간을 구별하고 미입력 상태를 명시한다
+  - 입력한 조건과 각 후보의 관련성을 설명하며 미검증인 도로 연결을 합격으로 표시하지 않는다
+  - 주차대수와 진입 진출 경로 및 기존 문제를 나란히 비교한다
+  - 원래 코어와 구조열을 고정한 비교와 사용자가 바꾼 비교를 구분한다
+  - 기존 저장 문서와 맥락 미입력 사례를 보존한다
+open_design:
+  - 도로 경계와 램프 상부 사이의 연결 가능 범위는 사용자 입력 또는 확인된 근거가 필요하다
+  - 좁은 출입 구간 폭, 램프 몸체와 방향 및 외부 동선은 중심점 하나만으로 합격 판정하지 않는다
+  - 가상 사례와 실제 사례를 구분하고 법규와 도로 접속 허가 여부는 미검증으로 남긴다
+not_doing:
+  - 지도 자동 수집이나 실제 도로 위치 추정
+  - 법규와 도로 접속 허가 확정
+  - 기존 기준값 또는 안전 판정 완화
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400

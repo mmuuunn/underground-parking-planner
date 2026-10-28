@@ -62,6 +62,19 @@ test('straight ramp suggestions exclude blocked routes even when they have more 
     assert.equal(plan.stallCount,s.stallCount);assert.equal(routes.entry.state,'clear');assert.equal(routes.exit.state,'clear');
   }
   assert.equal(suggestions[0].stallCount,78);
+  assert.equal(suggestions[0].status,'CONDITIONAL');
+  assert.ok(suggestions[0].issues.some(note=>note.includes('69㎡')));
+});
+test('straight ramp suggestions expose a violated allowed boundary',()=>{
+  const c=require('./fixtures/underground-golden-cases.json').cases.find(c=>c.id==='rectangle');
+  const input={...c.input,allowedBoundary:[[0,0],[40000,0],[40000,60000],[0,60000]]};
+  const base=E.generate(input),suggestions=E.suggestRamps(input,3);assert.ok(suggestions.length);
+  for(const s of suggestions){
+    const plan=E.generate({...input,phase:base.grid.phase,ramp:{...input.ramp,x:s.x,y:s.y,angleDeg:s.angleDeg}});
+    assert.equal(plan.status,'INFEASIBLE');assert.equal(s.status,plan.status);
+    assert.ok(plan.violations.some(v=>v.id==='FLOOR_OUTSIDE_ALLOWED'));
+    assert.ok(s.issues.includes(plan.violations.find(v=>v.id==='FLOOR_OUTSIDE_ALLOWED').note));
+  }
 });
 test('F3/F4 both ramp forms report the same short approach and the unresolved 140 degree corner',()=>{
   const a=E.generate({...input,ramp:ramp(26000)}),b=E.generate({...input,ramp:E.createStraightRamp(ramp(26000))});

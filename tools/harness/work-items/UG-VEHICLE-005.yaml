@@ -1,13 +1,16 @@
 ﻿id: UG-VEHICLE-005
-status: USER_GATE
+status: ACCEPTED
 stage: vehicle-circulation
 authority: codex
 owner: codex
-reviewer: independent-review-required
+reviewer: independent-read-only-review
 verify_profile: vehicle-circulation
 question: 직선 램프 추천이 차량 진입과 진출이 가능한 대안을 우선 제시하는가?
 verification_result: npm test 및 하네스 62개 통과; L자 81대 막힘 제외, 78대 진입 진출 통과 첫 추천
-remaining: 사용자 화면 확인 및 독립 검토; 78대 안의 EMPTY_ISLAND 별도 확인
+user_gate: 2026-10-28 사용자는 추천 전후와 코어 이동 화면에 문제가 없다고 확인; 도로와 대지 맥락 없는 합리성 판단의 한계를 지적
+review_result: 차량 경로가 막힌 직선 후보 제외는 검토 사례 통과; 기존 후보 상태와 사유 누락 및 180도 중복 발견
+remaining: 후보 상태와 사유 누락은 UG-VEHICLE-006; 사용자 의견은 UG-SITE-001에 반영; 후보 중복은 별도 범위 검토
+follow_up_finding: L자 78대 후보는 진입 진출 clear이나 69㎡ 칸 없는 섬으로 CONDITIONAL; 직선 후보는 status와 issues가 없어 화면에서 자리 비교로만 표시된다
 allowed_files:
   - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
   - 04_parking/02_tests/parking-turns.test.cjs
