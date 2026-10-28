@@ -57,6 +57,7 @@
     const {cfg, inner, b, gy, xLines} = G, Y0 = G.Y0, hc = cfg.columnMm / 2, inside = insideOf(inner), columns = [];
     if (G.columnAxes) {
       for (const x of xLines) for (const y of G.columnAxes.y) {
+        if (!G.columnExists(x, y)) continue;
         const r = rectPoly([x - hc, y - hc, x + hc, y + hc]);
         if (inside(r)) columns.push(r); // Fixed structure must survive even when a generated aisle/ramp collides.
         else if (hitArea(r, [inner])) throw new RangeError(`고정 기둥 (${x}, ${y})이 실내 외곽에 걸칩니다 — 구조축 또는 외곽을 확인하세요`);

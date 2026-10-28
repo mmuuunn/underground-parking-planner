@@ -1,0 +1,69 @@
+id: UG-SGHS-LANDING-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: B1 상부 경계의 벽 안팎 기준을 구분한 입력에서 기존 착지 검사와 램프 도달 구간이 성립하는가?
+user_context: 2026-10-29 사용자가 첫 차수 착지 복구 지시; SGHS 전체 재현의 1시간 내 가능성도 질문함
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-LANDING-001.yaml
+acceptance:
+  - 기존 B1/B2 보완 전후 입력과 여섯 골든 계산 결과 보존
+  - 원도 상부 Y 치수 기준을 벽 안쪽으로 해석한 B1 별도 시험 입력과 추정 근거 표시
+  - 기존 벽 두께 400mm와 검사 허용 오차 유지; 램프·코어·구조축·기둥을 이동/삭제하지 않음
+  - 별도 입력에서 LANDING 실패 해소·유효 시작점·램프에서 도달한 구간 확인
+  - 기존 위상 고정과 자동 위상 선택을 분리하여 후보 대수 및 남은 실패 기록
+  - 실제 단절·접속부 장애물 반례는 계속 실패; 후보 칸 수를 주행 합격으로 승격하지 않음
+  - 비교 화면에서 새 시험·기존 입력·B2 분리 및 저장 격리 확인
+not_doing:
+  - NO_LOOP·DEAD_END·급회전·충돌·착지 검사 또는 골든값 변경
+  - 벽 두께 삭제·허용 오차 확대·구조 교점 자동 생략
+  - 새 차로 생성기 및 실제 조향·회차·교행·층간 연결 구현
+  - 원도 치수의 실측 확정 또는 SGHS 전체 동선 재현 성공 선언
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: 접속부의 벽 기준 불일치 가설과 자동 차로 문제를 분리
+  reference_change: 기존 r1은 보존하고 B1 landing 별도 입력 추가; B2에는 적용하지 않음
+  excluded_scope: 상부 경계 이외 원도 형상 보정 및 이후 연결 차로 생성은 별도 차수
+input_change:
+  variant: B1 landing; before/revised 및 B2는 원래 입력 유지
+  interpretation: 원도 상부 6.5m 치수 끝점의 흰 바닥·검은 외벽 접선을 안쪽 기준으로 읽는 추정
+  geometry: 상부 평탄 외곽 두 점만 Y=47300에서 47700으로; 기존 엔진의 400mm 벽 차감 후 안쪽 Y=47300
+  preserved: 벽 두께 400mm·램프 몸체/착지/폭·코어·실·구조축·기둥 39개 및 모든 검사 공차 유지
+  uncertainty: 래스터 도면의 비례 해석이며 실제 벽 상세·유효 폭 확정 아님; 원도/사용자 대조 필요
+results:
+  implementation_rounds: 1
+  implementation: B1 별도 착지 검토 입력과 비교 화면 선택·시작점/도달 구간 표시 추가; 엔진·독립 판정 코드는 수정하지 않음
+  old_fixed: 위상 6000/8000; 착지 누락 0.15㎡; 시작점 null; 도달 0구간; 최종 0칸 INFEASIBLE
+  trial_fixed: 같은 위상 6000/8000; 착지 누락 0㎡; 시작점 22; 도달 2구간; 최종 0칸 INFEASIBLE
+  trial_auto: 기존 자동 위상 선택 결과 3800/8000; 착지 누락 0㎡; 시작점 12; 도달 4구간; 접근 후보 8칸 INFEASIBLE
+  count_cause: 벽 기준 변경으로 착지 검사가 성립; 8칸은 바뀐 입력에서 기존 자동 주차 모듈 위치 선택을 함께 적용한 결과이며 벽 기준 변경만의 고정 위상 결과는 0칸
+  remaining: 자동 위상 안의 합류는 3.138m 직진 후 90도 두 번으로 거부; 코어·고정 기둥 차단·기둥/램프 겹침·NO_LOOP·DEAD_END 유지
+  entry_exit: 기존 전체 경로 검사는 진입/진출 모두 unconnected; 착지 연결과 전체 주행 합격을 구분
+  counterexamples: 기존 경계로 되돌리거나 접속부 장애물을 추가하면 LANDING·도달 0·최종 0 유지; 이후 그래프를 끊으면 착지 시작점이 있어도 후보 칸 전부 unreachable
+  baseline: preflight 77/77; 49.615초
+  npm_test: 최종 코드 80/80; 50.244초
+  harness_verification: 최종 코드 80/80; 50.509초; 같은 시험을 반복한 것이므로 독립 증거로 세지 않음
+  preservation: 기존 여섯 골든과 SGHS 네 입력의 전체 계산 결과 SHA256 동일; 앞선 P1 코드·작업표와 사용자 기존 변경 보존
+  browser: 새 입력/기존 입력 전환·새 입력 저장/재열기·기존 저장 격리·B2 선택 제한/자동 복귀·일반 장면 저장 보존·720px 가로 넘침 없음; pageerror 0·HTTP 오류 0
+  visual: 원도와 자동 생성 안을 실제 브라우저 캡처로 대조; 합류 꺾임·코어/기둥 차단 안내 및 추정 입력 표시 확인
+  screen: http://127.0.0.1:8874/04_parking/sghs-compare.html?floor=B1&revision=landing
+  run_id: 20261029-014334-UG-SGHS-LANDING-001-ac44d5a7
+  evidence: C:/Users/seok2/.codex/research/SGHS-LANDING-20261029; engine-evidence.json·browser-evidence.json·landing-comparison.png·before.json·after.json·npm-test.log
+  independent_review: 미실시; GPT-6 Astra로 상부 벽 기준 해석과 거짓 연결 반례를 읽기 전용 검토할 수 있으나 호출하지 않음; 자체 시험은 독립 검토가 아님
+  user_visual_review: 대기; 상부 안쪽 기준 해석과 새 시험 입력의 도면 결과 확인 필요
+  conclusion: 추정 경계 해석을 사용한 별도 입력에서 착지 검사는 복구; SGHS 원안 전체 동선 재현·실제 8대 사용 가능·차량 단계 종료는 미확인
+  one_hour: 첫 착지 검토는 약 15분 범위에서 확보했으나 전체 동선 재현을 1시간 내 보장할 근거는 없음; 다음 단위는 고정 구조를 보존한 B1 연결 차로 1안의 생성/검증
+limitations:
+  - 상부 벽 기준선과 물리 벽 상세는 추정; 기존 입력을 대체하는 확정 원도 보정이 아님
+  - 접근 후보 8칸은 현 기하·접근 검사 결과이며 실제 칸 입출차·후진·회차·교행 합격이 아님
+  - 남은 합류·고정 구조·폐회로 판정 문제를 완화하거나 제거하지 않음; B2에 같은 해석을 복사하지 않음

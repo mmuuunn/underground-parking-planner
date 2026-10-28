@@ -1,0 +1,64 @@
+id: UG-SGHS-INTERSECTIONS-001
+status: VERIFYING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: 고정 구조축의 지정 교점만 생략하면서 다른 기둥과 코어 맞춤의 물리 구조를 보존할 수 있는가?
+user_context: 2026-10-29 SGHS 조사 후 사용자가 P1 교점별 기둥 처리 진행을 지시함
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_grid.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/01_src/plan/core-fit.js
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-INTERSECTIONS-001.yaml
+acceptance:
+  - 고정축 교점의 omitted만 선택적으로 제외하고 같은 축의 다른 기둥은 보존
+  - wall-integrated 교점은 물리 기둥으로 유지하고 유효 코어 참조를 검사
+  - 코어 내부 기둥 검사와 실제 생성 기둥이 동일한 교점 예외를 사용
+  - 잘못된 인덱스·중복·알 수 없는 필드·없는 축 또는 코어 참조를 거부
+  - 기존 입력·골든 결과와 SGHS r1의 기둥 수·실패 원인 재현
+not_doing:
+  - SGHS 원도 예외를 현재 입력에 직접 적용하거나 B2로 복사
+  - 화면 편집·저장 형식 또는 차로 생성·램프·차량 판정 변경
+  - 골든값·합격 기준 변경 또는 SGHS 재현 성공 선언
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: 고정 구조축의 잘못된 전교점 기둥 가정을 개별 입력으로 정정할 기반
+  reference_change: 없음; 예외 없는 기존 SGHS와 여섯 골든 보존
+  excluded_scope: 화면·저장 전달과 원도별 예외 적용은 후속 작업
+input_contract:
+  location: generate 입력의 grid.columnIntersections; columnAxes는 기존 x/y 배열 유지
+  index: ix/iy는 0부터 시작하는 고정축 목록 인덱스; 예외 없는 교점은 기존 기본 기둥
+  omitted: state=omitted와 비어 있지 않은 reason 필수; source 문자열 선택; coreId는 허용하지 않음
+  integrated: state=wall-integrated와 reason 및 유일한 기존 coreId 필수; 물리 기둥은 유지
+  note: 코어 참조 검사는 벽체 결합이나 구조 안전성의 확인이 아님; 실제 벽체 표현은 P3 범위
+  output: P1은 생성 형상과 코어 내부 계산만 반영; 결과 메타데이터·화면·저장 전달은 후속 작업
+results:
+  implementation: P1 구현과 자체 검증 완료; Grid의 동일 교점 조회를 기둥 배치와 코어 내부 열거에서 사용
+  implementation_rounds: 1
+  production_change: 3개 파일에 21줄 추가; 시험 파일과 작업표 포함 허용 파일 5개
+  targeted_behavior: 12개 고정 교점 중 1개만 생략하여 11개 유지; 같은 X/Y축의 다른 기둥과 코어·램프 형상 보존
+  core_behavior: 홀 내부 생략 기둥은 코어 맞춤·방 충돌 개수·벽체 합집합에서 제거; 통합 기둥은 충돌·돌출·벽 형상 유지
+  coordinate_behavior: 주차 위상 변경·고정축 좌표 수정·UCS 90도 회전에서도 같은 교점에 예외 적용
+  validation: 잘못된 인덱스·희소 배열·중복·상태·사유·출처·알 수 없는 필드·축 누락·코어 누락/중복 참조 거부; 원본 입력 보존
+  baseline: preflight 기준 시험 74/74 통과; 51.062초
+  npm_test: 최종 코드 77/77 통과; 51.577초
+  harness_verification: 최종 코드 77/77 통과; 52.329초; 같은 공통 시험의 반복이므로 독립 증거로 세지 않음
+  test_count_note: 새 동작 시험 4개를 node:test로 등록; 기존 파일 단위 1개 집계를 대체하여 총계는 74에서 77로 증가
+  preservation: 기존 여섯 골든과 SGHS 네 입력의 직렬화된 전체 결과 SHA256이 수정 전과 일치; 기존 사용자 변경 3개 파일도 해시 일치
+  sghs_fixture: 원래 입력 유지; B1/B2 보완 입력은 각 0대 INFEASIBLE·기둥 39개·진입/진출 unconnected와 기존 실패 원인 재현
+  static_checks: 구문 검사 및 git diff --check 통과
+  run_id: 20261029-012100-UG-SGHS-INTERSECTIONS-001-9d8a0bc0
+  evidence: C:/Users/seok2/.codex/research/SGHS-P1-20261029; before.json·after.json·npm-test.log·baseline-verification.json/log
+  independent_review: 미실시; 구조 관련 코드이므로 필수 검토는 대기; 다른 모델·서브에이전트 호출 금지 유지; 자체 검증은 독립 검토가 아님
+  user_visual_review: P1에서 화면·현재 SGHS 입력을 변경하지 않음; 화면 편집·저장 연결과 원도 예외 적용은 후속 P2 범위
+  pending_reason: 독립 검토와 사용자 확인 미완료로 VERIFYING 유지; ACCEPTED 및 차량 단계 종료를 선언하지 않음
+limitations:
+  - 엔진 API 기반만 제공; 화면 입력과 저장·취소·복원 및 결과 메타데이터는 아직 교점 레코드를 전달하지 않음
+  - wall-integrated는 물리 부재 보존과 코어 참조만 검사; 실제 벽체 결합 형상·중복 기호 통합은 후속 P3 범위
+  - 구조 안전성 및 실제 조향·회차·교행을 보증하지 않으며 SGHS 램프 착지·차로 생성 실패는 별도 작업

@@ -107,7 +107,8 @@ function defaultDoc() {
     cores: [{c: W([-5, 25]), w: 9000, d: 7000}, {c: W([20, 0]), w: 9000, d: 7000}], ramp: {p: W([-22, 34.2]), k: 0, len: 24000, w: 6000}, snap: 1000, module: 'normal'};
 }
 function validDoc(d) {
-  if(d?.columnAxes!==undefined){try{UGP.grid.normalize({mass:d.mass,grid:{columnAxes:d.columnAxes}});}catch(e){return false;}}
+  if(d?.referenceColumnMm!==undefined&&(!Number.isFinite(d.referenceColumnMm)||d.referenceColumnMm<=0))return false;
+  if(d?.columnAxes!==undefined){try{UGP.grid.normalize({mass:d.mass,grid:{columnAxes:d.columnAxes,...(d.referenceColumnMm!==undefined?{columnMm:d.referenceColumnMm}:{})}});}catch(e){return false;}}
   const ok = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
   return d && d.v === 2 && Number.isFinite(d.ucs) && Array.isArray(d.mass) && d.mass.length >= 3 && d.mass.every(ok) && Array.isArray(d.cores) && d.cores.every((c) => ok(c.c) && c.w > 0 && c.d > 0) && d.ramp && ok(d.ramp.p) && d.ramp.len > 0 && d.ramp.w > 0 && (d.ramp.alignedAngleDeg === undefined || Number.isFinite(d.ramp.alignedAngleDeg));
 }
@@ -210,7 +211,7 @@ function evaluateCurveRamp(curve,plan,mass=doc.mass) {
 }
 // 구조열(격자 위상): 매스·UCS·모듈이 바뀌어 확정될 때만 엔진이 다시 고르고(실제 대수 비교) 문서에 적는다.
 //   코어·램프를 고치는 동안과 끄는 중 미리 보기는 적어 둔 위상을 그대로 쓴다(설계안 결정 ②). 실행 취소하면 위상도 같이 돌아간다
-const phaseKey = () => JSON.stringify([doc.mass,doc.ucs,doc.module,...(doc.columnAxes?[doc.columnAxes]:[])]);
+const phaseKey = () => JSON.stringify([doc.mass,doc.ucs,doc.module,...(doc.columnAxes?[doc.columnAxes]:[]),...(doc.referenceColumnMm!==undefined?[doc.referenceColumnMm]:[])]);
 const phaseMatches = () => {if(doc.phase?.key===phaseKey())return true;try{const old=JSON.parse(doc.phase?.key);return Array.isArray(old)&&old.length===5&&JSON.stringify(old.slice(0,3))===phaseKey();}catch(e){return false;}};
 const docPhase = () => (doc.phase && (ui.drag || phaseMatches()) ? doc.phase.p : undefined);
 function planningMass(ramp) {
@@ -238,7 +239,7 @@ function changeCoreEv(i,ev){
 }
 const planInput = () => {
   const ramp=rampSpec(doc.ramp),boundary=planningMass(ramp);
-  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const selected=referenceScene&&c.referenceEnvelopeOnly?null:l;const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return selected?{...fixed,layouts:selected}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.columnAxes?{columnAxes:doc.columnAxes}:{})},floorMm:referenceScene&&doc.ramp.referenceVisibleOnly?undefined:projectFloor(),phase:docPhase()};
+  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const selected=referenceScene&&c.referenceEnvelopeOnly?null:l;const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return selected?{...fixed,layouts:selected}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.referenceColumnMm!==undefined?{columnMm:doc.referenceColumnMm}:{}),...(doc.columnAxes?{columnAxes:doc.columnAxes}:{})},floorMm:referenceScene&&doc.ramp.referenceVisibleOnly?undefined:projectFloor(),phase:docPhase()};
 };
 function solveCurveInput(input) {
   let draft,placedCurve=input.ramp;
@@ -886,7 +887,7 @@ async function startPlan(){
   if(referenceScene){
     await import('./sghs-reference.js');
     const data=window.SGHSReference,f=data.floors.find(f=>f.id===referenceScene.floor);
-    if(!f||!['before','revised'].includes(referenceScene.revision))throw Error('SGHS 층 또는 입력 버전을 확인하세요');
+    if(!f||!['before','revised','landing','aligned','clearance'].includes(referenceScene.revision)||!f[referenceScene.revision])throw Error('SGHS 층 또는 입력 버전을 확인하세요');
     MODULES.sghs={name:'SGHS 시험 모듈 · 칸·벽·기둥 치수는 가정',grid:data.grid};
     SITE.splice(0,SITE.length,...structuredClone(data.site));
     doc=load()||structuredClone(f[referenceScene.revision]);
@@ -895,7 +896,7 @@ async function startPlan(){
     document.querySelector('.project .eyebrow').textContent='동대문구 구민회관 · SGHS';
     document.querySelector('.floor-tab').textContent=f.id+' '+f.label+' 평면도';
     document.querySelector('.sheet-heading h1').textContent=f.label+' 평면도';
-    document.querySelector('.sheet-heading p').textContent='SGHS · '+(referenceScene.revision==='before'?'보완 전 입력':'보완 입력')+' / 추정 치수 포함';
+    document.querySelector('.sheet-heading p').textContent='SGHS · '+({before:'보완 전 입력',revised:'보완 입력',landing:'착지 검토 · 상부 벽 기준선 추정',aligned:'피드백 보정 · 외벽 내측 기준 / 벽 두께 가정',clearance:'원본 작동 전제 · 순폭 6m 역산'}[referenceScene.revision])+' / 추정 치수 포함';
     document.querySelector('.sheet-caption strong').textContent=f.label+' 평면도';
     $('north').style.display='none'; // Drawing-up is not a verified geographic north direction.
     $('plan').setAttribute('aria-label','편집 가능한 SGHS '+f.label+' 주차 평면도');

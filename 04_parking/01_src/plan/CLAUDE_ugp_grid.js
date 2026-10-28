@@ -21,6 +21,22 @@
     return out;
   }
 
+  function columnIntersections(raw, axes, cores) {
+    if (!axes || !Array.isArray(raw) || raw.length > axes.x.length * axes.y.length) throw new RangeError('columnIntersections는 고정 구조축의 교점 예외 배열이어야 합니다');
+    const seen = new Set(), text = v => typeof v === 'string' && v.trim().length > 0;
+    return Array.from(raw, record => {
+      if (!record || typeof record !== 'object' || Array.isArray(record) || Object.keys(record).some(k => !['ix', 'iy', 'state', 'reason', 'source', 'coreId'].includes(k))) throw new RangeError('columnIntersections: 알 수 없는 교점 필드입니다');
+      const {ix, iy, state, reason, source, coreId} = record, key = `${ix},${iy}`;
+      if (!Number.isInteger(ix) || !Number.isInteger(iy) || ix < 0 || iy < 0 || ix >= axes.x.length || iy >= axes.y.length || seen.has(key)) throw new RangeError('columnIntersections: 교점 인덱스 범위와 중복을 확인하세요');
+      if (!['omitted', 'wall-integrated'].includes(state) || !text(reason) || (source !== undefined && !text(source))) throw new RangeError('columnIntersections: 교점 상태·사유·출처를 확인하세요');
+      if (state === 'wall-integrated') {
+        if (!text(coreId) || !Array.isArray(cores) || cores.filter(c => c?.id === coreId).length !== 1) throw new RangeError('columnIntersections: 벽체 통합은 유일한 코어 식별자를 참조해야 합니다');
+      } else if (Object.prototype.hasOwnProperty.call(record, 'coreId')) throw new RangeError('columnIntersections: 생략 교점은 coreId를 지정하지 않습니다');
+      seen.add(key);
+      return {...record};
+    });
+  }
+
   function normalize(input) {
     if (!input || !Array.isArray(input.mass) || input.mass.length < 3) throw new TypeError('지하층 외곽(mass)이 필요합니다');
     const cfg = {...DEFAULTS, ...(input.grid || {})};
@@ -29,6 +45,7 @@
       if (!Number.isFinite(cfg.columnMm)) throw new RangeError('columnMm 값이 올바르지 않습니다');
       cfg.columnAxes = columnAxes(cfg.columnAxes, cfg.columnMm);
     }
+    if (Object.prototype.hasOwnProperty.call(cfg, 'columnIntersections')) cfg.columnIntersections = columnIntersections(cfg.columnIntersections, cfg.columnAxes, input.cores);
     const a = cfg.aisleMm ?? (2 * cfg.gy - 2 * cfg.stallD), n = Math.floor((cfg.gx - cfg.columnMm) / cfg.stallW);
     if (a < 6000) throw new RangeError(`세로 기둥 간격 ${cfg.gy}mm로는 차로가 ${a}mm라 6m보다 좁습니다`);
     if (n < 1) throw new RangeError('가로 기둥 간격에 칸이 들어가지 않습니다');
@@ -45,6 +62,8 @@
     const b = bbox(inner);
     const G = {cfg, a, n, ucs, d, gy: cfg.gy, L, W: (p) => rot(p, ucs), inner, b, lostParts, P: 2 * cfg.gy, X0: 0, Y0: 0};
     G.columnAxes = cfg.columnAxes || null;
+    const omitted = new Set((cfg.columnIntersections || []).filter(r => r.state === 'omitted').map(r => `${cfg.columnAxes.x[r.ix]},${cfg.columnAxes.y[r.iy]}`));
+    G.columnExists = omitted.size ? (x, y) => !omitted.has(`${x},${y}`) : () => true;
     G.lineY = (m) => G.Y0 + m * G.gy;
     G.midX = (i) => G.X0 + (i + .5) * G.cfg.gx;
     return G;

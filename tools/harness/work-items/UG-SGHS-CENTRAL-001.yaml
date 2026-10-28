@@ -1,0 +1,57 @@
+id: UG-SGHS-CENTRAL-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: 파란 표시의 중앙 남측 가지가 기존 원본 추적 가로 동선과 동일 접속점을 공유하는가?
+user_context: 2026-10-29 순폭 역산 화면의 중앙 남측 파란 표시 구간에도 중심선 연결 요청
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-CENTRAL-001.yaml
+acceptance:
+  - 원본 작동 및 6m 순폭 전제 유지; 중앙 양측 추적 주차열 사이에서 중심과 말단 도출
+  - 기존 가로 동선에 분기점을 명시하고 새 가지와 같은 좌표 공유
+  - 추적 연결망 그래프에서 램프 쪽 시작점부터 새 말단까지 도달 확인
+  - 접속점이 떨어진 반례는 도달 실패; 선의 시각적 교차만으로 연결 선언 금지
+  - 새 가지의 6m 면과 양측 주차열 접면 및 구조/코어/실 충돌 검사
+  - clearance 추적만 보완; 모든 기존 엔진 입력·계산 결과·저장과 B2 보존
+not_doing:
+  - 추적선을 자동 생성 차로·대수에 합성
+  - 엔진 생성기·검사·골든값·구조축/기둥 변경
+  - 원본 작동 여부 재판정 또는 회차/조향 구현
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 4
+max_new_production_lines: 400
+start_gate:
+  contribution: 원본 연결 관계의 빠진 중앙 남측 가지를 보완
+  reference_change: clearance 참고 연결선/차로 면만 추가; 과거 엔진 입력 보존
+  excluded_scope: 자동 생성기 연결은 후속 단위이며 이번에는 추적 연결 관계를 검증
+results:
+  implementation_rounds: 1
+  connection: clearance 추적의 중앙 가로 동선에 X=33000/Y=19500 분기점 삽입; 같은 점에서 Y=5600까지 중앙 남측 가지 연결
+  derivation: 남서측 쌍열 우측 X=30000과 남측 단열 좌측 X=36000의 중간 X=33000; 추적 주차열 하단 Y=5600
+  width: 중앙 면 6000mm·길이 13900mm; 양쪽 주차열 앞면 전체 접촉 및 실내 면 안 포함 확인
+  obstacles: 기둥 400/600/800mm 가정 모두에서 중앙 가지 면과 기둥·코어·실·추적 주차열의 면적 겹침 0
+  graph: 참고 연결망 12노드·11구간·램프 쪽 시작점에서 12노드 전부 도달; 중앙 접속점 차수 3으로 T자 연결
+  counterexample: 가지 시작점을 가로선보다 500mm 아래로 떼면 총 13노드 중 11개만 도달하며 새 말단 도달 실패
+  display: 중앙 가지 중심선·6m 참고 면·순폭 치수·T 접속점 표식 추가; 표시 토글/재열기 유지
+  baseline: preflight 86/86; 50.698초
+  npm_test: 88/88; 50.519초
+  harness_verification: 88/88; 50.947초; 공통 시험 반복이며 독립 검토로 세지 않음
+  preservation: 기존 여섯 골든·SGHS 네 초기 입력·landing·aligned·clearance의 전체 엔진 계산 결과 SHA256 동일; 엔진 입력과 이전 시험 보존
+  automatic_model: 모형 후보 9칸·INFEASIBLE 그대로; 추적 가지를 자동 생성 입력/대수에 합성하지 않음
+  browser: 같은 SVG 접속 좌표와 T 표식·세 개 6m 면·기둥 겹침 0·표시 토글·재열기·과거 aligned/B2 표시 유지·일반 장면 저장 보존; pageerror 0·HTTP 오류 0·720px 가로 넘침 없음
+  screen: http://127.0.0.1:8874/04_parking/sghs-compare.html?floor=B1&revision=clearance
+  run_id: 20261029-030410-UG-SGHS-CENTRAL-001-28a92d88
+  evidence: C:/Users/seok2/.codex/research/SGHS-CENTRAL-20261029; graph-evidence.json·browser-evidence.json·central-connection.png·before.json·after.json
+  independent_review: 미실시; 다른 모델·서브에이전트 호출 없음; 자체 시험은 독립 검토가 아님
+  user_visual_review: 대기; 파란 표시 위치의 새 가지와 접속점 확인 필요
+  conclusion: 원본 작동 전제 아래 참고 동선 연결 보완과 자체 검증 완료; 자동 생성기 단계 종료는 선언하지 않음
+limitations:
+  - 이번 연결은 원본 추적 연결망의 보완이며 자동 차로 생성기의 연결 구현은 별도
+  - 좌표와 폭은 합의한 추적 모형 기준이며 실측값으로 표시하지 않음

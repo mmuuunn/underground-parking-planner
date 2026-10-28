@@ -346,3 +346,253 @@ console.log('issues ok');
   assert.strictEqual(E._emptyIslands(out, [stall(12000, 15000), stall(15000, 15000), stall(18000, 15000)]).length, 0, '칸 3대 섬을 빈 섬으로 봄');
 }
 console.log('empty island ok');
+
+// 교점 예외는 구조축 전체가 아닌 지정한 기둥에만 적용한다.
+{
+  const {test} = require('node:test');
+  const Grid = require('../01_src/plan/CLAUDE_ugp_grid.js'), Layout = require('../01_src/plan/CLAUDE_ugp_layout.js');
+  const CoreFit = require('../01_src/plan/core-fit.js'), Gm = require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const axes = {x: [10000,19000,25000,33400], y: [12000,21000,30000]};
+  const base = {mass: M(box), cores: [{id:'C',c:[25000,30000],w:4000,d:4000,keep:{x:true,y:true}}], ramp:ramp(30,52,0), grid:{columnAxes:axes}, phase:[6000,8000]};
+  const omitted = {ix:1,iy:1,state:'omitted',reason:'원도 대조',source:'test drawing'};
+  const integrated = {ix:2,iy:2,state:'wall-integrated',reason:'코어벽 부재',coreId:'C'};
+  const withRecords = records => ({...base,grid:{...base.grid,columnIntersections:records}});
+  const centers = r => r.columns.map(P => { const b=Gm.bbox(P); return [(b[0]+b[2])/2,(b[1]+b[3])/2]; });
+
+  test('intersection input rejects invalid, sparse, duplicate and unreferenced records', () => {
+    const invalid = [null,{},'omitted',[null],new Array(1),[{}],
+      [{...omitted,ix:-1}],[{...omitted,ix:axes.x.length}],[{...omitted,iy:axes.y.length}],
+      [{...omitted,ix:.5}],[{...omitted,iy:NaN}],[{...omitted,ix:'1'}],
+      [omitted,{...omitted}],[{...omitted,state:'column'}],[{...omitted,state:'omittted'}],
+      [{...omitted,reason:' '}],[{...omitted,reason:1}],[{...omitted,source:42}],
+      [{...omitted,extra:true}],[{...omitted,coreId:'C'}],
+      [{...integrated,coreId:undefined}],[{...integrated,coreId:'missing'}]];
+    for (const records of invalid) assert.throws(() => E.generate(withRecords(records)), /columnIntersections/);
+    assert.throws(() => E.generate({...base,grid:{columnIntersections:[]}}), /columnIntersections/);
+    assert.throws(() => E.generate({...withRecords([integrated]),cores:[]}), /columnIntersections/);
+    assert.throws(() => E.generate({...withRecords([integrated]),cores:[base.cores[0],base.cores[0]]}), /columnIntersections/);
+    const input=withRecords([omitted,integrated]), before=structuredClone(input), normalized=Grid.normalize(input);
+    assert.notStrictEqual(normalized.cfg.columnIntersections,input.grid.columnIntersections);
+    normalized.cfg.columnIntersections[0].reason='changed';
+    assert.deepStrictEqual(input,before,'normalization must not mutate source records');
+  });
+
+  test('only an explicitly omitted fixed intersection disappears; wall integration preserves structure', () => {
+    const original=E.generate(base), input=withRecords([omitted,integrated]), before=structuredClone(input), r=E.generate(input);
+    const expected=original.columns.filter(P => {const b=Gm.bbox(P);return (b[0]+b[2])/2!==19000 || (b[1]+b[3])/2!==21000;});
+    assert.equal(original.columns.length,12);assert.deepStrictEqual(r.columns,expected);
+    assert(centers(r).some(([x,y])=>x===19000&&y===12000),'same X axis must survive');
+    assert(centers(r).some(([x,y])=>x===10000&&y===21000),'same Y axis must survive');
+    assert.deepStrictEqual(r.cores,original.cores);assert.deepStrictEqual(r.ramp,original.ramp);
+    assert.deepStrictEqual(r.innerOutline,original.innerOutline);assert.deepStrictEqual(input,before);
+    assert.deepStrictEqual(E.generate(withRecords([])),original,'empty exceptions preserve the full result');
+    assert.deepStrictEqual(E.generate(withRecords([integrated])),original,'integration cannot erase a physical collision');
+    assert(r.violations.some(v=>v.id==='FIXED_COLUMN_BLOCKS_ROUTE'),'remaining fixed blockers must still be reported');
+    assert.notEqual(r.status,'FEASIBLE');
+  });
+
+  test('intersection omissions follow fixed axes through phase changes, coordinate edits and UCS rotation', () => {
+    const input=withRecords([omitted]), original=E.generate(input);
+    assert.deepStrictEqual(E.generate({...input,phase:[2000,3000]}).columns,original.columns);
+    const changedAxes={x:[10000,20000,25000,33400],y:axes.y.slice()}, frame=Grid.frame({...input,grid:{...input.grid,columnAxes:changedAxes}});
+    Grid.setPhase(frame,[0,0]);
+    const moved=centers({columns:Layout.placeColumns(frame,[],null)});
+    assert(!moved.some(([x,y])=>x===20000&&y===21000));assert(moved.some(([x,y])=>x===20000&&y===12000));
+    const rotated=E.generate({...input,ucs:90,mass:input.mass.map(p=>Gm.rot(p,90)),cores:input.cores.map(c=>({...c,c:Gm.rot(c.c,90)})),ramp:{...input.ramp,x:-52000,y:30000,angleDeg:90}});
+    assert.deepStrictEqual(rotated.columns,original.columns.map(P=>P.map(p=>Gm.rot(p,90).map(Math.round))));
+  });
+
+  test('core fitting and wall geometry never resurrect an omitted column or hide an integrated one', () => {
+    const columnAxes={x:[18000,20000,22000,30000],y:[18000,20000,22000,30000]};
+    const alt={id:'test-hall',outer:{w:4000,h:4000},t:200,rooms:{H:[{x0:200,y0:200,x1:3800,y1:3800}]},doors:[{id:'ENT',orient:'h',axis:0,center:2000,width:1000}]};
+    const core={id:'hall',c:[20000,20000],w:4000,d:4000,keep:{x:true,y:true},facing:'S',layouts:[alt]};
+    const fit = records => {
+      const frame=Grid.frame({mass:M(box),cores:[core],grid:{columnAxes,...(records?{columnIntersections:records}:{})}});
+      Grid.setPhase(frame,[0,0]);return {frame,result:CoreFit.fit(frame,core,[])};
+    };
+    const full=fit(), removed=fit([{ix:1,iy:1,state:'omitted',reason:'홀 내부 기둥 생략'}]);
+    assert(full.result&&removed.result);assert.deepStrictEqual(removed.result.r,full.result.r);
+    assert(full.result.cols.some(([x,y])=>x===20000&&y===20000));
+    assert.deepStrictEqual(removed.result.cols,full.result.cols.filter(([x,y])=>x!==20000||y!==20000));
+    assert.equal(removed.result.roomCols,full.result.roomCols-1);
+    const physical=centers({columns:Layout.placeColumns(removed.frame,[],null)});
+    assert(removed.result.cols.every(p=>physical.some(q=>p[0]===q[0]&&p[1]===q[1])));
+    const centerColumn=Gm.rectPoly([19700,19700,20300,20300]);
+    const overlap = result => Math.abs(Gm.areaOf(Gm.boolOp(CoreFit.geometry(result).walls,[centerColumn],Gm.CL.ClipType.ctIntersection)));
+    assert.equal(overlap(full.result),360000);assert.equal(overlap(removed.result),0);
+    const wall=fit([{ix:0,iy:1,state:'wall-integrated',reason:'벽과 결합',coreId:'hall'},{ix:1,iy:1,state:'wall-integrated',reason:'충돌 검사를 유지할 반례',coreId:'hall'}]);
+    assert.deepStrictEqual(wall.result.cols,full.result.cols);
+    assert.equal(wall.result.roomCols,full.result.roomCols);assert.equal(wall.result.loose,full.result.loose);
+    assert.deepStrictEqual(CoreFit.geometry(wall.result).walls,CoreFit.geometry(full.result).walls);
+  });
+}
+
+// B1 착지 검토는 별도 입력이며 기존 r1과 검사 기준을 바꾸지 않는다.
+{
+  const {test}=require('node:test'), F=require('../01_src/sghs-reference.js');
+  const Gm=require('../01_src/plan/CLAUDE_ugp_geom.js'), Ver=require('../01_src/plan/CLAUDE_ugp_verify.js');
+  const engineInput = d => {
+    d=structuredClone(d);const rp=d.ramp;
+    return {...d,grid:{...F.grid,columnAxes:d.columnAxes},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+  };
+  test('B1 north wall datum trial restores landing while preserving walls and all fixed elements', () => {
+    const f=F.floors[0], oldInput=engineInput(f.revised), input=engineInput(f.landing), before=structuredClone(input);
+    const old=E.generate({...oldInput,phase:[6000,8000]}), fixed=E.generate({...input,phase:[6000,8000]}), automatic=E.generate(input);
+    assert.equal(old.graph.rootId,null);assert(old.violations.some(v=>v.id==='LANDING'));
+    for(const r of [fixed,automatic]){
+      assert(Number.isInteger(r.graph.rootId));assert(r.graph.edges.some(e=>e.ok&&e.reached));
+      assert(!r.violations.some(v=>['LANDING','EDGE_OFF_AISLE'].includes(v.id)));
+      assert.equal(Gm.bbox(input.mass)[3]-Gm.bbox(r.innerOutline)[3],400,'physical wall thickness is retained');
+      assert.equal(Gm.bbox(r.innerOutline)[3],f.landingBoundary.sourceInnerY);
+      assert.deepStrictEqual(r.columns,old.columns);assert.deepStrictEqual(r.cores,old.cores);assert.deepStrictEqual(r.ramp.body,old.ramp.body);
+      assert.deepStrictEqual(r.ramp.landing,old.ramp.landing);assert.equal(r.ramp.shiftMm,0);
+      assert.equal(r.status,'INFEASIBLE');assert.equal(r.ramp.approach.accepted,false);
+      for(const id of ['RAMP_OFFGRID','COLUMN_IN_AISLE','NO_LOOP'])assert(r.violations.some(v=>v.id===id),id+' remains a failure');
+    }
+    assert(automatic.stallCount>0,'automatic phase may provide access candidates without certifying the whole route');
+    assert.deepStrictEqual(input,before);assert.deepStrictEqual(f.landing.cores,f.revised.cores);assert.deepStrictEqual(f.landing.ramp,f.revised.ramp);
+    assert.deepStrictEqual(f.landing.columnAxes,f.revised.columnAxes);assert.equal(f.landingBoundary.certainty,'estimated');
+    assert.equal(F.floors[1].landing,undefined,'the B1 interpretation must not leak into B2');
+  });
+  test('restoring the old boundary or obstructing the B1 landing still rejects the connection', () => {
+    const input=engineInput(F.floors[0].landing), p=input.ramp.landing;
+    const blocked={...input,occupants:input.occupants.concat({id:'landing-obstruction',c:[p[0]-1500,p[1]],w:3000,d:6000})};
+    for(const x of [{...input,mass:F.floors[0].revised.mass},blocked]){
+      const r=E.generate(x);assert.equal(r.graph.rootId,null);assert(r.violations.some(v=>v.id==='LANDING'));
+      assert.equal(r.graph.edges.filter(e=>e.reached).length,0);assert.equal(r.stallCount,0);assert.equal(r.status,'INFEASIBLE');
+    }
+  });
+  test('a valid landing does not certify parking after the onward graph is disconnected', () => {
+    const input=engineInput(F.floors[0].landing), r=E.generate(input), root=r.graph.rootId;
+    assert(r.stallCount>0&&Number.isInteger(root));
+    const broken={...r,graph:{nodes:r.graph.nodes,edges:r.graph.edges.filter(e=>e.a!==root&&e.b!==root).map((e,i)=>({...e,id:i}))}};
+    const check=Ver.check(broken,input);assert.equal(check.rootId,root);assert.equal(check.hasLoop,false);
+    assert.equal(check.counts.unreachable,r.stallCount);assert.equal(check.status,'INFEASIBLE');
+  });
+}
+
+// 사용자 피드백 입력과 폭을 가진 추적 차로는 자동 생성 결과와 별도로 검토한다.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js'),Gm=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const f=F.floors[0],tr=f.alignedTrace;
+  const inputFor = d => {d=structuredClone(d);const rp=d.ramp;return {...d,grid:{...F.grid,columnAxes:d.columnAxes},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};};
+  const overlap = (A,B) => Math.abs(Gm.areaOf(Gm.boolOp(A,B,Gm.CL.ClipType.ctIntersection)));
+  test('B1 feedback input aligns only the C1 right face and keeps the accepted inner wall datum', () => {
+    const oldInput=inputFor(f.landing),input=inputFor(f.aligned),before=structuredClone(input),old=E.generate(oldInput),r=E.generate(input);
+    const a=Gm.bbox(old.cores[0].pts),b=Gm.bbox(r.cores[0].pts);
+    assert.deepStrictEqual([b[0],b[1],b[3]],[a[0],a[1],a[3]]);assert.equal(b[2],input.grid.columnAxes.x[3]);
+    assert.equal(a[2]-b[2],1000);assert.equal(input.cores[0].w,3000);
+    assert.deepStrictEqual(r.cores.slice(1),old.cores.slice(1));assert.deepStrictEqual(r.columns,old.columns);assert.equal(r.columns.length,39);
+    assert.deepStrictEqual(r.ramp.body,old.ramp.body);assert.deepStrictEqual(input.mass,oldInput.mass);
+    assert.equal(Gm.bbox(r.innerOutline)[3],47300);assert.equal(input.grid.wallMm,400);
+    assert.equal(f.alignedBoundary.certainty,'user_confirmed');assert.equal(f.alignedBoundary.wallCertainty,'assumed');
+    assert(Number.isInteger(r.graph.rootId));assert(r.stallCount>0);assert.equal(r.status,'INFEASIBLE');
+    for(const id of ['RAMP_OFFGRID','COLUMN_IN_AISLE','NO_LOOP'])assert(r.violations.some(v=>v.id===id));
+    assert.deepStrictEqual(input,before);assert.equal(input.routes,undefined);assert.equal(F.floors[1].aligned,undefined);
+  });
+  test('terminal reference aisles reach the lower row fronts inside the floor without consuming parking or cores', () => {
+    const input=inputFor(f.aligned),r=E.generate(input);
+    assert.equal(tr.widthMm,6000);assert.equal(tr.certainty,'estimated');
+    for(let i=0;i<2;i++){
+      const a=tr.terminalAisles[i],front=tr.fronts[i],b=Gm.bbox(a.polygon);
+      assert.equal(b[2]-b[0],6000);assert.deepStrictEqual(Gm.clipSeg(...front.points,b),[0,1]);
+      const route=tr.routes.find(x=>x.id===(i?'동측 남부 가지':'서측 남부 가지'));
+      assert.equal(route.points.at(-1)[1],front.points[0][1]);assert.equal(route.points.at(-1)[1],1800);
+      const outside=Math.abs(Gm.areaOf(Gm.boolOp([a.polygon],[r.innerOutline],Gm.CL.ClipType.ctDifference)));
+      assert.equal(outside,0);assert.equal(overlap([a.polygon],f.rows.map(x=>x.polygon)),0);
+      assert.equal(overlap([a.polygon],r.cores.map(x=>x.pts).concat(r.occupants.map(x=>x.pts))),0);
+    }
+    assert.deepStrictEqual(tr.routes.find(x=>x.id==='서측 남부 가지').points.at(-1),[17000,1800]);
+    assert.deepStrictEqual(tr.routes.find(x=>x.id==='동측 남부 가지').points.at(-1),[60700,1800]);
+  });
+  test('short or narrow terminal surfaces fail front coverage and overlapping fixed columns remain visible', () => {
+    for(let i=0;i<2;i++){
+      const b=Gm.bbox(tr.terminalAisles[i].polygon),front=tr.fronts[i].points;
+      assert.notDeepStrictEqual(Gm.clipSeg(...front,[b[0],b[1]+3000,b[2],b[3]]),[0,1]);
+      assert.equal(Gm.clipSeg(...front,[b[0]+100,b[1],b[2]-100,b[3]]),null);
+    }
+    const r=E.generate(inputFor(f.aligned)),bands=tr.terminalAisles.map(a=>a.polygon),hits=r.columns.filter(P=>overlap([P],bands)>0);
+    assert.equal(hits.length,2);assert.equal(overlap(hits,bands),360000);
+    assert.deepStrictEqual(hits.map(P=>Gm.bbox(P)),tr.columnConflicts.map(c=>Gm.bbox(c.polygon)));
+    assert.deepStrictEqual(tr.columnConflicts.map(c=>c.id),['X2/Y1','X2/Y2']);
+    assert.equal(r.status,'INFEASIBLE','source overlays must not erase a failing automatic verdict');
+  });
+}
+
+// 원본 작동과 6m 순폭은 사용자 전제이며 이를 만족하는 추적 모형을 역산한다.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js'),Gm=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const inputFor = d => {d=structuredClone(d);const rp=d.ramp;return {...d,grid:{...F.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm??F.grid.columnMm},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};};
+  const overlap = (A,B) => Math.abs(Gm.areaOf(Gm.boolOp(A,B,Gm.CL.ClipType.ctIntersection)));
+  test('inverse reference retains 6m net clearance and 5m parking for different assumed column sizes', () => {
+    for(const columnMm of [400,600,800]){
+      const c=F.calibrateClearance(columnMm),r=E.generate(inputFor(c.input));
+      assert.equal(c.trace.columnMm,columnMm);assert.equal(c.trace.columnConflicts.length,0);assert.equal(c.boundary.certainty,'user_assumption');
+      for(let i=0;i<2;i++){
+        const b=Gm.bbox(c.trace.terminalAisles[i].polygon),axis=c.input.columnAxes.x[i?7:1];
+        assert.equal(b[2],axis-columnMm/2);assert.equal(b[2]-b[0],6000);
+        assert.deepStrictEqual(Gm.clipSeg(...c.trace.fronts[i].points,b),[0,1]);
+        assert.equal(overlap([c.trace.terminalAisles[i].polygon],r.columns),0);
+        assert.equal(overlap([c.trace.terminalAisles[i].polygon],r.cores.map(x=>x.pts).concat(r.occupants.map(x=>x.pts))),0);
+      }
+      for(const row of c.trace.rows.filter(x=>x.id==='서측 외벽'||x.id.startsWith('동측'))){
+        const b=Gm.bbox(row.polygon);assert.equal(b[2]-b[0],5000);
+        assert.equal(Math.abs(Gm.areaOf(Gm.boolOp([row.polygon],[r.innerOutline],Gm.CL.ClipType.ctDifference))),0);
+        assert.equal(overlap([row.polygon],c.trace.terminalAisles.map(x=>x.polygon)),0);
+      }
+    }
+  });
+  test('600mm inverse model preserves structure and separates its premise from the automatic verdict', () => {
+    const f=F.floors[0],c=F.calibrateClearance(600),r=E.generate(inputFor(f.clearance)),old=E.generate(inputFor(f.aligned)),q=c.equation;
+    assert.equal(q.westColumnFaceMm,19700);assert.equal(q.westParkingFrontMm,13700);assert.equal(q.westParkingBackMm,8700);assert.equal(q.westCenterMm,16700);
+    assert.equal(q.eastColumnFaceMm,63750);assert.equal(q.eastParkingFrontMm,63750);assert.equal(q.eastCenterMm,60750);
+    assert.equal(q.westRowShiftMm,-300);assert.equal(q.eastRowShiftMm,50);
+    assert.equal(Gm.bbox(r.innerOutline)[0],q.sourceWestInnerX);assert.equal(q.sourceWestInnerX-q.outerWestX,400);
+    assert.equal(r.columns.length,39);assert.deepStrictEqual(r.columns,old.columns);assert.deepStrictEqual(r.cores,old.cores);assert.deepStrictEqual(r.ramp.body,old.ramp.body);
+    assert.equal(r.status,old.status,'the source premise must not fabricate an engine pass');
+    assert.equal(F.floors[1].clearance,undefined);assert.equal(inputFor(f.clearance).routes,undefined);
+  });
+  test('inverse input rejects invalid dimensions and returns independent geometry copies', () => {
+    for(const x of [null,0,-1,NaN,Infinity,'600'])assert.throws(()=>F.calibrateClearance(x),/기둥 폭/);
+    const f=F.floors[0],before=JSON.stringify([f.aligned,f.rows,f.alignedTrace]),c=F.calibrateClearance(600);
+    c.input.cores[0].w=1;c.trace.rows[0].polygon[0][0]=0;c.trace.routes[0].points[0][0]=0;
+    c.trace.terminalAisles[0].polygon[0][0]=0;c.trace.fronts[0].points[0][0]=0;
+    assert.equal(JSON.stringify([f.aligned,f.rows,f.alignedTrace]),before);
+  });
+}
+
+// 파란 표시의 중앙 가지는 가로 동선과 실제 분기점을 공유한다.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js');
+  const Net=require('../01_src/plan/CLAUDE_ugp_network.js'),Gm=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const connected = routes => {
+    const graph=Net.buildGraph(routes.flatMap(r=>r.points.slice(1).map((b,i)=>({a:r.points[i],b,kind:'reference'}))));
+    const first=routes[0].points[0],root=graph.nodes.find(n=>Gm.len(Gm.sub(n.p,first))<1),seen=new Set([root.id]),todo=[root.id];
+    while(todo.length){const u=todo.pop();for(const e of graph.edges){const v=e.a===u?e.b:e.b===u?e.a:null;if(v!==null&&!seen.has(v)){seen.add(v);todo.push(v);}}}
+    return {graph,seen};
+  };
+  test('central south branch shares a T junction and is reachable from the traced ramp entry', () => {
+    const tr=F.floors[0].clearanceTrace,c=tr.centralConnection;
+    assert.deepStrictEqual(c.junction,[33000,19500]);assert.deepStrictEqual(c.end,[33000,5600]);
+    const parent=tr.routes.find(r=>r.id===c.parentRouteId),branch=tr.routes.find(r=>r.id===c.branchRouteId);
+    assert(parent.points.some(p=>p[0]===c.junction[0]&&p[1]===c.junction[1]));assert.deepStrictEqual(branch.points[0],c.junction);
+    const {graph,seen}=connected(tr.routes),end=graph.nodes.find(n=>n.p[0]===33000&&n.p[1]===5600),join=graph.nodes.find(n=>n.p[0]===33000&&n.p[1]===19500);
+    assert(seen.has(end.id));assert.equal(seen.size,graph.nodes.length);
+    assert.equal(graph.edges.filter(e=>e.a===join.id||e.b===join.id).length,3);
+    const broken=structuredClone(tr.routes);broken.find(r=>r.id===c.branchRouteId).points[0][1]-=500;
+    const bad=connected(broken),badEnd=bad.graph.nodes.find(n=>n.p[0]===33000&&n.p[1]===5600);
+    assert(!bad.seen.has(badEnd.id),'an actual gap must not be accepted as a connected junction');
+  });
+  test('central branch keeps six-metre clearance between both parking fronts and physical obstacles', () => {
+    for(const cm of [400,600,800]){
+      const c=F.calibrateClearance(cm),a=c.trace.terminalAisles.find(x=>x.id==='중앙 남측'),d=structuredClone(c.input),rp=d.ramp;
+      const input={...d,grid:{...F.grid,columnAxes:d.columnAxes,columnMm:cm},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+      const r=E.generate(input),b=Gm.bbox(a.polygon);assert.deepStrictEqual(b,[30000,5600,36000,19500]);
+      assert.equal(b[2]-b[0],6000);assert.equal(c.trace.centralConnection.widthMm,6000);
+      for(const f of c.trace.fronts.slice(-2))assert.deepStrictEqual(Gm.clipSeg(...f.points,b),[0,1]);
+      const obstacles=r.columns.concat(r.cores.map(x=>x.pts),r.occupants.map(x=>x.pts),c.trace.rows.map(x=>x.polygon));
+      assert.equal(Math.abs(Gm.areaOf(Gm.boolOp([a.polygon],obstacles,Gm.CL.ClipType.ctIntersection))),0);
+      assert.equal(Math.abs(Gm.areaOf(Gm.boolOp([a.polygon],[r.innerOutline],Gm.CL.ClipType.ctDifference))),0);
+    }
+  });
+}

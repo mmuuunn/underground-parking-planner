@@ -108,6 +108,7 @@
           const doorR = alt.doors.map((dd) => { const lo = dd.center - dd.width / 2, hi = dd.center + dd.width / 2, ax = dd.axis; return rectOf(to, dd.orient === 'h' ? {x0: lo, y0: ax - alt.t, x1: hi, y1: ax + alt.t} : {x0: ax - alt.t, y0: lo, x1: ax + alt.t, y1: hi}); });
           let roomCols = 0, wallCols = 0, corner = 0, loose = 0; const cols = [];
           for (const x of colX) { if (x < r[0] - hc || x > r[2] + hc) continue; for (const y of cys) { if (y < r[1] - hc || y > r[3] + hc) continue;
+            if (G.columnAxes && !G.columnExists(x, y)) continue;
             const inR = x >= r[0] - 1 && x <= r[2] + 1 && y >= r[1] - 1 && y <= r[3] + 1, touch = x > r[0] - hc + 1 && x < r[2] + hc - 1 && y > r[1] - hc + 1 && y < r[3] + hc - 1;
             if (!touch) continue; cols.push([x, y]);
             if (doorR.some((t) => x + hc > t[0] && x - hc < t[2] && y + hc > t[1] && y - hc < t[3])) { roomCols++; continue; }

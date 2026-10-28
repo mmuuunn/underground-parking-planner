@@ -1,0 +1,69 @@
+id: UG-SGHS-FEEDBACK-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: B1의 C1 우측선과 최하단 주차열 앞 차로 후보를 보정하고 원본 이미지 해석·자동 결과를 구분할 수 있는가?
+user_context: 2026-10-29 사용자 초록/파랑 표시와 외벽 내측선 기준 확인 후 진행 지시
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-FEEDBACK-001.yaml
+acceptance:
+  - B1 별도 피드백 보정 입력; 기존 before/revised/landing와 B2 계산 결과·저장 보존
+  - C1 좌측과 상하 경계 유지; 우측만 기둥열 X=29000에 정렬
+  - 램프 위 외벽의 접한 선은 내측선이라는 사용자 확인과 벽 두께 400mm 임시 가정을 구분
+  - 최하단 좌우 주차열 앞면을 기준으로 폭 6m의 말단 차로 면 후보와 수동 연결선 보정
+  - 접면·외곽 내 포함·기둥/코어 충돌을 구분하여 검토; 충돌 시 자동 삭제·합격 승격 금지
+  - 수동 추적 후보는 자동 생성 입력·대수에 합성하지 않음; 자동 계산 차이와 남은 실패 기록
+  - 새 입력/기존 입력 전환과 별도 저장·재열기·B2 격리 및 실제 화면 대조 확인
+not_doing:
+  - 차로 생성기·차량 검사·허용 공차·골든값 변경
+  - 원도에 없는 기둥 생략을 임의 적용하거나 B2에 동일 예외 복사
+  - 실제 벽 두께·주차칸 치수·조향·회차·교행 확정
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: 합의한 B1 입력과 말단 차로 폭을 확인하여 다음 생성기 실험의 기준을 정리
+  reference_change: 기존 버전은 보존하고 aligned 별도 입력 추가
+  excluded_scope: 말단 후보의 접면 확인을 전체 입출차·회차 가능으로 확대하지 않음
+input_change:
+  variant: B1 aligned 별도 입력; before/revised/landing와 B2는 그대로 유지
+  C1: 좌측 X=26000 및 Y=22800~40800 유지; 우측 X=30000에서 기둥열 29000으로; 폭 4000에서 3000mm
+  wall_basis: 램프 위 외벽 내측선은 사용자 확인 기준; 벽 두께 400mm는 assumed로 구분; 기존 landing 형상 유지
+  terminal_centers: 추적 주차열 앞면과 6m 폭을 맞추어 서측 X=17100에서 17000으로·동측 X=60200에서 60700으로 보정
+  terminal_ends: 서측 Y=4800 및 동측 Y=9000에서 모두 추적 주차열 하단 Y=1800까지 연장
+  terminal_surface: 서측 X=14000~20000·동측 X=57700~63700; Y=1800~19500; 말단을 평평하게 닫은 참고 면이며 엔진 끝단 확장 방식을 바꾸지 않음
+results:
+  implementation_rounds: 1
+  implementation: 피드백 보정 입력·버전 선택·하단 6m 후보 면과 기둥 겹침 표시; 자동 생성기·검사 코드 변경 없음
+  fixed_comparison: 같은 위상 6000/8000에서 landing은 0칸·도달 2구간; C1 보정 후 aligned는 9칸·도달 4구간
+  automatic_comparison: landing은 위상 3800/8000·접근 후보 8칸; aligned는 6000/8000·접근 후보 9칸; 모두 INFEASIBLE
+  preserved_structure: 기둥 39개·램프 형상·다른 코어·외곽 유지; C1 좌측/상하 경계 보존
+  terminal_contact: 두 하단 후보 면이 추적 주차열 앞면을 덮고 실내 면 안에 있으며 주차열/코어/실과 면적 겹침 없음
+  terminal_conflicts: 서측 X2/Y1 및 X2/Y2 가정 기둥 두 곳과 각 0.18㎡·총 0.36㎡ 겹침; 적색 표시하며 부재와 실패 보존
+  interpretation: 기존 점선에는 폭·끝단 면이 정의되지 않았으므로 선 말단 위치만으로 과거 접근 불가를 확정하지 않음; 새 면 후보로 접면과 충돌을 분리
+  counterexamples: 실제 차로 면을 짧게 또는 좁게 만들면 앞면 전체 접촉 실패; 충돌 기둥을 숨기거나 판정을 합격으로 승격하지 않음
+  remaining: RAMP_OFFGRID·CORE_IN_AISLE·FIXED_COLUMN_BLOCKS_ROUTE·COLUMN_IN_AISLE·STALL_NO_FRONT·NO_LOOP·DEAD_END 유지; 전체 진입/진출 미통과
+  baseline: preflight 80/80; 50.279초
+  npm_test: 최종 동작 시험 83/83; 51.269초
+  harness_verification: 최종 파일 기준 83/83; 50.313초; 동일 시험 반복이며 독립 검토로 세지 않음
+  preservation: 기존 여섯 골든·SGHS 네 원래 입력·landing의 전체 계산 결과 SHA256 동일; 기존 버전의 코어·행·추적선·램프 도형도 동일; 이전 시험과 P1 코드/작업표 및 사용자 변경 보존
+  browser: 새 입력/기존 입력 전환·C1 치수·말단 좌표·후보 면/적색 기둥·표시 토글·자동 그림·독립 저장/재열기·B2 차단/복귀·일반 장면 저장 보존 확인; pageerror 0·HTTP 오류 0·720px 가로 넘침 없음
+  visual: 원본 이미지와 수동 추적/자동 생성 캡처 대조; C1 우측 기둥열 정렬과 좌우 하단 면·서측 기둥 겹침 표시 확인
+  screen: http://127.0.0.1:8874/04_parking/sghs-compare.html?floor=B1&revision=aligned
+  run_id: 20261029-022007-UG-SGHS-FEEDBACK-001-812f45a0
+  evidence: C:/Users/seok2/.codex/research/SGHS-FEEDBACK-20261029; engine-evidence.json·browser-evidence.json·feedback-trace.png·feedback-auto.png·before.json·after.json
+  independent_review: 미실시; 다른 모델·서브에이전트 호출하지 않음; 자체 시험은 독립 검토가 아님
+  user_visual_review: 대기; C1와 좌우 말단·내측선 표현 보정 결과 확인 필요
+  conclusion: 피드백 입력/추적 표현과 자체 검증 완료; 실제 차량 이용 합격 및 차량 단계 종료는 미확인
+limitations:
+  - C1 옆 회색 표현의 상세 용도와 실제 벽 두께·칸 치수는 미확인; 사용자 지적에 따라 상자만 정렬
+  - 말단 후보는 추적 주차열 접면 검토용이며 자동 차로망이나 자동 대수에 합성하지 않음
+  - 서측 두 기둥 침범으로 6m 유효 폭은 아직 성립하지 않음; 실제 조향·후진·회차·교행 미검증
