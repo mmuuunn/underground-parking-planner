@@ -1,0 +1,60 @@
+id: UG-SGHS-PAIRED-ROWS-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: 등을 맞댄 남서측 두 열에 공통 구획선 기준을 적용해275mm 어긋남을 대수·치수·차로·기둥 변경 없이 해소할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/sghs-compare.html
+  - tools/harness/work-items/UG-SGHS-PAIRED-ROWS-001.yaml
+acceptance:
+  - 공통 등맞댄 주차열 구획선 규칙으로 남서측 하부3칸씩의275mm 차이를0으로 정렬; 양측4+4칸 유지; 특정 좌표나 원본칸 특례 금지
+  - 새 정렬은 명시적 선택으로 적용; 기존 입력·기본골든6·과거SGHS7 및 기존calibrated 결과를 전후 기준으로 보존
+  - 두 열이 같이 쓸 수 있는 구간에서 대수·칸 폭을 유지하는 경우만 정렬; 물리 침범·외곽·폭 불일치·불가능한 공통 정렬은 기존 안전 배치를 유지
+  - 원본 구조축·기둥38개·차로 순폭6m·주차2500×5000·램프·기존 연결망 불변; 남서측 외 칸의 좌표와 전체66후보·원본13곳 대조 유지
+  - 파란 상부3칸은 원도에 없는 생성후보로 구분; 보라 하역공간은 엔진 제약에 넣지 않음; 분홍 남측2칸은 배치 가능한 대안으로 유지
+  - 합성 등맞댐 사례·적용 불가 반례·평행 이동/90도 회전·입력 불변·기존 결과 보존 및 B1 전후를 실행형 자체검사로 검증
+  - npm test·하네스 통과; 실제 화면과 원본/전후 동일 축척13곳 및 남서측 확대 주석 이미지 제공; 미재현·악화 공개
+not_doing:
+  - 원도 밖 후보 삭제·하역공간 규칙 추가·C1 누락 수정·램프/동선 변경·정밀 조향·안전 판정 완화
+  - 다른 모델·서브에이전트 호출·원격push·단계 종료
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 사용자 표시 남서측 정렬 결함 해소에 직접 기여
+  reference_change: ○ 사용자 승인한 다음 단위; 기존 결과는 보존하고 대수·안전 상태 유지
+  excluded_scope: ○ 하역장·다른 후보·회차는 수정하지 않음
+stop_conditions:
+  - 같은 원인의 세 번째 구현 또는 허용 파일 밖 수정 필요
+  - 대수·칸 치수·차로6m·구조축·안전 판정 완화 필요
+  - 기준 시험을 변경 전 상태에서 재현할 수 없음
+results:
+  implementation_rounds: 2
+  common_rule: 명시적 stallRowAlignment=back-to-back에서 세로 차로 양옆 중 앞면은 반대이고 등 사이가 기둥폭 이하인 열을 짝지음; 공통 빈 구간과 각 열의 최대대수 보존 시작범위를 칸 폭 주기로 교차해 공통 구획선을 선택; 폭 불일치·용량 손실·물리 충돌이면 기존 배치 유지
+  second_round: 일반2000mm 모듈에서 한쪽6칸·다른쪽5칸을 유지할 수 있는 공통 구획선이 있음에도 공통 구간 가운데 위치만 시도하면 정렬을 놓치는 반례 확인; 각 열의 시작 가능 범위 교차로 보완; 특정B1 좌표 특례 없음
+  scoped_test_correction: 주기 차이가 음수인 정상 정렬의 JavaScript -0을 Math.abs로 검사해0과 비교; 판정 공차·합격 조건 완화 아님
+  rollout: 명시적 선택으로 현재calibrated에 적용; 미표시 기본은 independent; calibratedBeforeAlignment/Trace에 직전66후보 입력 보존; 비교 페이지와 일반 편집 입력 전달에도 정렬 설정 연결
+  southwest: 서쪽 하부3칸의 Y5550/8050/10550→5825/8325/10825;각+275mm; 동쪽 하부3칸은5825/8325/10825 그대로; 양측 상부1칸씩Y14050 그대로; 구획선 차이275→0mm;4+4칸 유지
+  unchanged: 총66후보·기하/도달 채택66·나머지63칸의 좌표와 속성 동일; 차로·기둥38개·코어·점유물·접속예약·램프·그래프·주차위상도 전후 동일
+  physical: 충돌0·미도달0·앞면없음0; 모든 공급구간의 전체6000mm 띠 누락0mm²; 실제 물리 장애물과 차로 겹침0mm²; 주차2500×5000mm·원본 구조축 유지
+  source_13: 모든13행의 후보수·원본방향접면 수 전후 동일; 남서측 추적 면적 대응86.8→87.0%; 서측외벽11·C1서측4·남서측8·중앙4열각3·동측외벽12·중앙장애인일반3·남측단열4·남측장애인일반3·동측북단2·동측남단2
+  feedback: 사용자 표시 빨강은 이번 정렬로 해소; 파랑 상부3칸은 원도 없는 생성후보로 구분하며 그대로 유지; 보라 하역공간을 엔진 제약에 추가하지 않음; 분홍 남측2칸은 배치 가능 대안으로 유지; 사용자 업로드 표시 원본의 로컬 파일 경로는 확인되지 않아 스크린샷 복제본으로 주장하지 않음
+  remaining: C1상단1칸 누락·장애인 공유통로·전기차 용도·동측남단 과대추적 유지; 열밖8칸 그대로이며 원도 밖이라는 이유만으로 배치 불가능 판정을 내리지 않음; 이번 수정으로 새로 악화된 원본13곳 없음
+  safety: 66칸 모두 막다른 차로 후보; INFEASIBLE·NO_LOOP·DEAD_END·turning=UNVERIFIED 유지; 원도 전체 재현·실제 회차·조향·교행 합격 아님
+  preflight: 20261029-221033-UG-SGHS-PAIRED-ROWS-001-8d4bf170; 기준107/107;50.947초
+  scoped_checks: node 04_parking/01_src/sghs-reference.js --calibration --access --paired; 기존8사례·접속부검사·쌍열정렬·대수보존불가·물리장애물·폭불일치·등간격초과/음수·2000mm모듈·구간역순·B1평행이동/90도회전·63칸보존·입력불변·결정성·잘못된모드 거부 통과; npm107개와 중복집계하지 않음
+  npm_test: 107/107;51.058초
+  harness: 107/107;51.286초; 같은 공통시험의 재실행이며 독립 검토 아님
+  preservation: 기본골든6·과거SGHS7의 전체결과SHA256 동일; AGENTS.md·README.md·docs/COMPLETION_BASELINE.md 바이트 동일; 과거calibration60·access66 기대값은 보존된 입력에서 그대로 검증
+  browser: 실제SVG에서 양측 시작Y5825/8325/10825/14050·66칸·13행·비교기준66칸 확인; 일반편집 입력의 정렬설정 전달·수동추적/자동편집 전환·reviewed64후보/채택0·B2·720px 가로넘침0·기존편집저장보존·페이지오류0
+  visual_evidence: 원본/변경전/변경후를 같은 축척의13곳 번호와 표로 대조; 남서측 확대에는 공통 구획선을 적색 점선으로 표시; 실제 비교 화면도 저장
+  scope: 허용5파일·제품4파일 추가82줄로400줄 이내; 원본·이미지·검사증거는 저장소 밖
+  review: 다른 담당자의 독립 검토 필요하나 미실시; 사용자 지시대로 모델·서브에이전트 호출 없음; 사용자 화면 확인 대기; 단계 종료 아님
+  evidence: C:/Users/seok2/.codex/research/SGHS-PAIRED-ROWS-20261029; B1-paired-rows-source-before-after-13.png·actual-ui.png·evidence.json·paired-check.log·npm-test.log·browser-checks.json·before.json·after.json

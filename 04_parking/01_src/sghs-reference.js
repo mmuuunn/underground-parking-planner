@@ -153,6 +153,9 @@
   calibratedTrace.routes[0].points=[[37200,44050],[34200,44050],[24600,44050],[16750,37200],[16750,19550],[32600,19550]];
   calibratedTrace.routes.push({id:'동측 북단 접속 가지',points:[[60800,36800],[60800,47300]],certainty:'derived-from-operable-source'});
   calibratedTrace.note='원본 작동 전제의 입력 정합안. 상부는 수평·사선·서측 차로로 간결화하고 동측은 북단까지 연장했습니다. 주황 점선 접속부는 차량 통과 가능·주차 금지입니다. 남서측275mm 어긋남·C1 상단·순환·용도·조향은 별도 확인이 필요합니다.';
+  Object.assign(floors[0],{calibratedBeforeAlignment:structuredClone(calibratedInput),calibratedBeforeAlignmentTrace:structuredClone(calibratedTrace)});
+  calibratedInput.stallRowAlignment='back-to-back';
+  calibratedTrace.note='원본 작동 전제의 입력 정합안. 남서측 등맞댄 두 열은 공통 구획선에 정렬했습니다. 상부3칸은 원도에 없는 후보이며 하역공간은 엔진 제약이 아닙니다. 남측 끝2칸은 사용자 확인된 배치 가능 대안입니다. C1 상단·순환·용도·조향은 미재현입니다.';
   // Compare supplied geometry against separately identified source regions before judging the engine.
   function auditB1(plan,G,reference='reviewed'){
     const {CL,boolOp,areaOf,rectPoly,bbox}=G,I=CL.ClipType.ctIntersection,U=CL.ClipType.ctUnion;
@@ -257,7 +260,7 @@ if(typeof module!=='undefined'&&require.main===module){
   if(process.argv.includes('--access')){
     const V=require('./plan/CLAUDE_ugp_verify.js'),I=G.CL.ClipType.ctIntersection,D=G.CL.ClipType.ctDifference;
     const over=(A,B,t=I)=>Math.abs(G.areaOf(G.boolOp(A,B,t)));
-    const f=c.floors[0],make=d=>{d=structuredClone(d);const p=d.ramp;return {...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',floorMm:undefined,grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},ramp:E.createStraightRamp({landing:p.p,angleDeg:p.alignedAngleDeg,widthMm:p.w,lengthMm:p.len})};};
+    const source=c.floors[0],f={...source,calibrated:source.calibratedBeforeAlignment,calibratedTrace:source.calibratedBeforeAlignmentTrace},make=d=>{d=structuredClone(d);const p=d.ramp;return {...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',floorMm:undefined,grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},ramp:E.createStraightRamp({landing:p.p,angleDeg:p.alignedAngleDeg,widthMm:p.w,lengthMm:p.len})};};
     const oldInput=make(f.calibratedBeforeAccess),input=make(f.calibrated),routes=f.calibratedTrace.routes,snapshot=JSON.stringify({input,routes});
     const old=E.generateConnected(oldInput,f.calibratedBeforeAccessTrace.routes),r=E.generateConnected(input,routes),a=c.auditB1(r,G,'calibrated');
     assert.equal(old.stallCount,60);assert.equal(r.stallCount,66);assert.equal(r.lostCount,0);assert.equal(r.columns.length,38);
@@ -290,6 +293,45 @@ if(typeof module!=='undefined'&&require.main===module){
     const rotatedForgery=structuredClone(turned);rotatedForgery.stalls=forged.stalls.map(s=>({...s,pts:s.pts.map(rot)}));assert.equal(V.check(rotatedForgery,turnedInput).counts.clash,1);
     assert.throws(()=>E.generateConnected({...generic,occupants:[{...access,vehiclePassable:'yes'}]},ring),RangeError);
     console.log(JSON.stringify({accessChecks:'B1 full width; physical clearance; 13 source regions; southwest preservation; generic access/physical distinction; vehicle samples; forged reservation; rotated reservation; invalid semantics; determinism',B1:{before:old.stallCount,after:r.stallCount,deadSide:r.deadSideCount,status:r.status,sourceRows:a.rows.map(x=>[x.id,x.candidates,x.matchingFacing]),outsideRows:a.outsideRows.length}}));
+  }
+  if(process.argv.includes('--paired')){
+    const Lay=require('./plan/CLAUDE_ugp_layout.js'),Grid=require('./plan/CLAUDE_ugp_grid.js'),V=require('./plan/CLAUDE_ugp_verify.js');
+    const f=c.floors[0],make=d=>{d=structuredClone(d);const p=d.ramp;return {...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',floorMm:undefined,grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},ramp:E.createStraightRamp({landing:p.p,angleDeg:p.alignedAngleDeg,widthMm:p.w,lengthMm:p.len})};};
+    const input=make(f.calibrated),before=E.generateConnected(make(f.calibratedBeforeAlignment),f.calibratedBeforeAlignmentTrace.routes),snapshot=JSON.stringify([input,f.calibratedTrace.routes]),r=E.generateConnected(input,f.calibratedTrace.routes);
+    const boxes=plan=>plan.stalls.map(s=>G.bbox(s.pts)),sw=plan=>boxes(plan).filter(b=>b[0]>=19750&&b[2]<=30000&&b[1]>=5000&&b[3]<=17000),oldSW=sw(before),newSW=sw(r);
+    assert.equal(before.stallCount,66);assert.equal(r.stallCount,66);assert.equal(r.lostCount,0);assert.equal(newSW.length,8);
+    assert.equal(oldSW[4][1]-oldSW[0][1],275);assert.deepEqual(newSW.slice(0,4).map(b=>b.slice(1).filter((_,i)=>i!==1)),newSW.slice(4).map(b=>b.slice(1).filter((_,i)=>i!==1)));
+    assert.deepEqual(newSW.slice(0,3).map((b,i)=>b[1]-oldSW[i][1]),[275,275,275]);assert.deepEqual(newSW.slice(3),oldSW.slice(3));
+    const unchanged=before.stalls.filter(s=>!oldSW.slice(0,3).some(b=>JSON.stringify(b)===JSON.stringify(G.bbox(s.pts))));
+    assert.equal(unchanged.length,63);assert(unchanged.every(s=>r.stalls.some(t=>JSON.stringify(s)===JSON.stringify(t))),'all 63 other stalls, including the blue three and pink two, must be identical');
+    for(const key of ['aisles','columns','cores','occupants','parkingReservations','ramp','graph','grid'])assert.deepEqual(r[key],before[key],key+' stays unchanged');
+    assert.deepEqual(c.auditB1(r,G,'calibrated').rows.map(x=>[x.candidates,x.matchingFacing]),c.auditB1(before,G,'calibratedBeforeAlignment').rows.map(x=>[x.candidates,x.matchingFacing]));
+    assert.equal(V.check(r,input).counts.clash,0);assert.deepEqual(r.placementReport.counts,{ok:0,deadSide:66,unreachable:0,noFront:0,clash:0});
+    assert.equal(r.status,'INFEASIBLE');for(const id of ['NO_LOOP','DEAD_END'])assert(r.violations.some(v=>v.id===id));assert.equal(r.networkCandidate.turning,'UNVERIFIED');
+    assert.equal(JSON.stringify([input,f.calibratedTrace.routes]),snapshot);assert.deepEqual(r,E.generateConnected(input,f.calibratedTrace.routes));
+    for(const [angle,delta]of [[0,[7000,-3500]],[90,[0,0]]]){
+      const point=p=>G.add(G.rot(p,angle),delta),d=structuredClone(input),p=f.calibrated.ramp;
+      d.ucs=angle;d.mass=d.mass.map(point);d.allowedBoundary=d.allowedBoundary.map(point);d.cores=d.cores.map(x=>({...x,c:point(x.c)}));d.occupants=d.occupants.map(x=>({...x,c:point(x.c)}));
+      if(!angle)d.grid.columnAxes={x:d.grid.columnAxes.x.map(x=>x+delta[0]),y:d.grid.columnAxes.y.map(y=>y+delta[1])};
+      d.ramp=E.createStraightRamp({landing:point(p.p),angleDeg:p.alignedAngleDeg+angle,widthMm:p.w,lengthMm:p.len});
+      const transformed=E.generateConnected(d,f.calibratedTrace.routes.map(l=>({...l,points:l.points.map(point)})));
+      assert.deepEqual(transformed.stalls.map(s=>s.pts),r.stalls.map(s=>s.pts.map(q=>point(q).map(Math.round))));assert.equal(V.check(transformed,d).counts.clash,0);
+    }
+    const sample=({left=1000,right=2000,top=13000,delta=0,gap=0,w=2500,rightW=w,block=false,reverse=false}={})=>{
+      const Gf=Grid.frame({mass:[[0,0],[40000,0],[40000,20000],[0,20000]],cores:[],grid:{aisleMm:6000,stallW:w,columnMm:500,columnAxes:{x:[30000,35000],y:[15000,18000]}}});Grid.setPhase(Gf,[0,0]);Gf.aisleSurfaceMode='network';
+      const lines=[{a:[10000,left],b:[10000,top],v:10000,h:null,kind:'spur'},{a:[26000+gap,right],b:[26000+gap,top+delta],v:26000+gap,h:null,kind:'spur'}];if(reverse)lines.reverse();
+      const aisles=[G.rectPoly([7000,left,13000,top]),G.rectPoly([23000+gap,right,29000+gap,top+delta])],blocks=block?[G.rectPoly([13000,11000,18000,13000])]:[];
+      const id='v:'+Math.round(26000+gap-Gf.b[0])+':-',options={stallRowSelection:'continuous',stallRowTypes:rightW===w?{}:{[id]:'expanded'},stallModules:{expanded:{widthMm:rightW,depthMm:5000}}};
+      const run=mode=>Lay.placeStalls(Gf,lines,[Gf.inner],aisles,blocks,[],false,{...options,stallRowAlignment:mode});
+      return {old:run('independent'),now:run('back-to-back'),run,blocks};
+    };
+    const ys=(s,x)=>s.stalls.filter(t=>t.bb[0]===x).map(t=>t.bb[1]);
+    for(const params of [{},{w:2000},{gap:500}]){const q=sample(params),w=params.w||2500,left=ys(q.now,13000),right=ys(q.now,18000+(params.gap||0));assert.equal(Math.abs((left[0]-right[0])%w),0);assert.equal(q.now.stalls.length,q.old.stalls.length);assert(left.some(y=>right.includes(y)));}
+    assert.deepEqual(sample({reverse:true}).now.stalls,sample().now.stalls);
+    for(const params of [{left:1000,right:2000,top:11000,delta:1000},{rightW:2600},{gap:501},{gap:-100},{block:true}]){const q=sample(params);assert.deepEqual(q.now.stalls,q.old.stalls,'unsafe or capacity-losing alignment must retain the prior placements: '+JSON.stringify(params));}
+    const q=sample({block:true});assert.equal(Math.abs(G.areaOf(G.boolOp(q.now.stalls.map(s=>s.poly),q.blocks,G.CL.ClipType.ctIntersection))),0);
+    assert.throws(()=>sample().run('unknown'),RangeError);
+    console.log(JSON.stringify({pairedChecks:'common divisions; capacity retention; physical blocker; width mismatch; distant/overlapping backs; alternate module; reversed lines; B1 translation/rotation; 63 unchanged stalls; deterministic and immutable input; invalid mode',B1:{count:r.stallCount,southwest:8,offsetBeforeMm:275,offsetAfterMm:0,movedStalls:3,status:r.status,deadSide:r.deadSideCount}}));
   }
   console.log(JSON.stringify({checks:'source dimensions; baseline reproduction; fixed cores and axes; no slope claim from visible length; no source-count claim; repeatability; input preservation; invalid input rejection',summaries},null,2));
 }

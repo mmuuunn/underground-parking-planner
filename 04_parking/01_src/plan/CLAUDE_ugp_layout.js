@@ -153,6 +153,8 @@
     if (!['envelope', 'occupied-bands'].includes(projection)) throw new RangeError('알 수 없는 주차열 장애물 투영: ' + projection);
     const selection=options.stallRowSelection||'sequential';
     if(!['sequential','continuous'].includes(selection))throw new RangeError('알 수 없는 주차열 선택: '+selection);
+    const alignment=options.stallRowAlignment||'independent';
+    if(!['independent','back-to-back'].includes(alignment))throw new RangeError('알 수 없는 주차열 정렬: '+alignment);
     const baseline=selection==='continuous'?placeStalls(G,segs,area,aisleU,blockedStatic,columns,false,{...options,stallRowSelection:'sequential'}).stalls:null;
     const blocked = aisleU.concat(blockedStatic, columns);
     const stalls = [], rows = [], excluded = {wall: 0, blocked: 0, overlap: 0, unreachable: 0}, dbg = debug ? [] : null;
@@ -191,6 +193,7 @@
     }
     // 세로 차로 양옆: 칸 줄 띠에서 실제 기둥·코어·램프·차로가 차지한 구간을 먼저 빼고, 남은 빈 구간마다 칸을 가운데 맞춰 채운다
     //   (세로 기둥 간격 gy에 칸 폭이 딱 맞지 않아도 기둥 사이마다 같은 묶음 — 이어 놓고 기둥에 걸린 칸을 지우던 '이빨 빠짐'을 없앤다)
+    const verticalRows=[];
     for (const ln of merged(vLines, 'v', 1)) {
       const cap=G.aisleSurfaceMode==='network'?0:a/2,y1 = ln.s - cap, y2 = ln.e + cap;
       for (const sg of [1, -1]) {
@@ -211,6 +214,36 @@
         // 남는 길이는 구간마다 번갈아 아래·위 끝으로 모은다(93차 B2): 이웃 구간의 틈이 사이 기둥 양옆에서 만나 한 덩어리 자투리가 된다(가운데 맞춤은 양 끝에 반씩 갈라졌다).
         //   모은 자리에서 칸이 하나라도 걸리면 그 구간은 가운데 맞춤 그대로(대수를 잃지 않는다)
         const free = Gm.minus([[y1, y2]], intervals).sort((p, q) => p[0] - q[0]);
+        verticalRows.push({row:activeRow,ln,sg,xA,xB,x0,x1,w,free,starts:new Map()});
+      }
+    }
+    if(alignment==='back-to-back'){
+      const fits=(r,y)=>{const P=rectPoly([r.x0,y,r.x1,y+r.w]);return inside(P)&&!hitArea(P,blocked)&&!stalls.some(s=>boxHit(bbox(P),s.bb)&&hitArea(P,[s.poly]));};
+      for(const left of verticalRows.filter(r=>r.sg===1))for(const right of verticalRows.filter(r=>r.sg===-1)){
+        // Opposite fronts and backs at most one column width apart identify an adjacent paired row.
+        const gap=right.xB-left.xB;
+        if(left.ln.k>=right.ln.k||gap<0||gap>cfg.columnMm||left.w!==right.w)continue;
+        const w=left.w;
+        for(const [i,[a0,a1]]of left.free.entries())for(const [j,[b0,b1]]of right.free.entries()){
+          if(left.starts.has(i)||right.starts.has(j))continue;
+          const lo=Math.max(a0,b0),hi=Math.min(a1,b1),shared=Math.floor((hi-lo+1)/w);
+          if(shared<1)continue;
+          const anchor=lo+(hi-lo-shared*w)/2,target=a0+((anchor-a0)%w+w)%w;
+          const na=Math.floor((a1-a0+1)/w),nb=Math.floor((b1-b0+1)/w),amax=a1-na*w,bmax=b1-nb*w,candidates=[];
+          // Intersect the two rows' capacity-preserving start ranges modulo the stall width.
+          for(let m=Math.ceil((b0-amax)/w);m<=Math.floor((bmax-a0)/w);m++){
+            const low=Math.max(a0,b0-m*w),high=Math.min(amax,bmax-m*w);
+            if(high<low)continue;
+            for(const t of [target-w,target,target+w]){const sa=Math.max(low,Math.min(high,t));candidates.push({sa,sb:sa+m*w,dist:Math.abs(sa-t)});}
+          }
+          candidates.sort((p,q)=>p.dist-q.dist||p.sa-q.sa);
+          const pick=candidates.find(p=>Array.from({length:na},(_,m)=>p.sa+m*w).every(y=>fits(left,y))&&Array.from({length:nb},(_,m)=>p.sb+m*w).every(y=>fits(right,y)));
+          if(pick){left.starts.set(i,pick.sa);right.starts.set(j,pick.sb);}
+        }
+      }
+    }
+    for(const r of verticalRows){
+        const {ln,sg,xA,x0,x1,w,free}=r;activeRow=r.row;
         const fits = (y) => { const poly = rectPoly([x0, y, x1, y + w]), bb = bbox(poly); return inside(poly) && !hitArea(poly, blocked) && !stalls.some((s) => boxHit(bb, s.bb) && hitArea(poly, [s.poly])); };
         for (const [k, [f0, f1]] of free.entries()) {
           const cnt = Math.floor((f1 - f0 + 1) / w), spare = f1 - f0 - cnt * w, packed = k % 2 ? spare : 0;
@@ -221,9 +254,9 @@
             // Extend an existing row's spacing without moving its valid members when a crossing row is replaced.
             off=anchors.length?((Math.min(...anchors.map(s=>s.bb[1]))-f0)%w+w)%w:spare/2;
           }
+          if(r.starts.has(k))off=r.starts.get(k)-f0;
           for (let m = 0; m < cnt; m++) { const y = f0 + off + m * w; tryStall(rectPoly([x0, y, x1, y + w]), [xA, y + w / 2], [-sg, 0], ln.kind); }
         }
-      }
     }
     if(baseline){activeGroup=null;const picked=selectRows(groups,baseline);stalls.push(...picked);excluded.overlap+=groups.reduce((n,g)=>n+g.length,0)-picked.length;}
     // 사선 벽(램프 옆면 포함): 벽에 직각인 칸. 바깥 경로의 방향으로 안쪽을 정한다(구멍은 반대 방향이라 같은 쪽이 안쪽)
