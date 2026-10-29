@@ -1,0 +1,57 @@
+id: UG-SGHS-AUTO-NETWORK-001
+status: RESCOPE_REQUIRED
+stage: vehicle-circulation
+authority: codex
+owner: codex-astra-high
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: SGHS B1 고정 외곽·구조·코어·램프에서 원도 추적선을 쓰지 않고 연결된 순환 대안을 자동 생성할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_network.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-AUTO-NETWORK-001.yaml
+acceptance:
+  - calibrated B1의 외곽·38기둥·코어·점유물·램프를 고정하고 일반 generate 경로에서 자동 탐색; 수동 추적선·SGHS 좌표 특례 금지
+  - 차로 순폭6000mm·주차2500x5000mm 유지; 도달·순환·충돌·급회전·착지 검사를 완화하지 않음
+  - 기존 일반 생성과 공급 연결망66칸을 비교 기준으로 보존하고 새 방식은 명시적 선택; 원안 재현과 자동 대안의 차이를 공개
+  - 성공 사례와 실제 차단 반례·결정성·입력 불변·회전 이동 확인; 기본골든6·과거SGHS7 전체 출력 보존
+  - 실제 제품 화면에서 선택·재생성·저장/재열기 검증; 후보 수·동선·실패/미검증을 보고
+  - 유효한 대안이 없으면 탐색 범위·원인·중단 이유를 기록하고 원본 불가능이나 완료로 표현하지 않음
+not_doing:
+  - 원본 대수 강제 일치·원안 주차열 완전 재현·장애인/전기차 용도·하역공간 확정·B2 개발
+  - 정밀 조향·교행·층간 연결·안전 기준 변경·골든값 변경·모델 호출·원격 push·단계 종료
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 현재 차량 단계의 램프 연결·순환 실패를 직접 다룸
+  reference_change: ○ 기존 입력과 결과를 보존하고 명시적으로 선택한 자동 대안만 비교
+  excluded_scope: ○ 정밀 주행과 원본 좌표 미세조정 제외
+calculation_basis: 기존 자동 생성은 균등 주차 모듈로 외곽 순환을 먼저 만든 후 고정 코어와 기둥에서 잘라낸다. SGHS의 불균등 고정 구조를 피하는 연결망 자체를 탐색하지 않는다. 공급 연결망66칸은 별도 함수로 만들며 그 입력 중심선 자체가 나무 구조여서 NO_LOOP가 정확히 유지된다. 고정 장애물과 전폭 차로의 허용 공간에서 자동 순환 대안을 탐색하고 기존 독립 검사로 다시 판단한다.
+stop_conditions:
+  - 같은 원인의 세 번째 구현 또는 허용5파일·제품추가400줄 초과 필요
+  - 외곽·구조·코어·램프 이동 또는 안전 판정 완화 필요
+  - 기준 재현 실패 또는 기존 기본 경로의 결과를 보존할 수 없음
+results:
+  product_implementation_rounds: 0
+  external_experiment_rounds: 2
+  preflight: 20261029-235309-UG-SGHS-AUTO-NETWORK-001-775a5dd9; 109/109; 52.302초
+  ordinary_baseline: 최신calibrated 입력의 일반generate는9칸·deadSide9·INFEASIBLE·NO_LOOP; 고정기둥38개 중6개가 기존 차로 차단; 램프 착지 뒤3.08m 직진 후90도 두 번으로 합류 거부
+  supplied_baseline: 별도generateConnected는66칸·deadSide66·INFEASIBLE·NO_LOOP;13구간 도달; 원도 참고 중심선 자체에 고리가 없음
+  root_cause: 일반 생성은 균등 주차모듈로 외곽 고리를 먼저 만든 후 고정 장애물에서 절단; 불균등 구조와 코어를 함께 고려한 동선 탐색 부재. 공급 연결망은 일반 생성과 별도이며 그 고리 없음은 검사기의 누락이 아님
+  first_experiment: 원본 추적선 없이 고정 장애물의 면과 구조축으로6m 직사각 순환 후보18개 발견; 면적 상위12개에 위치 기반 최단 연결을 적용하면 고리는 생기지만 약178도 되돌림이 생겨 차량 검사 실패
+  second_experiment: 150개 가시 연결점에서 진행방향·4.712m 내90.5도 한계를 적용한 제한 탐색3456상태; 직사각 고리18개 전부 재검사;18~22칸·고리있음·충돌0·전폭6m 띠 누락0mm²이나 진입18개 모두blocked; 채택0
+  representative_failure: 22칸 실험의 북서측 굽음[23196,44953]에서4.6x1.9m 차량 몸체가 차로를0.019672㎡ 이탈; 공차0.01㎡ 초과. 기존 합류검사도5~6회 굽음을 거부; 공급망의CONDITIONAL은 차량 합격이 아님
+  limits: 직사각 고리와 제한 가시 경로 탐색이며 최적해·전체 가능성 증명 아님; 원도 하역공간은 기존 입력대로 물리 제약에 없으므로 원안 용도 보존 대안으로 해석할 수 없음; B2·정밀 조향·교행 미실시
+  browser: 실제underground-compare.html의 최신SGHS B1 calibrated를 격리된 새 저장공간에서 계산;9칸·38기둥·INFEASIBLE·진입/진출unconnected;통행예약true·쌍열정렬 설정 존재;재열기 입력·칸·상태 동일;페이지오류0
+  browser_note: 공유 브라우저에는 과거calibrated 저장본이 있어 최신 입력 시험은 별도 컨텍스트에서 수행; 기존 저장본을 덮어쓰지 않음
+  preservation: 기본골든6·과거SGHS7 전체출력SHA256 동일; 공급연결망66 전체출력 동일; 사용자AGENTS.md·README.md·docs/COMPLETION_BASELINE.md SHA256 동일
+  checks: 하네스최종109/109;83.874초;기준검사와 같은 공통시험 재실행이며 독립검토 아님
+  scope: 제품코드·시험기대값 변경0; 저장소 변경은 이번 작업표1개; 실험 스크립트·JSON·비교화면은 저장소 밖에 보존
+  review: 다른 모델·서브에이전트 호출0; 제품 구현·단계 종료·독립검토 완료로 주장하지 않음
+  decision: 자동 생성 복구 미완료; 실패한 실험의 제품 반영 보류. 고리 추가만으로 SGHS를 마무리할 수 없으므로 램프에서 서측 차로로 이어지는 방향·차체 여유를 충족하는 동선 생성으로 다음 범위를 좁힘
+  gate: RESCOPE_REQUIRED; SGHS 완료·사용자 승인·다음 사례 진행 조건 미충족
+  evidence: C:/Users/seok2/.codex/research/SGHS-AUTO-NETWORK-20261029/REPORT.md; review.html; review.png; baseline.json; experiment.json; directional-experiment.json; verification.json; actual-generator.png; browser-check.json
