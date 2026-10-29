@@ -74,6 +74,8 @@
   // S6 칸. 반환 {stalls:[{poly,bb,cl,kind}], excluded, dbg}
   function placeStalls(G, segs, area, aisleU, blockedStatic, columns, debug, options = {}) {
     const {cfg, a, d, n, inner, xLines} = G, w = cfg.stallW, inside = insideOf(inner);
+    const projection = options.stallStripProjection || 'envelope';
+    if (!['envelope', 'occupied-bands'].includes(projection)) throw new RangeError('알 수 없는 주차열 장애물 투영: ' + projection);
     const blocked = aisleU.concat(blockedStatic, columns);
     const stalls = [], rows = [], excluded = {wall: 0, blocked: 0, overlap: 0, unreachable: 0}, dbg = debug ? [] : null;
     let activeRow = null;
@@ -118,9 +120,18 @@
         if (activeRow.stallType === 'accessible') continue;
         const xA = ln.k + sg * a / 2, xB = xA + sg * d, x0 = Math.min(xA, xB), x1 = Math.max(xA, xB), strip = rectPoly([x0, y1, x1, y2]);
         const hits = boolOp([strip], blocked.filter((q) => boxHit(bbox(strip), bbox(q))), CL.ClipType.ctIntersection).filter((q) => Math.abs(signedArea(q)) > 1e4);
+        let intervals = hits.map(q => { const bq = bbox(q); return [bq[1], bq[3]]; });
+        if (projection === 'occupied-bands') {
+          // 경계선으로만 이어진 기둥·차로의 bbox는 빈 구간까지 덮는다. 면적이 있는 높이 띠만 제외한다.
+          const ys = [...new Set(hits.flatMap(q => q.map(p => p[1])))].sort((p, q) => p - q);
+          intervals = ys.slice(1).flatMap((hi, i) => {
+            const lo = ys[i], band = rectPoly([x0, lo, x1, hi]);
+            return Math.abs(areaOf(boolOp(hits, [band], CL.ClipType.ctIntersection))) > 1 ? [[lo, hi]] : [];
+          });
+        }
         // 남는 길이는 구간마다 번갈아 아래·위 끝으로 모은다(93차 B2): 이웃 구간의 틈이 사이 기둥 양옆에서 만나 한 덩어리 자투리가 된다(가운데 맞춤은 양 끝에 반씩 갈라졌다).
         //   모은 자리에서 칸이 하나라도 걸리면 그 구간은 가운데 맞춤 그대로(대수를 잃지 않는다)
-        const free = Gm.minus([[y1, y2]], hits.map((q) => { const bq = bbox(q); return [bq[1], bq[3]]; })).sort((p, q) => p[0] - q[0]);
+        const free = Gm.minus([[y1, y2]], intervals).sort((p, q) => p[0] - q[0]);
         const fits = (y) => { const poly = rectPoly([x0, y, x1, y + w]), bb = bbox(poly); return inside(poly) && !hitArea(poly, blocked) && !stalls.some((s) => boxHit(bb, s.bb) && hitArea(poly, [s.poly])); };
         for (const [k, [f0, f1]] of free.entries()) {
           const cnt = Math.floor((f1 - f0 + 1) / w), spare = f1 - f0 - cnt * w, packed = k % 2 ? spare : 0;

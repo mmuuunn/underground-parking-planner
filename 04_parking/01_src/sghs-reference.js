@@ -92,20 +92,55 @@
   const rampBottom=Math.min(...floors[0].visibleRamp.map(p=>p[1])),rampTop=calibrated.boundary.sourceInnerY;
   reviewed.occupants.push({id:'B2 하행 램프 동측 접속부',kind:'ramp-access',c:[(rampLeft+rampRight)/2,(rampBottom+rampTop)/2],w:rampRight-rampLeft,d:rampTop-rampBottom,certainty:'user_confirmed',referenceReservationOnly:true});
   Object.assign(floors[0],{reviewed,reviewedTrace:structuredClone(calibrated.trace),reviewedBoundary:{...calibrated.boundary,note:calibrated.boundary.note+' C3의 좌측 해치 과대영역을 제거하고 B2 하행 램프의 동측 접속부를 주차 제외 공간으로 예약했습니다. 접속부의 실제 주행·회차는 미검증입니다.'}});
+  reviewed.stallStripProjection='occupied-bands';
+  // plan_06 직접 판독. 앞면은 인접 차로 쪽이며 짧은 흰 선(차막이) 쪽과 구분한다. 형상은 여전히 근사다.
+  const observations=[
+    ['서측 외벽',11,'E','전기차 표시 7 + 일반 4','상부 1+3+3, 하부 3+1; 전기차 충전 설비 상세 미확인'],
+    ['서측 안쪽',5,'W','일반','C1 서쪽 2+3'],
+    ['남서측 쌍열',8,'WE','일반','서쪽 4칸은 W, 동쪽 4칸은 E; 두 열은 등을 맞댐'],
+    ['중앙 북측 1',3,'N','일반','C1 동쪽 하역장 오른쪽; 앞면은 북측 차로'],
+    ['중앙 북측 2',3,'N','일반','C2 서쪽; 앞면은 북측 차로'],
+    ['중앙 남측 1',3,'S','일반','북측 1과 등 맞댐; 앞면은 남측 차로'],
+    ['중앙 남측 2',3,'S','일반','북측 2와 등 맞댐; 앞면은 남측 차로'],
+    ['동측 외벽',12,'W','일반','북단 2칸과 최남단 1칸을 제외한 3+3+3+3'],
+    ['중앙 장애인 열',2,'S','장애인 표시 2 + 해치 통로','C1 동쪽; 해치를 일반 주차칸으로 세지 않음'],
+    ['남측 단열',4,'W','일반','남측 중앙 1+3'],
+    ['남측 장애인 열',2,'N','장애인 표시 2 + 해치 통로','용역원실 북쪽; 두 칸의 동쪽 해치 포함'],
+    ['동측 북단',2,'W','일반','램프 동쪽 최북단 2칸; 추적 차로가 이 높이까지 이르지 않음'],
+    ['동측 남단',1,'W','일반','최남단 1칸; 기존 추적 범위 높이 5.1m는 두 칸 높이여서 과대'],
+  ];
+  for(const [id,visibleCount,facing,use,note]of observations){
+    const row=floors[0].reviewedTrace.rows.find(r=>r.id===id);
+    Object.assign(row,{facing,observation:{visibleCount,facing,use,note,source:'DG-80514_plan_06.jpg',basis:'direct-image-reading'}});
+  }
   // Compare supplied geometry against separately identified source regions before judging the engine.
   function auditB1(plan,G){
     const {CL,boolOp,areaOf,rectPoly,bbox}=G,I=CL.ClipType.ctIntersection,U=CL.ClipType.ctUnion;
     const area=P=>Math.abs(areaOf(P)),over=(A,B)=>area(boolOp(A,B,I)),shape=c=>rectPoly([c.c[0]-c.w/2,c.c[1]-c.d/2,c.c[0]+c.w/2,c.c[1]+c.d/2]);
     const rows=floors[0].reviewedTrace.rows,kept=(plan.stalls||[]).map(s=>s.pts),candidates=kept.concat(plan.lost||[]),union=boolOp(candidates,[],U);
     const reservation=shape(reviewed.occupants.find(c=>c.kind==='ramp-access')),core=shape(reviewed.cores[2]);
-    const rowResults=rows.map(row=>({id:row.id,sourceAreaM2:area([row.polygon])/1e6,coveragePct:Math.round(over([row.polygon],union)/area([row.polygon])*1000)/10,candidates:candidates.filter(P=>over([P],[row.polygon])>1e4).length,kept:kept.filter(P=>over([P],[row.polygon])>1e4).length}));
+    // 국소 앞면의 차로 접면만 확인한다. 램프 도달·차량 회전의 합격이 아니다.
+    const fronts=P=>{
+      const b=bbox(P),vertical=b[2]-b[0]>b[3]-b[1];
+      return (vertical?['W','E']:['S','N']).filter(dir=>[.2,.5,.8].every(t=>{
+        const x=vertical?(dir==='W'?b[0]-100:b[2]+100):b[0]+t*(b[2]-b[0]);
+        const y=vertical?b[1]+t*(b[3]-b[1]):(dir==='S'?b[1]-100:b[3]+100);
+        return over([rectPoly([x-10,y-10,x+10,y+10])],plan.aisles||[])>=399;
+      }));
+    };
+    const facingByCandidate=candidates.map(fronts);
+    const rowResults=rows.map(row=>{
+      const indices=candidates.flatMap((P,i)=>over([P],[row.polygon])>1e4?[i]:[]),matching=indices.filter(i=>facingByCandidate[i].some(d=>row.facing.includes(d))).length;
+      return {id:row.id,sourceAreaM2:area([row.polygon])/1e6,coveragePct:Math.round(over([row.polygon],union)/area([row.polygon])*1000)/10,candidates:indices.length,kept:kept.filter(P=>over([P],[row.polygon])>1e4).length,
+        observation:row.observation,matchingFacing:matching,wrongFacing:indices.length-matching,candidateFacings:indices.map(i=>facingByCandidate[i].join('/')||'앞면 미확인')};
+    });
     const outside=candidates.flatMap((P,i)=>{const ratio=over([P],rows.map(r=>r.polygon))/area([P]);return ratio<.5?[{index:i,pts:P,sourceRowOverlapPct:Math.round(ratio*1000)/10,bounds:bbox(P)}]:[];});
     return {basis:'user-confirmed core/ramp meaning; estimated source parking-row envelopes',status:'DIFFERENCES_REQUIRE_REVIEW',candidateCount:candidates.length,keptCount:kept.length,
       coreMismatch:!plan.cores?.[2]||area(boolOp([plan.cores[2].pts],[core],CL.ClipType.ctXor))>1e4,
       rampReservationMissing:!plan.occupants?.some(c=>c.kind==='ramp-access'&&area(boolOp([c.pts],[reservation],CL.ClipType.ctXor))<=1e4),
       rampCandidateHits:candidates.filter(P=>over([P],[reservation])>1e4).length,
-      rows:rowResults,emptyRows:rowResults.filter(r=>r.candidates===0).map(r=>r.id),outsideRows:outside,
-      note:'면적 일치율은 추적 주차열과 생성 후보의 겹침이며 원본 대수·주행 합격을 뜻하지 않습니다. 열 밖 후보는 후보 면적의 절반 미만이 추적 열에 포함된 경우입니다.'};
+      rows:rowResults,visibleSourceCount:observations.reduce((sum,r)=>sum+r[1],0),emptyRows:rowResults.filter(r=>r.candidates===0).map(r=>r.id),outsideRows:outside,
+      note:'원본 59칸은 이미지에서 보이는 칸의 판독 합계이며 공식 총대수는 미확인입니다. 방향 대응은 후보 짧은 변 앞의 국소 차로 면만 확인하며 용도·도달·조향 합격이 아닙니다. 전기차·장애인 공유통로는 미재현입니다. 면적 대응은 근사 추적 범위와의 겹침이며 후보는 열 경계에서 중복 집계될 수 있습니다. 열 밖은 후보 면적의 절반 미만이 추적 열에 드는 경우입니다.'};
   }
   const data={id:'SGHS',revision:'2026-10-29-r1',sourceRoot,dimensions,site,floors,grid:referenceGrid,calibrateClearance,auditB1,evidence:[
     {certainty:'assumed',item:'좌표 기준',value:'mm 단위 도면 좌표에 X +8400 / Y +1200 적용. Y는 도면 위쪽이며 북향·측량 좌표는 미확인',source:'기존 파일럿과 같은 로컬 원점'},

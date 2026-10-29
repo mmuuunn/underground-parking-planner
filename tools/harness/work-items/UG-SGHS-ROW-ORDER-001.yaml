@@ -1,0 +1,67 @@
+id: UG-SGHS-ROW-ORDER-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: B1 원본 13곳의 방향·용도·보이는 칸 수를 대조하고 장애물의 전체 높이 투영이 빈 주차 구간을 지우는 공통 원인을 줄이는가?
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-ROW-ORDER-001.yaml
+acceptance:
+  - 원본 이미지를 직접 읽어 13곳 위치·앞면 방향·용도·보이는 칸 수와 판독 한계를 기록
+  - 추적 입력 오인·생성 순서·장애물·도달 판정을 분리하고 수정 전후 동일 조건 비교
+  - 경계에서만 연결된 장애물의 전체 높이 대신 면적이 존재하는 높이 띠만 제외하는 일반 계산을 reviewed 입력에서 사용; 임의 대수·칸 좌표 특례 없음
+  - 서측 안쪽·남서측 쌍열의 원본 방향 후보 증가를 확인하고 남측 단열의 남는 오방향을 보고; 대수 증가만으로 개선 판정 금지
+  - 기존 기본 생성 순서·골든 6개·과거 SGHS 7입력 결과 보존; 순폭 6m·깊이 5m·고정 구조·판정 유지
+  - 성공 및 잘못된 방향 선점 반례 검사; npm test 및 하네스 실행; 화면 공개 후 사용자 검토 대기
+not_doing:
+  - 장애인 공유통로 및 전기차 배정 구현, 북동측 차로 추가, 외곽·코어·램프·기둥 변경
+  - 도달·NO_LOOP 판정 완화, 원본 재현 완료 선언, 다른 모델·서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 원본 배치와 생성 차이의 공통 원인 제거
+  reference_change: ○ 골든·과거 입력 유지; reviewed 비교 결과만 변경해 사용자 확인
+  excluded_scope: ○ 한 공통 원인; 차량·법규 판정 변경 없음
+stop_conditions:
+  - 허용 파일 밖 수정 또는 세 번째 구현 필요
+  - 안전 판정 완화 또는 골든 기대값 변경이 있어야 진행 가능
+  - 원본 방향 후보 개선 없이 단순 후보 수 증가만 발생
+source_review:
+  source: C:/Users/seok2/OneDrive/바탕 화면/08 arch-automation/08_ Pilot test/01 동대문구 구민회관 부지 복합개발(문화시설)사업 설계공모/01 당선작_SGHS/DG-80514_plan_06.jpg
+  method: 원본 전체 및 주차 구역 확대를 직접 확인; N은 실제 방위가 아닌 이미지 위쪽; 앞면은 인접 차로 쪽으로 판독
+  visible_counts: 서측 외벽 11·서측 안쪽 5·남서 쌍열 8·중앙 북1/북2/남1/남2 각3·동측 외벽 12·중앙 장애인 2·남측 단열 4·남측 장애인 2·동측 북단 2·동측 남단 1
+  count_limit: 합계 59칸은 보이는 구획의 판독 합계; 도면 명시 공식 총대수와 별개; 하역장 점선 4구획과 장애인 해치는 주차칸에서 제외
+  trace_errors: 중앙 4열의 방향 기록 반전·중앙 장애인 열 방향 기록 반전·전기차 7칸 및 장애인 4칸/통로 의미 누락·동측 최남단 추적 범위 과대·북동측 차로 미추적
+  generation_limits: 가로열 우선 선점으로 남측 단열 4후보 중 2칸만 W방향; 서측 안쪽 5후보 중 3칸 오방향; 장애인 구역에 일반 후보 3/4칸; 추적 열 밖 후보 8칸
+  obstacle_limits: 상부 차로 검사 띠의 외곽 부족·C1/고정 기둥 차로 차단·램프 몸체와 기둥 3개 겹침 유지
+  reach_limits: 원본은 작동 가능한 계획으로 전제; 현재 근사 입력 및 연결망은 도달 0구간·NO_LOOP; 원본 실패 판정 아님
+scope_resolution:
+  round_1: 전체 차로 길이가 큰 축 먼저 배치하는 실험은 57후보·서측 안쪽 개선 없음; 채택하지 않고 코드 제거
+  round_2: 장애물 합집합의 전체 bbox 높이 투영이 경계에서만 이어진 기둥 사이 빈 구간까지 제외함을 확인; 모든 꼭짓점 높이로 띠를 나누고 실제 양의 면적이 있는 띠만 제외
+  compatibility: 기본 envelope 계산은 보존하고 일반 occupied-bands 계산을 reviewed에서만 명시; 개별 칸 좌표/대수 특례 없음; 전역 교체 실험은 골든 3개 대수가 바뀌어 채택하지 않음
+  review_limit: 구현 2회 소진; 추가 생성 순서·특수칸·도달 수정을 진행하지 않음
+results:
+  implementation_rounds: 2
+  matching_direction: 서측 안쪽 0→2칸·남서측 쌍열 2→4칸; 위치·방향의 국소 개선이며 칸별 차량 이용 합격 아님
+  envelope_overlap: 서측 안쪽 후보 3→5·면적 31→64.1%; 남서측 쌍열 후보 4→6·면적 45.3→65.6%; 방향이 틀린 후보도 면적에는 포함
+  candidate_result: 58→62후보; 실제 채택 0·미도달 62·도달 0구간·INFEASIBLE; 추가 4칸 깊이 5m·폭 2.5m·장애물 겹침 0
+  geometry_preservation: 같은 위상에서 columns·cores·occupants·aisles·ramp·graph 전체 동일; 차로 순폭 6m 유지
+  counterexample: 복구 구간을 폭 600mm 실장애물로 막으면 세로 후보가 다시 제외됨; 면적/후보수와 앞면 방향을 별도 검증
+  preflight: 96/96; 52.226초; 20261029-175351-UG-SGHS-ROW-ORDER-001-23978635
+  npm_test: 98/98; 51.711초
+  harness: 98/98; 51.330초; 공통 시험 재실행이며 독립 검토 아님
+  preservation: 골든 6개와 과거 SGHS 7입력의 전체 계산 SHA256 동일; 기존 사용자 변경 3파일 바이트 동일
+  browser: 원본 이미지 로드·13행·전후 수/방향·재열기·추적/연결망 전환·B2·clearance 59후보·reviewed 62후보 확인; 저장 보존; 720px에서 body 705px로 넘침 없음; 콘솔 오류 없음
+  files: 허용된 5파일만 변경; 프로덕션 추가 55줄로 400줄 한도 이내
+  evidence: C:/Users/seok2/.codex/research/SGHS-ROW-ORDER-20261029; semantic-evidence.json·before.json·after.json·npm-test.log·reviewed-comparison.png
+  screen: http://127.0.0.1:8874/04_parking/sghs-compare.html?floor=B1&revision=reviewed&candidate=connected
+  independent_review: 미실시; 다른 모델·서브에이전트 호출 없음
+  user_visual_review: 새 화면 확인 대기; 단계 종료 또는 원본 재현 완료 승인 아님

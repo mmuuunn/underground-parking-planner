@@ -628,7 +628,7 @@ console.log('empty island ok');
     assert.deepStrictEqual(r.columns,old.columns);assert.deepStrictEqual(r.ramp.body,old.ramp.body);assert.deepStrictEqual(r.cores.slice(0,2),old.cores.slice(0,2));
     const reserve=r.occupants.find(c=>c.kind==='ramp-access');assert.deepStrictEqual(G.bbox(reserve.pts),[57400,40800,63750,47300]);
     for(const out of [r,net]){const audit=F.auditB1(out,G);assert.equal(audit.coreMismatch,false);assert.equal(audit.rampReservationMissing,false);assert.equal(audit.rampCandidateHits,0);assert.equal(out.grid.aisleMm,6000);}
-    assert.equal(net.stallCount,0);assert.equal(net.status,'INFEASIBLE');assert.equal(net.placementReport.counts.unreachable,58);
+    assert.equal(net.stallCount,0);assert.equal(net.status,'INFEASIBLE');assert.equal(net.placementReport.counts.unreachable,62);
     assert.equal(F.floors[0].clearance.cores[2].w,5600);assert.equal(F.floors[0].clearance.occupants.length,2);assert.equal(F.floors[1].reviewed,undefined);
   });
   test('source audit detects former hatch overread, missing ramp reservation and an introduced ramp stall',()=>{
@@ -640,10 +640,42 @@ console.log('empty island ok');
   });
   test('source row audit exposes omissions and extra candidates while keeping actual accepted parking separate',()=>{
     const r=candidate('reviewed'),audit=F.auditB1(r,G),before=JSON.stringify(r);assert.deepStrictEqual(audit,F.auditB1(r,G));assert.equal(JSON.stringify(r),before);
-    assert.equal(audit.rows.length,13);assert.equal(audit.candidateCount,58);assert.equal(audit.keptCount,0);assert.equal(audit.outsideRows.length,8);assert.deepStrictEqual(audit.emptyRows,['동측 북단']);
-    assert.equal(audit.rows.find(x=>x.id==='서측 안쪽').coveragePct,31);assert.equal(audit.rows.find(x=>x.id==='남서측 쌍열').coveragePct,45.3);
+    assert.equal(audit.rows.length,13);assert.equal(audit.candidateCount,62);assert.equal(audit.keptCount,0);assert.equal(audit.outsideRows.length,8);assert.deepStrictEqual(audit.emptyRows,['동측 북단']);
+    assert.equal(audit.rows.find(x=>x.id==='서측 안쪽').coveragePct,64.1);assert.equal(audit.rows.find(x=>x.id==='남서측 쌍열').coveragePct,65.6);
     assert.equal(audit.status,'DIFFERENCES_REQUIRE_REVIEW');assert(audit.rows.every(x=>x.kept===0));
     const noCandidates=F.auditB1({...r,stalls:[],lost:[]},G);assert.equal(noCandidates.emptyRows.length,13);assert(noCandidates.rows.every(x=>x.coveragePct===0));
+  });
+  test('direct source observations separate visible counts, facing and special use from envelope coverage',()=>{
+    const rows=F.floors[0].reviewedTrace.rows,by=id=>rows.find(r=>r.id===id).observation;
+    assert.equal(rows.reduce((sum,r)=>sum+r.observation.visibleCount,0),59);
+    assert.deepEqual(rows.map(r=>r.observation.visibleCount),[11,5,8,3,3,3,3,12,2,4,2,2,1]);
+    assert.deepEqual(rows.map(r=>r.facing),['E','W','WE','N','N','S','S','W','S','W','N','W','W']);
+    assert(by('서측 외벽').use.includes('전기차 표시 7'));assert(by('중앙 장애인 열').use.includes('해치 통로'));
+    const a=F.auditB1(candidate('reviewed'),G),row=id=>a.rows.find(r=>r.id===id);
+    assert.equal(a.visibleSourceCount,59);assert.equal(row('중앙 장애인 열').candidates,3);assert.equal(row('중앙 장애인 열').observation.visibleCount,2);
+    assert.equal(row('남측 단열').candidates,4);assert.equal(row('남측 단열').matchingFacing,2,'same count and area do not certify direction');
+  });
+  test('occupied bands recover source-facing candidates lost between boundary-touching obstacles, without certifying reach',()=>{
+    const input=inputFor('reviewed');input.phase=E.generate(input).grid.phase;
+    const before=JSON.stringify(input),routes=F.floors[0].reviewedTrace.routes;
+    const old=E.generateConnected({...input,stallStripProjection:'envelope'},routes),r=E.generateConnected(input,routes);
+    const oldAudit=F.auditB1(old,G),audit=F.auditB1(r,G),row=(a,id)=>a.rows.find(x=>x.id===id);
+    assert.equal(JSON.stringify(input),before);assert.deepEqual(r,E.generateConnected(input,routes));
+    assert.deepEqual([old.lostCount,r.lostCount],[58,62]);
+    assert.deepEqual([row(oldAudit,'서측 안쪽').matchingFacing,row(audit,'서측 안쪽').matchingFacing],[0,2]);
+    assert.deepEqual([row(oldAudit,'남서측 쌍열').matchingFacing,row(audit,'남서측 쌍열').matchingFacing],[2,4]);
+    for(const key of ['columns','cores','occupants','aisles','ramp','graph'])assert.deepEqual(r[key],old[key],key+' must not change to recover stalls');
+    const added=r.lost.filter(P=>!old.lost.some(Q=>JSON.stringify(P)===JSON.stringify(Q)));
+    assert.equal(added.length,4);
+    for(const P of added){const b=G.bbox(P);assert.equal(b[2]-b[0],5000);assert.equal(b[3]-b[1],2500);}
+    const blocks=r.columns.concat(r.cores.map(c=>c.pts),r.occupants.map(c=>c.pts),[r.ramp.body],r.aisles);
+    assert.equal(Math.abs(G.areaOf(G.boolOp(r.lost,blocks,G.CL.ClipType.ctIntersection))),0);
+    assert.equal(r.placementReport.counts.unreachable,62);assert.equal(r.placementReport.counts.clash,0);assert.equal(r.stallCount,0);assert.equal(r.status,'INFEASIBLE');assert(r.violations.some(v=>v.id==='NO_LOOP'));
+    const solid=structuredClone(input);solid.occupants.push({c:[20000,27300],w:600,d:8400});
+    const blocked=E.generateConnected(solid,routes),gap=G.rectPoly([19700,23100,24700,31500]);
+    const vertical=blocked.lost.filter(P=>{const b=G.bbox(P);return b[2]-b[0]>b[3]-b[1];});
+    assert.equal(Math.abs(G.areaOf(G.boolOp(vertical,[gap],G.CL.ClipType.ctIntersection))),0,'a positive-width obstruction must still remove the blocked vertical-row height');
+    assert.throws(()=>E.generateConnected({...input,stallStripProjection:'unknown'},routes),RangeError);
   });
 }
 
