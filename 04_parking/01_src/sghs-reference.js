@@ -147,6 +147,12 @@
   calibratedTrace.centralConnection={...calibratedTrace.centralConnection,junction:[33000,19550]};
   calibratedTrace.note='원본 작동 전제의 입력 정합안. 3.1m 원호는 장애물 이격 중심선이며 차량 조향반경이 아닙니다. 순환·주차 용도·칸별 조향은 미재현입니다.';
   Object.assign(floors[0],{calibrated:calibratedInput,calibratedTrace,calibratedBoundary:{...calibrated.boundary,note:'사용자 승인 추정치 보정: 기둥500mm·램프 유효폭6m·가로 차로+50mm·C2 북측 차로+100mm·C3 추정 북단-250mm·상부 곡선 재추적과200mm 정합·원도 빈 교점1곳 반영. 구조축·칸2.5×5m·차로6m 유지; 실측 확정이나 원본 전체 재현 아님.'},calibratedDimensionReview:{...floors[0].reviewedDimensionReview,status:'ASSUMPTIONS_RECONCILED',columnMm:500,laneCenterMm:19550,requiredMm:9000,shortfallMm:0,availableStallWidthMm:2500,oppositeFaceMarginMm:0,note:'기둥500mm는 승인된 정합 가정이며 원도 실측치가 아닙니다. 600mm 비교 입력은 보존했습니다.'}});
+  Object.assign(floors[0],{calibratedBeforeAccess:structuredClone(calibratedInput),calibratedBeforeAccessTrace:structuredClone(calibratedTrace)});
+  calibratedInput.occupants.find(c=>c.kind==='ramp-access').vehiclePassable=true;
+  // Two bends follow the source's open floor; no point is an individual-stall correction or steering proof.
+  calibratedTrace.routes[0].points=[[37200,44050],[34200,44050],[24600,44050],[16750,37200],[16750,19550],[32600,19550]];
+  calibratedTrace.routes.push({id:'동측 북단 접속 가지',points:[[60800,36800],[60800,47300]],certainty:'derived-from-operable-source'});
+  calibratedTrace.note='원본 작동 전제의 입력 정합안. 상부는 수평·사선·서측 차로로 간결화하고 동측은 북단까지 연장했습니다. 주황 점선 접속부는 차량 통과 가능·주차 금지입니다. 남서측275mm 어긋남·C1 상단·순환·용도·조향은 별도 확인이 필요합니다.';
   // Compare supplied geometry against separately identified source regions before judging the engine.
   function auditB1(plan,G,reference='reviewed'){
     const {CL,boolOp,areaOf,rectPoly,bbox}=G,I=CL.ClipType.ctIntersection,U=CL.ClipType.ctUnion;
@@ -171,7 +177,7 @@
     const outside=candidates.flatMap((P,i)=>{const ratio=over([P],rows.map(r=>r.polygon))/area([P]);return ratio<.5?[{index:i,pts:P,sourceRowOverlapPct:Math.round(ratio*1000)/10,bounds:bbox(P)}]:[];});
     return {basis:'user-confirmed core/ramp meaning; estimated source parking-row envelopes',status:'DIFFERENCES_REQUIRE_REVIEW',candidateCount:candidates.length,keptCount:kept.length,
       coreMismatch:!plan.cores?.[2]||area(boolOp([plan.cores[2].pts],[core],CL.ClipType.ctXor))>1e4,
-      rampReservationMissing:!plan.occupants?.some(c=>c.kind==='ramp-access'&&area(boolOp([c.pts],[reservation],CL.ClipType.ctXor))<=1e4),
+      rampReservationMissing:!([...(plan.occupants||[]),...(plan.parkingReservations||[])]).some(c=>c.kind==='ramp-access'&&area(boolOp([c.pts],[reservation],CL.ClipType.ctXor))<=1e4),
       rampCandidateHits:candidates.filter(P=>over([P],[reservation])>1e4).length,
       rows:rowResults,visibleSourceCount:observations.reduce((sum,r)=>sum+r[1],0),emptyRows:rowResults.filter(r=>r.candidates===0).map(r=>r.id),outsideRows:outside,
       note:'원본 59칸은 이미지에서 보이는 칸의 판독 합계이며 공식 총대수는 미확인입니다. 방향 대응은 후보 짧은 변 앞의 국소 차로 면만 확인하며 용도·도달·조향 합격이 아닙니다. 전기차·장애인 공유통로는 미재현입니다. 면적 대응은 근사 추적 범위와의 겹침이며 후보는 열 경계에서 중복 집계될 수 있습니다. 열 밖은 후보 면적의 절반 미만이 추적 열에 드는 경우입니다.'};
@@ -234,7 +240,7 @@ if(typeof module!=='undefined'&&require.main===module){
     assert.equal(require('./plan/CLAUDE_ugp_verify.js').check(remote,tangentInput).counts.unreachable,1,'a real stall on the far side of the gap must be rejected');
     const rot=p=>G.rot(p,90),rotated=E.generateConnected({...generic,ucs:90,mass:generic.mass.map(rot),cores:generic.cores.map(k=>({...k,c:rot(k.c)})),obstacleClearance:'euclidean',ramp:E.createStraightRamp({landing:rot([5000,19000]),angleDeg:90,widthMm:6000,lengthMm:3000})},lines.map(r=>({...r,points:r.points.map(rot)})));
     assert(rotated.graph.edges.every(e=>e.ok&&e.reached));assert.equal(rotated.stallCount,exact.stallCount);
-    const f=c.floors[0],d=structuredClone(f.calibrated),rp=d.ramp,input={...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+    const source=c.floors[0],f={...source,calibrated:source.calibratedBeforeAccess,calibratedTrace:source.calibratedBeforeAccessTrace},d=structuredClone(f.calibrated),rp=d.ramp,input={...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
     const snapshot=JSON.stringify({input,routes:f.calibratedTrace.routes}),r=E.generateConnected(input,f.calibratedTrace.routes),a=c.auditB1(r,G,'calibrated'),square=E.generateConnected({...input,obstacleClearance:'box'},f.calibratedTrace.routes);
     assert.equal(JSON.stringify({input,routes:f.calibratedTrace.routes}),snapshot);assert.deepEqual(r,E.generateConnected(input,f.calibratedTrace.routes));
     assert.deepEqual(r.grid.columnAxes,f.reviewed.columnAxes);assert.equal(r.columns.length,38);assert.equal(r.grid.aisleMm,6000);assert.equal(d.referenceColumnMm,500);assert.equal(r.stallCount,60);assert.equal(r.lostCount,0);
@@ -247,6 +253,43 @@ if(typeof module!=='undefined'&&require.main===module){
     const realColumn=E.generateConnected({...input,grid:{...input.grid,columnIntersections:[]}},f.calibratedTrace.routes);assert(realColumn.violations.some(v=>v.id==='FIXED_COLUMN_BLOCKS_ROUTE'));assert(realColumn.graph.edges.some(e=>!e.reached));
     assert.throws(()=>E.generateConnected({...input,obstacleClearance:'unknown'},f.calibratedTrace.routes),RangeError);assert.throws(()=>E.generate({...input}),RangeError);
     console.log(JSON.stringify({calibrationChecks:'clear diagonal; real collision; exact tangency; 500mm gap; rotation; full B1 bands and physical obstacles; restored blocker; input preservation; invalid modes',cases:8,commonFixSameInput:{boxReached:square.graph.edges.filter(e=>e.reached).length,euclideanReached:19,boxKept:square.stallCount,euclideanKept:r.stallCount},B1:{candidates:60,geometricReachKept:60,deadSide:r.deadSideCount,status:r.status,sourceRows:a.rows.map(x=>[x.id,x.candidates,x.matchingFacing])}}));
+  }
+  if(process.argv.includes('--access')){
+    const V=require('./plan/CLAUDE_ugp_verify.js'),I=G.CL.ClipType.ctIntersection,D=G.CL.ClipType.ctDifference;
+    const over=(A,B,t=I)=>Math.abs(G.areaOf(G.boolOp(A,B,t)));
+    const f=c.floors[0],make=d=>{d=structuredClone(d);const p=d.ramp;return {...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',floorMm:undefined,grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},ramp:E.createStraightRamp({landing:p.p,angleDeg:p.alignedAngleDeg,widthMm:p.w,lengthMm:p.len})};};
+    const oldInput=make(f.calibratedBeforeAccess),input=make(f.calibrated),routes=f.calibratedTrace.routes,snapshot=JSON.stringify({input,routes});
+    const old=E.generateConnected(oldInput,f.calibratedBeforeAccessTrace.routes),r=E.generateConnected(input,routes),a=c.auditB1(r,G,'calibrated');
+    assert.equal(old.stallCount,60);assert.equal(r.stallCount,66);assert.equal(r.lostCount,0);assert.equal(r.columns.length,38);
+    assert.deepEqual(r.grid.columnAxes,old.grid.columnAxes);assert.deepEqual(r.columns,old.columns);assert.equal(r.grid.aisleMm,6000);
+    assert(r.stalls.every(s=>{const b=G.bbox(s.pts);return (b[2]-b[0]===5000&&b[3]-b[1]===2500)||(b[2]-b[0]===2500&&b[3]-b[1]===5000);}));
+    assert.deepEqual(a.rows.map(x=>x.candidates),[11,4,8,3,3,3,3,12,3,4,3,2,2]);assert.equal(a.rampCandidateHits,0);assert.equal(a.rampReservationMissing,false);
+    assert.equal(r.parkingReservations.length,1);assert.equal(r.occupants.length,2);assert(over(r.aisles,r.parkingReservations.map(x=>x.pts))>38e6);
+    assert.equal(over(r.aisles,r.columns.concat(r.cores.map(x=>x.pts),r.occupants.map(x=>x.pts),[r.ramp.body])),0);
+    const fullBands=routes.flatMap(l=>l.points.slice(1).map((b,i)=>{const p=l.points[i],v=G.mul(G.norm(G.sub(b,p)),3000),n=[-v[1],v[0]];return [G.add(p,n),G.add(b,n),G.sub(b,n),G.sub(p,n)];}));
+    assert.equal(over(fullBands,r.aisles,D),0,'all supplied full six-metre bands must exist');
+    assert(r.graph.edges.every(e=>e.ok&&e.reached));assert.equal(r.graph.edges.length,13);assert.deepEqual(r.placementReport.counts,{ok:0,deadSide:66,unreachable:0,noFront:0,clash:0});
+    assert.equal(r.status,'INFEASIBLE');assert(r.violations.some(v=>v.id==='NO_LOOP'));assert(r.violations.some(v=>v.id==='DEAD_END'));assert.equal(r.networkCandidate.turning,'UNVERIFIED');
+    const sw=plan=>plan.stalls.map(x=>G.bbox(x.pts)).filter(b=>b[0]>=19750&&b[2]<=30000&&b[1]>=5000&&b[3]<=17000);
+    assert.deepEqual(sw(r),sw(old),'southwest row coordinates, including the 275mm discrepancy, stay unchanged');
+    assert.equal(JSON.stringify({input,routes}),snapshot);assert.deepEqual(r,E.generateConnected(input,routes));
+    const access={id:'shared access',kind:'ramp-access',c:[20000,15000],w:6000,d:18000,vehiclePassable:true};
+    const generic={mass:[[0,0],[50000,0],[50000,40000],[0,40000]],cores:[],occupants:[access],phase:[0,0],autoZones:false,aisleSurfaceMode:'network',obstacleClearance:'euclidean',grid:{...c.grid,columnAxes:{x:[40000,45000],y:[30000,35000]}},ramp:E.createStraightRamp({landing:[5000,15000],angleDeg:0,widthMm:6000,lengthMm:3000})};
+    const ring=[{points:[[5000,15000],[10000,15000]]},{points:[[10000,15000],[30000,15000],[30000,30000],[10000,30000],[10000,15000]]}],pass=E.generateConnected(generic,ring),physicalInput={...generic,occupants:[{...access,vehiclePassable:false}]},physical=E.generateConnected(physicalInput,ring);
+    assert(pass.graph.hasLoop);assert(pass.graph.edges.every(e=>e.ok&&e.reached));assert.equal(over(pass.stalls.map(s=>s.pts),pass.parkingReservations.map(x=>x.pts)),0);
+    assert.equal(E.checkVehiclePath(pass,[[10000,15000],[28000,15000]]).state,'clear','body sampling crosses access without treating it as a wall');
+    assert(!physical.graph.hasLoop);assert(physical.violations.some(v=>v.id==='CORE_IN_AISLE'));assert.equal(over(physical.aisles,physical.occupants.map(x=>x.pts)),0);
+    const forged=structuredClone(pass);delete forged.parkingReservations;forged.stalls=[{pts:G.rectPoly([18000,18000,20500,23000]),kind:'h'}];
+    assert.equal(V.check(forged,generic).counts.clash,1,'input reservation still rejects a stall if output reservation metadata is missing');
+    const wall=structuredClone(pass);wall.occupants=physical.occupants;
+    assert(V.check(wall,physicalInput).violations.some(v=>v.id==='AISLE_UNDER_CORE'),'same-kind physical objects must still block lanes');
+    assert.equal(E.checkVehiclePath(wall,[[10000,15000],[28000,15000]]).firstIssue.id,'VEHICLE_HITS_OBJECT');
+    const rot=p=>G.rot(p,90),turnedInput={...generic,ucs:90,mass:generic.mass.map(rot),occupants:[{...access,c:rot(access.c)}],ramp:E.createStraightRamp({landing:rot([5000,15000]),angleDeg:90,widthMm:6000,lengthMm:3000})};
+    const turned=E.generateConnected(turnedInput,ring.map(l=>({points:l.points.map(rot)})));
+    assert.equal(turned.stallCount,pass.stallCount);assert.equal(V.check(turned,turnedInput).counts.clash,0);
+    const rotatedForgery=structuredClone(turned);rotatedForgery.stalls=forged.stalls.map(s=>({...s,pts:s.pts.map(rot)}));assert.equal(V.check(rotatedForgery,turnedInput).counts.clash,1);
+    assert.throws(()=>E.generateConnected({...generic,occupants:[{...access,vehiclePassable:'yes'}]},ring),RangeError);
+    console.log(JSON.stringify({accessChecks:'B1 full width; physical clearance; 13 source regions; southwest preservation; generic access/physical distinction; vehicle samples; forged reservation; rotated reservation; invalid semantics; determinism',B1:{before:old.stallCount,after:r.stallCount,deadSide:r.deadSideCount,status:r.status,sourceRows:a.rows.map(x=>[x.id,x.candidates,x.matchingFacing]),outsideRows:a.outsideRows.length}}));
   }
   console.log(JSON.stringify({checks:'source dimensions; baseline reproduction; fixed cores and axes; no slope claim from visible length; no source-count claim; repeatability; input preservation; invalid input rejection',summaries},null,2));
 }

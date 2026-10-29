@@ -25,11 +25,16 @@
   const over = (poly, paths) => { const c = near(poly, paths); return c.length ? A(boolOp([poly], c, I)) : 0; };
   // 여러 다각형 중 기준을 넘는 것: 합쳐서 한 번 재 보고 넘을 때만 하나씩
   const offenders = (polys, total, each) => (total(polys) <= TOL.areaMm2 ? [] : polys.map((P, i) => [i, each(P)]).filter(([, v]) => v > TOL.areaMm2));
+  // Rebuild no-parking access from input, rather than trusting the generator's reservation output.
+  const accessReservations=input=>(input.occupants||[]).filter(c=>c.vehiclePassable===true).map(c=>{
+    const u=input.ucs||0,q=Gm.rot(c.c,-u);
+    return Gm.rectPoly([q[0]-c.w/2,q[1]-c.d/2,q[0]+c.w/2,q[1]+c.d/2]).map(p=>Gm.rot(p,u).map(Math.round));
+  });
 
   function checkZones(out,input,expected){
     if(!expected){const u=input.ucs||0,w=input.grid?.wallMm??400,base=Gm.offs((input.parkingMass||input.mass).map(p=>Gm.rot(p,-u)),-w),holes=(input.massHoles||[]).map(P=>Boundary.outer(P).map(p=>Gm.rot(p,-u)));expected=boolOp(base,holes.length?Gm.offsP(holes,w):[],D).map(P=>P.map(p=>Gm.rot(p,u).map(Math.round)));}
     const result=[],zones=out.nonParkingZones||[],walks=out.cores.filter(c=>c.plan).map(c=>c.plan.walk),ramp=out.ramp?[out.ramp.body]:[];
-    const cores=out.cores.map(c=>c.pts).concat((out.occupants||[]).map(c=>c.pts));
+    const cores=out.cores.map(c=>c.pts).concat((out.occupants||[]).map(c=>c.pts),accessReservations(input));
     const bands=zones.some(z=>z.source==='input')?out.graph.edges.map(e=>band(out.graph.nodes[e.a].p,out.graph.nodes[e.b].p,out.grid.aisleMm/2-TOL.widthMm)):[];
     const at=paths=>{const b=bbox(paths.flat());return [Math.round((b[0]+b[2])/2),Math.round((b[1]+b[3])/2)];};
     for(const z of zones){
@@ -109,7 +114,7 @@
     if (deadNodes.length) V.push({id: 'DEAD_END', note: `막다른 차로 끝 ${deadNodes.length}곳`, at: deadNodes[0].p});
     // 칸: 허용 영역·겹침 → 앞면 → 동선
     const S = out.stalls.map((s) => s.pts), state = S.map(() => null);
-    const blockers = aisles.concat(out.columns, cores, ramp ? [ramp.body] : [],out.cores.filter(c=>c.plan).map(c=>c.plan.walk));
+    const blockers = aisles.concat(out.columns, cores, accessReservations(input), ramp ? [ramp.body] : [],out.cores.filter(c=>c.plan).map(c=>c.plan.walk));
     for (const [i] of offenders(S, (Ps) => A(boolOp(Ps, allowed, D)), (P) => A(boolOp([P], allowed, D)))) state[i] = 'outside';
     for (const [i] of offenders(S, (Ps) => A(boolOp(Ps, blockers, I)), (P) => over(P, blockers))) state[i] = state[i] || 'hit';
     if (S.reduce((t, P) => t + Math.abs(signedArea(P)), 0) - A(boolOp(S, [], U)) > TOL.areaMm2) {

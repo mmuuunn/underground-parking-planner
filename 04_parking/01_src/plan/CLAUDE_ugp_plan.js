@@ -87,10 +87,13 @@
       if (!c.fit.reach) violations.push({id: 'CORE_DOOR_OFF_AISLE', note: `${n} 입구 앞 ${CoreFit.WALK / 1000}m 안에 차로가 없습니다 — 입구 쪽을 차로에 붙이세요`, at: W(c.fit.out).map(Math.round)});
       if (c.fit.alt.law === 'FAIL') violations.push({id: 'CORE_LAW', note: `${n} ${c.fit.alt.id}안은 코어 생성기 법규 판정 실패입니다${c.fit.alt.lawNote ? ' — ' + c.fit.alt.lawNote : ''}`, at: W([(c.r[0] + c.r[2]) / 2, (c.r[1] + c.r[3]) / 2]).map(Math.round)}); });
     cores.forEach((c,i)=>{if(input.cores[i]?.layouts?.length&&!c.fit)violations.push({id:'CORE_CONFIG_MISSING',note:`코어 ${i+1} 상자 안에 선택한 승강기 구성이 들어가지 않습니다 — 상자 크기를 늘리거나 승강기 대수를 줄이세요`,at:W([(c.r[0]+c.r[2])/2,(c.r[1]+c.r[3])/2]).map(Math.round)});});
-    const occupants=(input.occupants||[]).map((c,i)=>{
+    const allOccupants=(input.occupants||[]).map((c,i)=>{
       if(!Array.isArray(c.c)||!c.c.every(Number.isFinite)||!(c.w>0&&c.d>0))throw new RangeError('점유물의 중심·폭·깊이를 확인하세요');
-      const q=L(c.c);return {id:c.id||'occupant-'+i,kind:c.kind||'equipment',r:[q[0]-c.w/2,q[1]-c.d/2,q[0]+c.w/2,q[1]+c.d/2]};
+      if(c.vehiclePassable!==undefined&&typeof c.vehiclePassable!=='boolean')throw new RangeError('차량 통과 가능 여부는 참·거짓으로 입력하세요');
+      const q=L(c.c);return {id:c.id||'occupant-'+i,kind:c.kind||'equipment',vehiclePassable:c.vehiclePassable===true,r:[q[0]-c.w/2,q[1]-c.d/2,q[0]+c.w/2,q[1]+c.d/2]};
     });
+    // Access reservations prohibit stalls, but are not physical obstacles for any vehicle-route consumer.
+    const occupants=allOccupants.filter(c=>!c.vehiclePassable),parkingReservations=allOccupants.filter(c=>c.vehiclePassable);
     const obstacles=cores.concat(occupants),policy=input.occupantPolicy||'report';
     if(!['report','bypass'].includes(policy))throw new RangeError('알 수 없는 코어 차단 정책입니다');
     // 우회 전 구조를 먼저 고정한다. 새 차로와 겹친다는 이유로 기둥을 지우지 않는다.
@@ -120,7 +123,7 @@
     }
     const graph = Net.buildGraph(pieces);
     // 기둥 · S6 칸
-    const blockedStatic = [...obstacles.map((c) => rectPoly(c.r)), ...cores.filter((c) => c.geo).map((c) => c.geo.walk), ...innerHoles,...zoneLocal,...(rampOut ? [rampOut.body] : [])];
+    const blockedStatic = [...cores.concat(allOccupants).map((c) => rectPoly(c.r)), ...cores.filter((c) => c.geo).map((c) => c.geo.walk), ...innerHoles,...zoneLocal,...(rampOut ? [rampOut.body] : [])];
     const {stalls, rows, excluded, dbg, outerSign} = Lay.placeStalls(G, segs, area, aisleU, blockedStatic, columns, input.debug, input);
     // 최종 도형(세계 좌표) → S7 독립 검사. 대수·칸 분류·동선 표시·상태는 모두 검사 결과로 정한다
     const Wp = (poly) => poly.map((pt) => W(pt).map(Math.round));
@@ -132,6 +135,7 @@
         ...(c.geo ? {plan: {altId: c.fit.alt.id, name: c.fit.alt.name, evCount: c.fit.alt.ev || null, facing: c.fit.f, law: c.fit.alt.law || null, wallMm: c.fit.alt.t, columnsInRoom: c.fit.roomCols, columnsInWall: c.fit.wallCols, columnsAtCorner: c.fit.corner, columnsStraddling: c.fit.loose, growMm: c.fit.grow, boxDeltaMm: c.fit.box, fitsBox: c.fit.fitsBox, entranceReachesAisle: c.fit.reach,
           rooms: c.geo.rooms.map((x) => ({kind: x.kind, pts: Wp(x.poly)})), walls: c.geo.walls.map(Wp), openings: c.geo.openings.map((o) => ({id: o.id, type: o.type, a: W(o.a).map(Math.round), b: W(o.b).map(Math.round), side: o.side})), stair: c.geo.stair.map(Wp), walk: Wp(c.geo.walk)}} : {})})),
       occupants:occupants.map(c=>({id:c.id,kind:c.kind,pts:Wp(rectPoly(c.r))})),
+      ...(parkingReservations.length?{parkingReservations:parkingReservations.map(c=>({id:c.id,kind:c.kind,pts:Wp(rectPoly(c.r))}))}:{}),
       occupantRouting:{policy,created:routing.created.map(path=>path.map(p=>W(p).map(Math.round))),failed:routing.failed.map(s=>({a:W(s.a).map(Math.round),b:W(s.b).map(Math.round)}))},
       ramp: rampOut && {...(rampOut.kind === 'curve' ? {kind: 'curve', id: rampOut.id, sourceRamp:rampOut.sourceRamp} : {}), body: Wp(rampOut.body), landing: W(rampOut.landing).map(Math.round), tangent: W(rampOut.u), widthMm: rampOut.widthMm, approach:{points:(rampOut.approach||[]).map(p=>W(p).map(Math.round)),widthMm:a,...(rampOut.approachInfo?{firstStraightMm:rampOut.approachInfo.firstStraightMm,turnAnglesDeg:rampOut.approachInfo.turnAnglesDeg,turnCount:rampOut.approachInfo.turnCount,accepted:rampOut.approachInfo.accepted,summary:rampOut.approachInfo.summary}:{})}, start: rampOut.start?W(rampOut.start).map(Math.round):null, slopePct: rampOut.slopePct, lengthMm: rampOut.lengthMm, shiftMm: rampOut.shiftMm},
       graph: {nodes: graph.nodes.map((nd) => ({id: nd.id, p: W(nd.p).map(Math.round)})), edges: graph.edges},
@@ -158,7 +162,7 @@
     if (excluded.unreachable) warnings.push(`램프에서 닿지 않는 차로에 면한 칸 ${excluded.unreachable}대 제외`);
     if (rep.counts.deadSide) warnings.push(`막다른 차로에 면한 칸 ${rep.counts.deadSide}대(후진·회차 필요)`);
     // S8 미사용 잔여공간: 허용 영역에서 차로·칸·코어·램프·기둥을 뺀 나머지 중 2㎡ 넘는 조각(구멍은 둔다)
-    const used = boolOp(out.aisles.concat(kept.map((s) => s.pts), out.cores.map((c) => c.pts),out.occupants.map(c=>c.pts), out.ramp ? [out.ramp.body] : [], out.columns), [], CL.ClipType.ctUnion);
+    const used = boolOp(out.aisles.concat(kept.map((s) => s.pts), out.cores.map((c) => c.pts),out.occupants.map(c=>c.pts),(out.parkingReservations||[]).map(c=>c.pts), out.ramp ? [out.ramp.body] : [], out.columns), [], CL.ClipType.ctUnion);
     const rawFree=boolOp(area.map(Wp),used,CL.ClipType.ctDifference);
     const dry = rawFree.filter((q) => Math.abs(signedArea(q)) > 2e6 || signedArea(q) * outerSign < 0);
     const zoning=Zones.calculate(out,input,rawFree);
@@ -191,7 +195,7 @@
     const U = boolOp(out.aisles.concat(out.ramp ? [out.ramp.body] : []), [], CL.ClipType.ctUnion); if (!U.length) return [];
     const sgn = Math.sign(signedArea(U.reduce((m, q) => (Math.abs(signedArea(q)) > Math.abs(signedArea(m)) ? q : m)))), mid = (P) => [0, 1].map((k) => P.reduce((n, q) => n + q[k], 0) / P.length);
     const inside = (P, q) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[j], b = P[i]; if ((a[1] > q[1]) !== (b[1] > q[1]) && q[0] < (b[0] - a[0]) * (q[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
-    const occupied=(out.cores||[]).map(c=>c.pts).concat((out.occupants||[]).map(c=>c.pts));
+    const occupied=(out.cores||[]).map(c=>c.pts).concat((out.occupants||[]).map(c=>c.pts),(out.parkingReservations||[]).map(c=>c.pts));
     return U.filter((h) => Math.sign(signedArea(h)) !== sgn && Math.abs(signedArea(h)) > 20e6).filter(h=>!occupied.some(P=>Math.abs(areaOf(boolOp([h],[P],CL.ClipType.ctIntersection)))>1e4)).map((h) => ({poly: h.map((q) => q.map(Math.round)), n: kept.filter((st) => inside(h, mid(st.pts))).length, areaM2: Math.round(Math.abs(signedArea(h)) / 1e6), at: mid(h).map(Math.round)})).filter((x) => x.n < ISLAND_MIN);
   }
   function issueList(allV, out, rep, rampOut, W, cores,sourceStalls,placementReport) {

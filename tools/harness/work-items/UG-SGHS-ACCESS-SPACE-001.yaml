@@ -1,0 +1,72 @@
+id: UG-SGHS-ACCESS-SPACE-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: B1 램프 접속부의 통행 가능·주차 금지 분류와 차로 정합으로 북단 누락 및 상부 굽음을 개선할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_verify.js
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/sghs-compare.html
+  - tools/harness/work-items/UG-SGHS-ACCESS-SPACE-001.yaml
+acceptance:
+  - 통행 가능한 주차 금지 예약을 물리 점유물과 분리; 생성·도형 검사·주행 경로 검사에 일관 반영; 실제 코어·기둥·실 차단 유지
+  - 기존 calibrated 입력과 연결망을 전후 기준으로 보존; 동측 북단2칸·외벽12칸의 생성·접면·도달과 전체13곳의 변화를 보고
+  - 상부 경로를 원본·분홍 개념선과 대조해 간결화; 모든 공급 구간의 전체6m 띠 및 장애물 이격·C1 상단 변화 검증
+  - 원본 구조축·차로 순폭6m·주차 깊이5m 유지; 추정 입력 변경과 악화를 공개; 남서측275mm 수정 금지
+  - 실제 화면과 같은 축척의 원본·전후 주석 이미지에서 접속부 색과 통행 가능·주차 금지 범례 일치
+  - source 실행형 자체검사에 통과·물리 차단·주차 금지·독립 검사 반례 추가; npm test 및 하네스 통과
+  - 기본 골든6·과거SGHS7·사용자 기존3파일 바이트 보존; 후보 수·시험 통과를 전체 재현이나 실제 회차·조향 합격으로 표현하지 않음
+not_doing:
+  - 남서측 쌍열 정렬·개별 칸 좌표 특례·정밀 조향·교행·안전 판정 완화
+  - 다른 모델·서브에이전트 호출·원격 push·단계 종료
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 원본 재현의 세 오류와 공통 공간 분류 개선에 직접 기여
+  reference_change: ○ 승인된 입력 정합; 과거 입력 보존·대수 변화 설명·화면 확인 대기
+  excluded_scope: ○ 1차 범위만 진행; 남서측 정렬과 정밀 조향 제외
+stop_conditions:
+  - 같은 원인의 세 번째 구현 또는 허용 파일 밖 수정 필요
+  - 순폭6m·깊이5m·구조축·안전 합격 조건 완화 필요
+  - 기준 시험을 변경 전 상태에서 재현할 수 없음
+results:
+  implementation_rounds: 1
+  test_fixture_correction: 합성 순환 사례의 램프 접속을 고리 모서리와 분리; 램프 몸체 위 차로를 허용하도록 시험 완화한 것이 아님; 제품 알고리즘은 첫 구현 이후 변경 없음
+  classification: 입력 점유물의 명시적 vehiclePassable=true만 통행 가능한 주차 금지 예약으로 분리; 출력 occupants는 물리 점유물, parkingReservations는 통행 예약; 기존 무표시 입력은 물리 장애물 유지
+  independent_geometry: 검사기는 입력에서 주차 금지 다각형을 별도 재구성; 출력 예약 목록을 지워도 겹친 칸 거부; 실제 물리 점유물의 차로·차량 몸체 충돌은 계속 거부
+  route_consumer: 기존 차량 경로 검사는 물리 occupants만 받아 통행 예약을 벽으로 오인하지 않음; 별도 합성 고리에서 실제 몸체 경로의 통과·물리 장애물 실패 확인; B1 실제 조향 통과 주장은 아님
+  input_changes: calibratedBeforeAccess와 그 Trace에 기존500mm 입력 보존; calibrated의 동측 예약에 명시적 통행 속성 추가; 동측 중심선Y36800→47300 가지; 상부 중심선13→6점, 수평Y44050·사선[24600,44050]→[16750,37200]
+  maintained: 구조축·기둥38개의 좌표·코어·외곽·램프 몸체·주차2500×5000·차로6000mm 불변; 남서측8칸 좌표와275mm 어긋남 그대로
+  full_width: 모든 공급 구간의 전체6000mm 띠 누락0mm²; 차로와 실제 코어·기둥·실·램프 몸체 겹침0mm²; 통행 예약과 차로38.675㎡ 겹침은 의도된 통행 공간
+  counts: 후보60→66·기하/도달 채택60→66; 미도달0·앞면 없음0·충돌0; 도달19/19→13/13구간; 구간 감소는 상부 중심선 간결화에 따른 것
+  safety: 66칸 모두 막다른 차로 후보; INFEASIBLE·NO_LOOP·DEAD_END·turning=UNVERIFIED 유지; 원본 재현 완료·실제 회차·조향·교행 합격 아님
+  source_13:
+    - 서측 외벽 원본11;11→11; 전기차7칸 용도 미재현
+    - C1 서측 안쪽 원본5;4→4; 상단1칸 누락 유지; C1을5칸으로 만드는 높은 사선안은 전체6m 띠 부족으로 미채택
+    - 남서측 쌍열 원본8;8→8;275mm 어긋남 유지; 이번에 수정하지 않음
+    - 중앙 북1·북2·남1·남2 원본각3;각3→3; 위치 근사
+    - 동측 외벽 원본12;10→12;12칸 모두 원본 방향 접면·램프 도달
+    - 중앙 장애인 원본2;일반3→3; 공유 통로·용도 미재현
+    - 남측 단열 원본4;4→4; 위치 근사
+    - 남측 장애인 원본2;일반3→3; 공유 통로·용도 미재현
+    - 동측 북단 원본2;0→2;2칸 모두 원본 방향 접면·램프 도달
+    - 동측 남단 원본1;2→2; 과대 추적·추가 후보 유지
+  deterioration: 추적 열 밖 후보6→8; 상부 경로 변경으로 X29450~34450/Y36050~41050의2칸 추가; 원본 하역장 부근으로 원본 주차 재현에 포함하지 않음; 실제 화면·13곳 전후 주석 이미지에서 적색 테두리와 문장으로 공개
+  isolated_effects: 분류만60칸; 연장만64후보/채택61·북단접면채택0; 분류+연장64칸·북단2칸; 상부선만62칸·열밖8칸; 모두66칸; 총증가6칸 중 원본 동측회복4칸과 열밖증가2칸을 분리
+  ui: 비교 화면의 접속부와 증거 이미지 모두 #ffedcc/#b77b2e 주황 점선 및 통과 가능·주차 금지 범례; 13행의 전후 기준은 기존500mm calibratedBeforeAccess; 다른 편집 입력과 섞지 않음
+  preflight: 20261029-212619-UG-SGHS-ACCESS-SPACE-001-0fe864bd; 기준107/107;51.210초
+  scoped_checks: node 04_parking/01_src/sghs-reference.js --calibration --access; 과거8사례·현재B1·합성 통과/물리차단·주차금지·예약출력누락·90도회전·입력불변·결정성·잘못된속성 거부 통과; npm107개와 중복 집계하지 않음
+  npm_test: 107/107;51.377초
+  harness: 107/107;51.506초; 같은 공통시험의 재실행이며 독립 검토 아님
+  preservation: 기본골든6·과거SGHS7의 전체결과SHA256 동일; AGENTS.md·README.md·docs/COMPLETION_BASELINE.md 바이트 동일; 안전 공차·과거 기대값 완화 없음
+  browser: 별도 시험용 Chromium에서 calibrated66칸·13행·38기둥·13도달구간·주황점선·원도 로드 확인; reviewed64후보/채택0·B2·수동추적·일반자동편집·720px 가로넘침0·편집저장보존·페이지오류0; 일반자동9칸과 연결망66칸은 별도 실험
+  display_scope: 주황 점선 표현은 이번 실제 연결망 비교 화면과 수동추적·주석 이미지에 적용; 일반 자동편집의 별도 drawing presentation은 parkingReservations 전용 표시를 아직 지원하지 않음; 별도 파일 수정이므로 이번 범위에서 확장하지 않음
+  review: 다른 담당자의 독립 검토는 필요하나 미실시; 사용자 지시대로 모델·서브에이전트 호출 없음; 사용자 화면 승인 대기; 단계 종료 아님
+  scope: 허용5파일; 제품4파일 추가68줄로400줄 이내; 증거·원본·임시파일은 저장소 밖
+  evidence: C:/Users/seok2/.codex/research/SGHS-ACCESS-SPACE-20261029; B1-source-before-after-13.png·actual-ui.png·evidence.json·isolated-effects.json·access-check.log·npm-test.log·browser-checks.json·before.json·after.json
