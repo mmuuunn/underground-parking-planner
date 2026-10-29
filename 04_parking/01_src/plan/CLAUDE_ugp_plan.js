@@ -127,7 +127,9 @@
     const graph = Net.buildGraph(pieces);
     // 기둥 · S6 칸
     const blockedStatic = [...cores.concat(allOccupants).map((c) => rectPoly(c.r)), ...cores.filter((c) => c.geo).map((c) => c.geo.walk), ...innerHoles,...zoneLocal,...(rampOut ? [rampOut.body] : [])];
-    const {stalls, rows, excluded, dbg, outerSign} = Lay.placeStalls(G, segs, area, aisleU, blockedStatic, columns, input.debug, input);
+    // Physical occupancy leaves empty row bands available; explicit network experiments retain their projection policy.
+    const stallOptions=connected?input:{...input,stallStripProjection:input.stallStripProjection||'occupied-bands'};
+    const {stalls, rows, excluded, dbg, outerSign} = Lay.placeStalls(G, segs, area, aisleU, blockedStatic, columns, input.debug, stallOptions);
     // 최종 도형(세계 좌표) → S7 독립 검사. 대수·칸 분류·동선 표시·상태는 모두 검사 결과로 정한다
     const Wp = (poly) => poly.map((pt) => W(pt).map(Math.round));
     const out = {

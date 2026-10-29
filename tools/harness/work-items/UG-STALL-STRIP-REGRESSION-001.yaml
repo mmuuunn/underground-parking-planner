@@ -1,0 +1,57 @@
+id: UG-STALL-STRIP-REGRESSION-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-session-pending
+verify_profile: vehicle-circulation
+question: 복구한 차로에 경계선으로 이어진 장애물 때문에 비어 있는 주차열을 통째로 버리지 않는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/stall-strip-regression.cjs
+  - tools/harness/scripts/completion-gate.cjs
+  - tools/harness/work-items/UG-STALL-STRIP-REGRESSION-001.yaml
+acceptance:
+  - 변경전125칸 재현;변경후최소126칸;기존유효두칸복구;겹침·앞면·기존도달성판정유지
+  - SGHS동일9칸·대표37.55㎡·기둥0.25㎡·요구폭6m·전체반환값보존
+  - 기존6골든전체반환값·정상접합·물리벽·실제바닥틈·우회25개구조와경로보존
+  - 실제일반제품고정입력125→126이상;최초저장과재열기일치;SGHS화면도별도확인
+  - 명시연결망·명시envelope옵션유지;허용량·골든·정책·사용자문서변경없음
+not_doing:
+  - 원도램프접속·NO_LOOP·정밀차량통행·NURBS·B2·다른모델호출·기존증거덮어쓰기·원격push
+max_implementation_rounds: 1
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 120
+start_gate:
+  contribution: ○ 유효한주차칸누락을수리하고대수변화의위치와원인을검증
+  reference_change: △ 반례125칸변경;SGHS와6골든및구조·경로보존
+  excluded_scope: ○ 램프접속과차량통행을변경하지않음
+completion_contract: |
+  {
+    "kind": "product",
+    "goal": "실제 점유 높이로 주차열을 계산하여 우회 시 유효한 칸 누락을 수리한다",
+    "stage_goal": "대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target": "04_parking/underground-compare.html",
+    "depends_on": [],
+    "checks": [
+      {"id":"stall-strip-regression","script":"04_parking/02_tests/stall-strip-regression.cjs","args":["--verify","C:/Users/seok2/.codex/research/AISLE-STALL-REGRESSION-FIX-20261030"]},
+      {"id":"surface-preservation","script":"04_parking/02_tests/aisle-surface-relation.cjs","args":["--verify","C:/Users/seok2/.codex/research/AISLE-STALL-REGRESSION-FIX-20261030/surface"]}
+    ],
+    "review_required": true,
+    "user_required": true,
+    "product": {
+      "url": "http://127.0.0.1:8874/04_parking/underground-compare.html",
+      "scene": {"v":2,"ucs":0,"mass":[[0,0],[80000,0],[80000,60000],[0,60000]],"cores":[],"ramp":{"p":[30000,48400],"k":0,"len":24000,"w":6000},"snap":1000,"module":"normal","phase":[0,0],"occupantPolicy":"bypass","occupants":[{"id":"solid","c":[66000,46000],"w":2000,"d":3000}]},
+      "expect": {"result.stallCount":{"gte":126},"result.grid.aisleMm":{"eq":6000},"result.report.counts.clash":{"eq":0},"result.report.counts.noFront":{"eq":0}}
+    }
+  }
+results:
+  verification_run: 20261030-035930-UG-STALL-STRIP-REGRESSION-001-934c3e55
+  outcome: REVIEW_PENDING;구현과기계검사통과;독립검토와사용자승인대기
+  implementation_rounds: 1
+  counterexample: 125→127칸;기존125전부보존;유효두칸추가;겹침·앞면누락·미도달0
+  preservation: SGHS전체결과동일9칸·802.154080㎡·대표37.55㎡;6골든전체결과동일;우회25개구조·경로보존
+  checks: 공통109/109;작업2/2;실제제품125→127·동일입력·재열기일치;하네스자체30/30
+  evidence: C:/Users/seok2/.codex/research/AISLE-STALL-REGRESSION-FIX-20261030/validation.json
+  limits: 원도램프접속미재현·NO_LOOP·정밀차량통행별도미해결;독립검토·사용자승인미작성

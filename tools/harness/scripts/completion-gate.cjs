@@ -34,7 +34,9 @@ function validate(i) {
   }
   if (c.kind === 'product') {
     const u = new URL(c.product?.url), expect = c.product?.expect;
-    if (u.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(u.hostname) || u.pathname !== '/04_parking/underground-compare.html' || c.target !== '04_parking/underground-compare.html' || u.searchParams.get('reference') !== 'sghs') throw Error('제품 검증은 실제 SGHS 제품 화면을 지정해야 합니다');
+    const scene = c.product.scene;
+    if (u.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(u.hostname) || u.pathname !== '/04_parking/underground-compare.html' || c.target !== '04_parking/underground-compare.html' || (scene ? u.search !== '' : u.searchParams.get('reference') !== 'sghs')) throw Error('제품 검증은 SGHS 또는 고정 문서를 사용하는 실제 제품 화면을 지정해야 합니다');
+    if (scene && (scene.v !== 2 || !Array.isArray(scene.phase) || scene.phase.length !== 2 || !scene.phase.every(Number.isFinite))) throw Error('고정 문서에는 버전 2와 유한한 위상 좌표가 필요합니다');
     if (!expect || !Object.keys(expect).length || c.user_required !== true) throw Error('제품의 측정 기대값과 사용자 승인이 필요합니다');
     for (const [key, rule] of Object.entries(expect)) {
       if (!/^(result|routes)\.[a-zA-Z0-9_.]+$/.test(key) || /(__proto__|prototype|constructor)/.test(key) || !rule || Object.keys(rule).length !== 1 || !['eq', 'gte', 'lte'].includes(Object.keys(rule)[0])) throw Error('측정 경로와 eq/gte/lte 기대값을 확인하세요');
@@ -64,28 +66,34 @@ function productVerdict(c, before, after) {
   return {passed:after.reloadStable && checks.every(x => x.passed) && checks.some(x => x.improved), checks, reason:'기대값 충족·개선·재열기 동일성을 모두 확인합니다'};
 }
 async function observe(i, dir, name) {
-  // shortcut: this adapter observes the existing SGHS snapshot; add another adapter when a second product case needs it.
   let chromium; try { ({chromium} = require('playwright')); } catch { throw Error('제품 화면 검증에 설치된 Playwright가 필요합니다. NODE_PATH에 해당 node_modules 경로를 지정하세요'); }
   const browser = await chromium.launch({headless:true});
   const context = await browser.newContext({viewport:{width:1500,height:1050}}), page = await context.newPage(), errors = [];
   try {
     page.on('pageerror', e => errors.push(e.message)); await page.goto(i.contract.product.url);
-    await page.waitForFunction(() => window.sghsScene?.snapshot()?.result?.graph, null, {timeout:30000});
+    const ready = () => page.waitForFunction(() => typeof ui !== 'undefined' && ui.res?.graph, null, {timeout:30000});
+    await ready();
+    if (i.contract.product.scene) await page.evaluate(scene => {
+      if (!validDoc(scene)) throw Error('고정 제품 문서가 유효하지 않습니다');
+      doc = structuredClone(scene); doc.phase = {key:phaseKey(),p:scene.phase};
+      save(); recomputeNow('하네스 고정 문서'); fit();
+      if (ui.res.fail) throw Error(ui.res.fail);
+    }, i.contract.product.scene);
     const take = () => page.evaluate(keys => {
-      const s = window.sghsScene.snapshot(), values = {};
+      const s = window.sghsScene ? window.sghsScene.snapshot() : {input:doc,result:ui.res,routes:UGPlan.inspectVehicleRoutes(ui.res)}, values = {};
       for (const key of keys) values[key] = key.split('.').reduce((o,k) => o?.[k], s);
       return {generator:s.result.networkCandidate?.source || 'automatic', values, input:JSON.stringify(s.input), output:JSON.stringify(s.result)};
     }, Object.keys(i.contract.product.expect));
     let first = await take();
     // First calculation persists its selected phase; only its provenance may change on the first reopen.
     if (JSON.parse(first.output).grid.phaseFrom === 'auto') {
-      await page.reload(); await page.waitForFunction(() => window.sghsScene?.snapshot()?.result?.graph, null, {timeout:30000});
+      await page.reload(); await ready();
       const settled = await take(), geometry = value => {const r=JSON.parse(value);delete r.grid.phaseFrom;return JSON.stringify(r);};
       if (first.input !== settled.input || geometry(first.output) !== geometry(settled.output)) throw Error('최초 저장·재열기에서 입력 또는 실제 결과가 달라졌습니다');
       first = settled;
     }
     await page.screenshot({path:path.join(dir, name + '.png'), fullPage:true});
-    await page.reload(); await page.waitForFunction(() => window.sghsScene?.snapshot()?.result?.graph, null, {timeout:30000});
+    await page.reload(); await ready();
     const again = await take(), result = {url:page.url(), generator:first.generator, values:first.values, inputDigest:hash(first.input), outputDigest:hash(first.output), reloadStable:!errors.length && first.input === again.input && first.output === again.output, errors};
     write(path.join(dir, name + '.json'), result); return result;
   } finally { await context.close(); await browser.close(); }
@@ -164,6 +172,10 @@ async function selfTest() {
     check('unstable reopen rejected', () => assert(!productVerdict(pc,before,{...after,reloadStable:false}).passed));
     check('changed input cannot claim improvement', () => assert(!productVerdict(pc,before,{...after,inputDigest:'changed'}).passed));
     check('comparison page rejected', () => assert.throws(()=>validate({...i,contract:{...pc,product:{...pc.product,url:'http://127.0.0.1:8874/04_parking/sghs-compare.html'}}})));
+    const sceneProduct={...pc,product:{...pc.product,url:'http://127.0.0.1:8874/04_parking/underground-compare.html',scene:{v:2,phase:[0,0]}}};
+    check('fixed document uses the actual product',()=>validate({...i,contract:sceneProduct}));
+    check('fixed document cannot use a reference override',()=>assert.throws(()=>validate({...i,contract:{...sceneProduct,product:{...sceneProduct.product,url:pc.product.url}}})));
+    check('fixed document requires a finite phase',()=>assert.throws(()=>validate({...i,contract:{...sceneProduct,product:{...sceneProduct.product,scene:{v:2,phase:[0,null]}}}})));
     check('product approval cannot be disabled', () => assert.throws(()=>validate({...i,contract:{...pc,user_required:false}})));
     const dir = path.join(temp,'run'); fs.mkdirSync(dir); write(path.join(dir,'manifest.json'),{workItem:i.id,runId:'run',verification:{mode:'VERIFY',passed:true,tests:109,pass:109,fail:0,sourceDigest:sourceDigest(i)}}); await preflight(i,dir);
     let r = await verify(i,dir); check('support passes but credits no product progress', () => {assert.equal(r.status,'TASK_VERIFIED');assert.equal(r.productProgress,false);});
