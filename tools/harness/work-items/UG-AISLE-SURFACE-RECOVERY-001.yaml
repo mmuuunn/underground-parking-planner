@@ -1,0 +1,50 @@
+id: UG-AISLE-SURFACE-RECOVERY-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-session-pending
+verify_profile: vehicle-circulation
+question: 사용자 화면에서 거부된 실패 수정을 철회하고 변경 전 제품 결과를 정확히 복구했는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/aisle-surface-recovery.cjs
+  - tools/harness/work-items/UG-AISLE-SURFACE-RECOVERY-001.yaml
+  - tools/harness/work-items/UG-AISLE-SURFACE-JOINS-001.yaml
+acceptance:
+  - 제품 두 파일을814a9dd와동일하게복구;실패증거·사용자변경3파일·기존골든기대값보존
+  - 기존6골든및SGHS B1전체결과를변경전저장자료와정확비교;실제일반제품화면9칸·747.692013㎡·8조각복구
+  - 공통109시험·실행형복구검사통과;원래자투리·기존단절미해결을명시;독립검토·사용자확인대기를완료로기록하지않음
+not_doing:
+  - 세번째면생성수정·새알고리즘·단절강제연결·골든변경·NO_LOOP변경·다른모델호출·원격push
+max_implementation_rounds: 1
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 0
+start_gate:
+  contribution: ○ 실패변경이만든추가훼손철회
+  reference_change: ○ 이미재현된변경전기준으로정확복구
+  excluded_scope: ○ 신규면알고리즘수정없음
+completion_contract: |
+  {
+    "kind": "support",
+    "goal": "실패한 끝단 면 수정을 철회하여 SGHS 실제 제품과6골든을 원래 상태로 복구한다;자투리 제거 완료로 집계하지 않는다",
+    "stage_goal": "대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target": "04_parking/underground-compare.html 복구;실제 화면은 실행형 검사로 관찰",
+    "depends_on": [],
+    "checks": [{"id":"original-product-recovery","script":"04_parking/02_tests/aisle-surface-recovery.cjs","args":[]}],
+    "review_required": true,
+    "user_required": true
+  }
+results:
+  verification_run: 20261030-015009-UG-AISLE-SURFACE-RECOVERY-001-6d9157c7
+  outcome: REVIEW_PENDING;복구검사통과·독립검토대기·사용자확인대기;원래자투리제거작업미완료
+  before: 실패수정7칸·456.7857305㎡·양의면조각10개;실행형복구검사실패·공통시험2실패를변경전재현
+  after: 실제SGHS일반자동생성9칸·747.692013㎡·양의면조각8개;변경전전체결과와정확일치·재열기일치
+  golden: 6개전체기하·기둥·대수·상태가변경전저장본과정확일치;130·67·120·105·122·107칸
+  tests: 공통109/109·실행형복구검사1/1통과;제품진척집계false
+  preserved: 사용자변경3파일SHA256동일;실패커밋f909bba와전후증거보존;독립검토·사용자승인기록생성없음
+  root_cause: 충돌여유를위해절단한중심선과실제바닥면의경계를같게취급한구조오류;500mm기둥을둘러싼6300mm중심선배제구간까지면에서제거
+  limit: 원래자투리·기존단절미해결;면생성의기준과동선유효성검사의기준을분리해재설계할필요
+  evidence: C:/Users/seok2/.codex/research/AISLE-SURFACE-JOINS-20261030/recovery.json

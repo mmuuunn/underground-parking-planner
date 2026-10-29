@@ -43,6 +43,11 @@ completion_contract: |
     }
   }
 results:
+  withdrawn: true
+  user_feedback: 자투리는여전히생기고오히려차로면이다끊겨있음;사용자화면거부
+  correction: 잔존선분의6m폭만확인한검사로전체차로면보존을주장한것은오류;299.9062825㎡제거·9㎡추가;양의면조각8→10
+  root_cause: 차량동선검사용으로기둥에서2.9m물린중심선절단끝을실제바닥면끝으로오인;500mm기둥부근의면을6300mm구간으로평평하게잘라단절확대
+  recovery: 제품두파일을814a9dd로복구;UG-AISLE-SURFACE-RECOVERY-001에서원래제품전체결과·6골든을정확대조;원래자투리미해결
   verification_run: 20261030-013233-UG-AISLE-SURFACE-JOINS-001-b6008043
   implementation_rounds: 2
   outcome: TASK_FAILED;제품 수정 후보이며 합격·완료 아님;독립검토·사용자확인 모두 PENDING
