@@ -76,7 +76,15 @@ async function observe(i, dir, name) {
       for (const key of keys) values[key] = key.split('.').reduce((o,k) => o?.[k], s);
       return {generator:s.result.networkCandidate?.source || 'automatic', values, input:JSON.stringify(s.input), output:JSON.stringify(s.result)};
     }, Object.keys(i.contract.product.expect));
-    const first = await take(); await page.screenshot({path:path.join(dir, name + '.png'), fullPage:true});
+    let first = await take();
+    // First calculation persists its selected phase; only its provenance may change on the first reopen.
+    if (JSON.parse(first.output).grid.phaseFrom === 'auto') {
+      await page.reload(); await page.waitForFunction(() => window.sghsScene?.snapshot()?.result?.graph, null, {timeout:30000});
+      const settled = await take(), geometry = value => {const r=JSON.parse(value);delete r.grid.phaseFrom;return JSON.stringify(r);};
+      if (first.input !== settled.input || geometry(first.output) !== geometry(settled.output)) throw Error('최초 저장·재열기에서 입력 또는 실제 결과가 달라졌습니다');
+      first = settled;
+    }
+    await page.screenshot({path:path.join(dir, name + '.png'), fullPage:true});
     await page.reload(); await page.waitForFunction(() => window.sghsScene?.snapshot()?.result?.graph, null, {timeout:30000});
     const again = await take(), result = {url:page.url(), generator:first.generator, values:first.values, inputDigest:hash(first.input), outputDigest:hash(first.output), reloadStable:!errors.length && first.input === again.input && first.output === again.output, errors};
     write(path.join(dir, name + '.json'), result); return result;

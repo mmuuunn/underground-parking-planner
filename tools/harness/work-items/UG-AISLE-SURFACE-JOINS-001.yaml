@@ -1,0 +1,60 @@
+id: UG-AISLE-SURFACE-JOINS-001
+status: TASK_FAILED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-session-pending
+verify_profile: vehicle-circulation
+question: 실제 일반 생성기에서 정상 폭과 장애물 단절을 보존하며 선분 끝단 잉여 면을 제거하는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/aisle-surface-joins.cjs
+  - tools/harness/work-items/UG-AISLE-SURFACE-JOINS-001.yaml
+  - tools/harness/scripts/completion-gate.cjs
+acceptance:
+  - SGHS B1 실제 일반 generate 동일 입력에서 표시 잉여 면 2.6㎡ 이상 제거 및 해당 영역 추가 면 0.01㎡ 미만
+  - 연결점 접합과 실제 끝·절단 끝의 평평한 마감; 정상 전폭 유지; 실제 단절과 장애물 보존
+  - 비스듬한 접합504건과 직선·직각·T·단절·절단·회전·이동 반례 및 기존6골든 정확 비교
+  - 실제 제품 화면 전후·재열기 일치; 기존칸 유지·제거·추가와 접면 판정 설명
+not_doing:
+  - 곡선 전면 개편·NO_LOOP 변경·순환 고리 강제·원도 보정·다른 모델 호출·원격 push·골든값 변경
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 일반 생성 차로 면 결함 제거와 실제 대표 화면 검증
+  reference_change: △ 대수·면 변화는 동일입력 전후와 개별 접면으로 설명;골든 기대값 보존
+  excluded_scope: ○ 잉여 면 제거만 수행
+completion_contract: |
+  {
+    "kind": "product",
+    "goal": "SGHS B1 일반 자동 생성 차로의 끝단 잉여 면을 제거하고 정상 폭·단절·주차칸 접면을 보존한다",
+    "stage_goal": "대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target": "04_parking/underground-compare.html",
+    "depends_on": [],
+    "checks": [{"id":"aisle-geometry-and-live-product","script":"04_parking/02_tests/aisle-surface-joins.cjs","args":["--verify","C:/Users/seok2/.codex/research/AISLE-SURFACE-JOINS-20261030"]}],
+    "review_required": true,
+    "user_required": true,
+    "product": {
+      "url": "http://127.0.0.1:8874/04_parking/underground-compare.html?reference=sghs&floor=B1&revision=calibrated",
+      "expect": {"result.grid.aisleMm":{"eq":6000},"result.areas.unassignedFreeM2":{"gte":1500}}
+    }
+  }
+results:
+  verification_run: 20261030-013233-UG-AISLE-SURFACE-JOINS-001-b6008043
+  implementation_rounds: 2
+  outcome: TASK_FAILED;제품 수정 후보이며 합격·완료 아님;독립검토·사용자확인 모두 PENDING
+  actual_screen: SGHS B1 일반 자동생성 동일입력·재열기 일치;참고 공급망 사용 없음
+  geometry: 표시영역2.498074㎡ 제거·추가0㎡;독립 연결폴리라인 면과 표시영역 차이0㎡;차로747.692013→456.7857305㎡
+  width: SGHS 잔존 선분 전폭6m의1mm안쪽 띠 결손0㎡;외곽·고정기둥·코어·램프·중심선동일;실제단절보존
+  stalls: 9→7;기존7유지·2제거·추가0;제거2칸은과거끝단연장부의접면에의존;최종접면실패0·겹침0
+  sweep: 접합504건 독립오프셋대비 과잉0㎡·결손0㎡;직선·직각·T·1~6000mm실제틈·장애물절단·회전·이동대조검사
+  common: 변경전109/109;변경후74/76·2실패;최초골든assert에서중단되어나머지시험일부미실행
+  golden_counts: 직사각130→130;L자67→67;사선120→120;노원105→106;좁은날개122→120;전변사선107→108
+  golden_reason: L자램프접합에9㎡추가로기존생성기둥1개누락;노원·전변사선은면축소후각1칸추가;좁은날개는끝단접면의존2칸제거
+  acceptance_error: 시작시고정한제거2.6㎡기준은기존bevel비교치에근거한설정오류;정상miter접합보존결과2.498074㎡라미달;기준변경없이실패로보존
+  stopping: 구현2회한도와골든차이·기둥회귀로추가제품수정중지;새범위·검증계약을먼저정해야함
+  preserved: 기존사용자변경3파일SHA256동일;기존골든값·NO_LOOP·곡선커널변경없음;다른모델·서브에이전트호출0
+  evidence: C:/Users/seok2/.codex/research/AISLE-SURFACE-JOINS-20261030/validation.json

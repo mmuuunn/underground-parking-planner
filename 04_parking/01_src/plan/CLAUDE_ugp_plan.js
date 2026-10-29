@@ -57,8 +57,8 @@
   function build(input, phase, alternative = null, connected = null) {
     input={...input,mass:Boundary.outer(input.parkingMass||input.mass)};
     const G = Grid.frame(input), {cfg, a, d, W, L, inner, b} = G, warnings = [], violations = [];
-    G.aisleSurfaceMode=input.aisleSurfaceMode||'legacy';
-    if(!['legacy','network'].includes(G.aisleSurfaceMode)||G.aisleSurfaceMode==='network'&&!connected)throw new RangeError('차로 면 모드를 확인하세요; network는 명시 연결망 전용입니다');
+    G.aisleSurfaceMode=input.aisleSurfaceMode||(connected?'legacy':'joined');
+    if(!['legacy','network','joined'].includes(G.aisleSurfaceMode)||G.aisleSurfaceMode==='network'&&!connected)throw new RangeError('차로 면 모드를 확인하세요; network는 명시 연결망 전용입니다');
     G.obstacleClearance=input.obstacleClearance||'box';
     if(!['box','euclidean'].includes(G.obstacleClearance)||G.obstacleClearance==='euclidean'&&(!connected||G.aisleSurfaceMode!=='network'))throw new RangeError('euclidean 장애물 여유는 명시 연결망의 network 차로 면 전용입니다');
     if (G.lostParts.length) violations.push({id: 'SPLIT_INNER', note: `외벽 두께를 빼면 실내 면이 ${G.lostParts.length + 1}조각으로 갈라집니다 — 가장 큰 조각만 계산했고 ${G.lostParts.map((x) => Math.round(x)).join('·')}㎡는 빠졌습니다`});

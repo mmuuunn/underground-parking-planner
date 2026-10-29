@@ -65,8 +65,53 @@
     // These bevelled junctions define lane geometry, not a vehicle turning-radius guarantee.
     return boolOp(boolOp(boolOp(paths,[],CL.ClipType.ctUnion),area,CL.ClipType.ctIntersection),cores.map(c=>rectPoly(c.r)),CL.ClipType.ctDifference);
   }
-  // S5 차로 면: 끊기지 않은 순환 고리는 닫힌 선, 나머지(끊긴 고리 조각·줄·가지)는 끝을 a/2 내민 열린 선, 램프 진입은 착지에서 바로
+  function joinedSurface(G,ringCL,pieces,area,cores) {
+    const co=new CL.ClipperOffset(2,2),out=new CL.Paths(),cuts=pieces.map(s=>[s.a,s.b]);
+    // Surface topology uses actual intersections, not the diagnostic graph's 30mm snapping tolerance.
+    for(let i=0;i<pieces.length;i++)for(let j=i+1;j<pieces.length;j++){
+      const a=pieces[i],b=pieces[j];
+      for(const p of [a.a,a.b])if(Gm.segDist(p,b.a,b.b)<1e-6)cuts[j].push(p);
+      for(const p of [b.a,b.b])if(Gm.segDist(p,a.a,a.b)<1e-6)cuts[i].push(p);
+      const u=sub(a.b,a.a),v=sub(b.b,b.a),den=u[0]*v[1]-u[1]*v[0],w=sub(b.a,a.a);
+      if(Math.abs(den)>1e-9){const t=(w[0]*v[1]-w[1]*v[0])/den,s=(w[0]*u[1]-w[1]*u[0])/den;
+        if(t>0&&t<1&&s>0&&s<1){const p=add(a.a,mul(u,t));cuts[i].push(p);cuts[j].push(p);}}
+    }
+    const nodes=[],byPoint=new Map(),edges=[],unique=new Set();
+    const node=p=>{const k=p.map(x=>Math.round(x*1e5)).join(',');if(!byPoint.has(k)){byPoint.set(k,nodes.length);nodes.push({p,edges:[],cut:false});}return byPoint.get(k);};
+    pieces.forEach((s,i)=>{
+      const u=sub(s.b,s.a),ps=cuts[i].slice().sort((p,q)=>Gm.dot(sub(p,q),u));
+      for(const [p,end] of [[s.a,s.aEnd],[s.b,s.bEnd]])if(end==='cut')nodes[node(p)].cut=true;
+      for(let j=1;j<ps.length;j++){
+        if(len(sub(ps[j],ps[j-1]))<1e-5)continue;
+        const a=node(ps[j-1]),b=node(ps[j]),key=[a,b].sort((x,y)=>x-y).join(',');if(unique.has(key))continue;
+        unique.add(key);const id=edges.length;edges.push({a,b});nodes[a].edges.push(id);nodes[b].edges.push(id);
+      }
+    });
+    const used=new Set(),stop=n=>n.cut||n.edges.length!==2;
+    const trace=(start,id)=>{
+      const P=[nodes[start].p];let current=start;
+      while(!used.has(id)){
+        used.add(id);const e=edges[id],next=e.a===current?e.b:e.a;P.push(nodes[next].p);current=next;
+        if(current===start||stop(nodes[current]))break;
+        id=nodes[current].edges.find(i=>!used.has(i));if(id===undefined)break;
+      }
+      const closed=current===start;if(closed)P.pop();
+      if(P.length>=2)co.AddPath(toC(P),CL.JoinType.jtMiter,closed?CL.EndType.etClosedLine:CL.EndType.etOpenButt);
+    };
+    nodes.forEach((n,i)=>{if(stop(n))for(const id of n.edges)if(!used.has(id))trace(i,id);});
+    edges.forEach((e,i)=>{if(!used.has(i))trace(e.a,i);});
+    const cutRings=new Set(pieces.filter(p=>p.kind==='ring'&&p.cut).map(p=>p.ri));
+    ringCL.forEach((P,i)=>{if(!cutRings.has(i))co.AddPath(toC(P),CL.JoinType.jtMiter,CL.EndType.etClosedLine);});
+    co.Execute(out,G.a/2);const paths=out.map(fromC);
+    for(const n of nodes)if(!n.cut&&n.edges.length>2){
+      const offsets=n.edges.flatMap(id=>{const e=edges[id],other=nodes[e.a].p===n.p?e.b:e.a,u=Gm.norm(sub(nodes[other].p,n.p)),v=[-u[1]*G.a/2,u[0]*G.a/2];return[add(n.p,v),sub(n.p,v)];});
+      paths.push(convexHull(offsets));
+    }
+    return boolOp(boolOp(boolOp(paths,[],CL.ClipType.ctUnion),area,CL.ClipType.ctIntersection),cores.map(c=>rectPoly(c.r)),CL.ClipType.ctDifference);
+  }
+  // 일반 생성은 연결점에서만 접합한다. 실제 끝과 장애물 절단 끝에는 끝단 연장이 없다.
   function aisleSurface(G, ringCL, pieces, area, cores) {
+    if(G.aisleSurfaceMode==='joined')return joinedSurface(G,ringCL,pieces,area,cores);
     if(G.aisleSurfaceMode==='network'){
       if(ringCL.length)throw new RangeError('연결 차로 면 모드는 명시적인 연결망 구간을 사용하세요');
       return networkSurface(G,pieces,area,cores);
