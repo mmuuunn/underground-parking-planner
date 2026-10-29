@@ -87,6 +87,59 @@ test('parking type conversion respects a six-metre structural bay rather than re
   for(const s of r.stalls){const b=G.bbox(s.pts);assert(b[0]>=1300&&b[2]<=6700);assert.equal(b[2]-b[0],2600);}
 });
 
+test('driveable no-parking reservation cannot cost valid stalls during expanded conversion',()=>{
+  const reservation=R(15000,26000,21000,950);
+  const routes=[
+    {points:[[5000,15000],[10000,15000]]},
+    {points:[[10000,15000],[40000,15000],[40000,35000],[10000,35000],[10000,15000]]}
+  ];
+  const shared={
+    mass:R(0,0,60000,50000),cores:[],phase:[0,0],autoZones:false,
+    aisleSurfaceMode:'network',obstacleClearance:'euclidean',
+    grid:{aisleMm:6000,stallW:2500,stallD:5000,columnMm:500,columnAxes:{x:[20000,28000,36000,44000],y:[5000,45000]}},
+    occupants:[{id:'driveable-access',c:[25500,26475],w:21000,d:950,vehiclePassable:true}],
+    ramp:E.createStraightRamp({landing:[5000,15000],angleDeg:0,widthMm:6000,lengthMm:3000})
+  };
+  const ordinary=E.generateConnected(shared,routes);
+  assert.equal(ordinary.stallCount,46);
+  assert(ordinary.stalls.every(s=>inter([s.pts],[reservation])<1e4));
+  for(const target of [2,4,5]){
+    const input={...shared,parkingOptions:{expanded:{mode:'count',value:target}}};
+    const result=E.generateConnected(input,routes),verdict=V.check(result,input);
+    assert(result.stallCount>=45,`expanded target ${target} lost valid capacity: ${result.stallCount}`);
+    assert(result.parkingSummary.dimensions.expanded>=target);
+    assert.equal(result.parkingSummary.requirements.expanded.short,0);
+    assert.equal(verdict.counts.clash,0);
+    assert(result.stalls.every(s=>inter([s.pts],[reservation])<1e4));
+    assert(result.graph.hasLoop);
+  }
+  const narrowAccess={...shared,occupants:[{id:'driveable-access',c:[14750,24325],w:1500,d:600,vehiclePassable:true}],parkingOptions:{expanded:{mode:'count',value:2}}};
+  const partial=E.generateConnected(narrowAccess,routes),partialReservation=R(14000,24025,1500,600);
+  assert(partial.stallCount>=45,'a valid four-expanded-stall partial bay must preserve 45 places');
+  assert(partial.parkingSummary.dimensions.expanded>=2);
+  assert(partial.stalls.every(s=>inter([s.pts],[partialReservation])<1e4));
+});
+
+test('all dimension conversions avoid reservations without losing valid capacity',()=>{
+  const input={mass:R(0,0,60000,50000),cores:[],grid:{aisleMm:6000,stallW:2500,stallD:5000,columnMm:500,columnAxes:{x:[20000,28000,36000,44000],y:[5000,45000]}}};
+  const frame=Grid.frame(input);Grid.setPhase(frame,[0,0]);
+  const reservation=R(15000,25000,2000,2500);
+  const stalls=[20000,22500,27500,30000].map(y=>({pts:R(13000,y,5000,2500),kind:'spur',rowId:'review-row',stallType:'normal'}));
+  const out={
+    innerOutline:frame.inner,parkingInnerPaths:[frame.inner],aisles:[R(7000,5000,6000,40000)],columns:[],
+    cores:[{pts:R(48000,40000,1000,1000),plan:{walk:R(47000,40000,1000,1000),openings:[]}}],
+    occupants:[],parkingReservations:[{id:'access',pts:reservation}],graph:{nodes:[],edges:[]},
+    stallRows:[{id:'review-row',axis:'v',coordinateMm:10000,side:1}],stalls
+  };
+  for(const type of ['expanded','compact','accessible']){
+    const r=A.allocate(frame,structuredClone(out),stalls.map(()=> 'ok'),{parkingOptions:{[type]:{mode:'count',value:2}}});
+    assert(r.stalls.every(s=>inter([s.pts],[reservation])<1e4),type+' conversion crossed a no-parking reservation');
+    assert(r.stalls.length>=stalls.length,type+' must preserve total capacity');
+    if(type==='compact')assert(r.stalls.some(s=>s.stallType==='compact'),'safe partial conversion should meet the compact target');
+    else assert.deepEqual(r.stalls.map(s=>s.pts),stalls.map(s=>s.pts),type+' must retain the valid ordinary bays');
+  }
+});
+
 test('a ramp through explicit structural columns is infeasible and cannot erase those columns',()=>{
   const input={...base,phase:[6000,8000],grid:{columnAxes:{x:[10000,19000],y:[50000,58000]}}};
   const r=E.generate(input);

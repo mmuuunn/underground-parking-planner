@@ -62,9 +62,9 @@
       if(!bays.has(id))bays.set(id,{id,row,axis,step,base,items:[],boxes:[]});const b=bays.get(id);b.items.push(s);b.boxes.push(bb);
     }
     const blocker=out.aisles.concat(out.columns,out.cores.map(c=>c.pts),(out.occupants||[]).map(c=>c.pts),out.cores.filter(c=>c.plan).map(c=>c.plan.walk),out.ramp?[out.ramp.body]:[],(out.nonParkingZones||[]).flatMap(z=>z.paths));
-    const blockBoxes=blocker.map(P=>({P,b:bbox(P)})),allowed=out.parkingInnerPaths||[out.innerOutline];
+    const blockBoxes=blocker.map(P=>({P,b:bbox(P)})),reservationBoxes=(out.parkingReservations||[]).map(c=>({P:c.pts,b:bbox(c.pts)})),allowed=out.parkingInnerPaths||[out.innerOutline];
     const overlaps=(P,Q)=>area(boolOp([P],Q,I))>1e4;
-    function clear(P,others){const b=bbox(P);return area(boolOp([P],allowed,D))<=1e4&&!overlaps(P,blockBoxes.filter(q=>boxHit(b,q.b)).map(q=>q.P))&&!overlaps(P,others.filter(s=>boxHit(b,bbox(s.pts))).map(s=>s.pts));}
+    function clear(P,others,ignoreReservation=false){const b=bbox(P);return area(boolOp([P],allowed,D))<=1e4&&!overlaps(P,blockBoxes.filter(q=>boxHit(b,q.b)).map(q=>q.P))&&!overlaps(P,others.filter(s=>boxHit(b,bbox(s.pts))).map(s=>s.pts))&&(ignoreReservation||!overlaps(P,reservationBoxes.filter(q=>boxHit(b,q.b)).map(q=>q.P)));}
     const crossings=(a,b)=>out.graph.edges.filter(e=>{const c=out.graph.nodes[e.a].p,d=out.graph.nodes[e.b].p,o=(p,q,r)=>Math.sign((q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]));return o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0;}).length;
     const proximity=P=>{const c=mid(P);return doors.length?doors.map(d=>[crossings(d,c),Math.hypot(c[0]-d[0],c[1]-d[1])]).sort((a,b)=>a[0]-b[0]||a[1]-b[1])[0]:[0,0];};
     const locked=new Set(),changes=[];
@@ -79,13 +79,20 @@
       const high=full?b.base+b.step-frame.cfg.columnMm/2:Math.max(...b.boxes.map(q=>q[axis+2]));
       const n=Math.floor((high-low+1)/spec.widthMm);if(!n)return null;
       const off=low+(high-low-n*spec.widthMm)/2,front=b.row.coordinateMm+b.row.side*frame.a/2,otherStalls=kept.filter(s=>!b.items.includes(s)),add=[];
+      let skippedReservation=false;
       for(let i=0;i<n;i++){
         const lo=off+i*spec.widthMm,hi=lo+spec.widthMm,back=front+b.row.side*spec.depthMm;
         const q=axis===0?[lo,Math.min(front,back),hi,Math.max(front,back)]:[Math.min(front,back),lo,Math.max(front,back),hi];
-        const pts=G.rectPoly(q).map(p=>frame.W(p).map(Math.round));if(!clear(pts,otherStalls.concat(add)))return null;
+        const pts=G.rectPoly(q).map(p=>frame.W(p).map(Math.round)),others=otherStalls.concat(add);
+        if(!clear(pts,others)){
+          if(clear(pts,others,true)){skippedReservation=true;continue;}
+          return null;
+        }
         add.push({pts,kind:b.items[0].kind,rowId:b.items[0].rowId,stallType:key,widthMm:spec.widthMm,depthMm:spec.depthMm,uses:[],allocationBay:b.id});
       }
-      const near=proximity(add[0].pts);return {b,key,add,near,cost:(b.items.length-n)/n};
+      // A reservation may split a bay, but partial conversion must not discard valid capacity.
+      if(!add.length||skippedReservation&&add.length<b.items.length)return null;
+      const near=proximity(add[0].pts);return {b,key,add,near,cost:(b.items.length-add.length)/add.length};
     }
     // Every successful step consumes a different bay. Final-total quotas cannot cause a cycle.
     for(let step=0;step<bays.size;step++){
