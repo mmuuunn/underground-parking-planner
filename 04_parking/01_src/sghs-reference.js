@@ -93,6 +93,7 @@
   reviewed.occupants.push({id:'B2 하행 램프 동측 접속부',kind:'ramp-access',c:[(rampLeft+rampRight)/2,(rampBottom+rampTop)/2],w:rampRight-rampLeft,d:rampTop-rampBottom,certainty:'user_confirmed',referenceReservationOnly:true});
   Object.assign(floors[0],{reviewed,reviewedTrace:structuredClone(calibrated.trace),reviewedBoundary:{...calibrated.boundary,note:calibrated.boundary.note+' C3의 좌측 해치 과대영역을 제거하고 B2 하행 램프의 동측 접속부를 주차 제외 공간으로 예약했습니다. 접속부의 실제 주행·회차는 미검증입니다.'}});
   reviewed.stallStripProjection='occupied-bands';
+  reviewed.stallRowSelection='continuous';
   // plan_06 직접 판독. 앞면은 인접 차로 쪽이며 짧은 흰 선(차막이) 쪽과 구분한다. 형상은 여전히 근사다.
   const observations=[
     ['서측 외벽',11,'E','전기차 표시 7 + 일반 4','상부 1+3+3, 하부 3+1; 전기차 충전 설비 상세 미확인'],

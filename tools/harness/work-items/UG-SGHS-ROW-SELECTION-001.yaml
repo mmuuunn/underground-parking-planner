@@ -1,0 +1,70 @@
+id: UG-SGHS-ROW-SELECTION-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: 가로·세로 경쟁 주차열을 구간 단위로 비교해 선택하면 원본 B1의 배치 오류가 줄고 확인된 4칸 및 중앙 가로열이 보존되는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-ROW-SELECTION-001.yaml
+acceptance:
+  - 원본 13곳을 직접 대조; 같은 외곽·구조·코어·차로·램프·위상에서 배치 단계만 비교
+  - 차로 주변에 독립 주차열 후보를 만들고 겹치는 열을 구간 단위로 선택하는 공유 백엔드 규칙 구현; 원본 칸 좌표 하드코딩 없음
+  - 사용자가 확인한 초록 4칸의 정확한 다각형 보존; 중앙 일반 4열 각3칸과 외벽열의 기존 후보 손상 여부 확인
+  - 서측 안쪽·남서 쌍열의 오방향 감소를 확인; 남측 단열 및 나머지 구역도 전후 비교하여 회귀·잔여 오류 보고
+  - 구조·6m 순폭·5m 깊이·도달/충돌/NO_LOOP 판정 유지; 후보 증가만으로 원본 재현 또는 차량 합격 선언 금지
+  - 기존 순차 생성은 비교 기준으로 유지하고 새 공유 선택기를 reviewed 입력에서 먼저 검증; 골든 기대값 무단 변경 금지
+  - 단순 형상의 경쟁열 성공·반례와 결정성 검사; npm test·하네스·13곳 화면 직접 대조
+not_doing:
+  - 장애인 통로·전기차 배정·북동 차로·외곽·램프·기둥·코어 보정
+  - 기존 사용자 변경 3파일 편집; 다른 모델·서브에이전트 호출; 전체 재현 완료 선언
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 실계획 재현을 막는 경쟁열 선점 규칙 수정 및 원본 전체 대조
+  reference_change: ○ 골든 기대값은 보존; reviewed의 생성 결과 변화는 사용자 확인
+  excluded_scope: ○ 한 공통 원인; 구조·차량·법규 판정 변경 없음
+stop_conditions:
+  - 허용 파일 밖 수정 또는 세 번째 구현 필요
+  - 확인된 4칸이나 중앙 가로열 손상 원인을 해소하지 못함
+  - 판정 완화 또는 원본 좌표 특례가 있어야만 개선 가능
+results:
+  implementation_rounds: 2
+  round_1: 열을 통째로 선택하자 남측 단열의 기존 비충돌 2칸도 제거되는 회귀 확인; 미채택
+  round_2: 선택되지 않은 열의 비충돌 잔여 부분을 연속 구간으로 나누어 다시 선택; 남측 단열 기존 4후보 복구
+  mechanism: 정적 장애물을 통과한 가로·세로 주차열 후보를 구간 단위로 비교; 연속 칸 수 제곱·대수·기존 다각형 유지 순으로 선택; 기둥·코어·차로 판정과 원본 좌표 특례 없음
+  bounded_search: 경쟁 구역별 20000회 탐색 한도; 한도에서는 이미 찾은 유효 선택을 보존하므로 모든 형상의 전역 최적 배치를 보장하지 않음
+  rollout: 공유 placeStalls의 stallRowSelection=continuous를 reviewed에서 명시적으로 검증; 기본 sequential은 유지; 일반 생성기 전역 기본 전환 및 자동 위상 탐색 전체 검증은 이번 범위 밖
+  same_geometry: columns·cores·occupants·aisles·ramp·graph 전체 동일; 39기둥·차로 6m·깊이 5m 및 고정 위상 [6400,8000] 보존
+  candidate_result: 62→62후보; 가로 후보 4칸 제거·세로 후보 4칸 추가; 모두 미도달·실제 채택 0·INFEASIBLE·NO_LOOP 유지
+  confirmed_preservation: 이전 사용자 확인 4칸의 정확한 다각형 모두 보존; 남측 단열의 기존 후보도 모두 보존
+  source_review:
+    - 서측 외벽 11→11; 정확한 후보 형상 보존; 전기차 7칸 용도 미재현 유지
+    - 서측 안쪽 5→5; 입출차 접면 오방향 3→1; 기존 확인2칸과 추가2칸으로 서향 연속열 회복; 상부 가로1칸 및 원본 최상단 서향1칸 누락 유지
+    - 남서측 쌍열 6→6; 오방향 2→0; 기존 확인2칸 보존; 원본4+4에 비해 현재3+3으로 양측 최상단 각1칸 누락; 동측 열 위치·뒤쪽 간격 차이는 별도 남음
+    - 중앙 북1·북2·남1·남2 각3→3; 12칸의 정확한 다각형 모두 보존; 전체 원본 좌표 일치 인증 아님
+    - 동측 외벽 12→12; 정확한 후보 형상 보존
+    - 중앙 장애인 구역 3→3 일반후보; 원본2칸·해치 통로 미재현 유지
+    - 남측 단열 4→4; 오방향2 유지; 남측 단열 회귀는 해소하되 기존 원본 차이는 남음
+    - 남측 장애인 구역 4→4 일반후보; 원본2칸·해치 통로 미재현 유지
+    - 동측 북단 0→0; 원본2칸 누락·연결선 부족 유지
+    - 동측 남단 2→2; 원본1칸에 대한 추적 범위 과대 및 추가후보 유지
+  other_regions: 변경된 2곳을 제외한 11곳은 전후 대조값·후보 형상 보존; 추적 열 밖 후보8·하역장 겹침2와 도달 문제 유지
+  geometric_limit: 서측 안쪽 면적 대응64.1→69.6%; 남서측65.6→64.5%; 방향 오류 감소를 위치·간격·대수 전체 재현으로 확대하지 않음
+  counterexamples: 비SGHS 단순T 46→47칸·4구간 도달이나 NO_LOOP 유지; 500mm 단절과 코어 차단은 계속 미도달; 입력/연결선 불변·반복 결정성·연결선 순서 반전·장애물 겹침0 확인
+  preflight: 98/98; 50.924초; 20261029-184553-UG-SGHS-ROW-SELECTION-001-f6709703
+  npm_test: 100/100; 51.032초
+  harness: 100/100; 51.443초; 공통 시험 반복이며 독립 검토 아님
+  preservation: 기존 골든6·과거SGHS7의 전체 계산 SHA256 동일; 사용자 기존3파일 바이트 동일
+  browser: 원본 로드·13행·직전62후보와 신규62후보 비교 확인; 추적/연결망 전환·B2·clearance59·저장 보존; 720px body705px; 제품 콘솔 오류0
+  scope: 허용5파일; 프로덕션 추가67줄로 400줄 한도 이내; 원본 바이너리·임시 증거는 저장소 밖에 보관
+  evidence: C:/Users/seok2/.codex/research/SGHS-ROW-SELECTION-20261029; semantic-evidence.json·before.json·after.json·B1-source-before-after.png·reviewed-comparison.png·npm-test.log
+  independent_review: 미실시; 다른 모델·서브에이전트 호출 없음
+  user_visual_review: 원본·직전·신규 3열 이미지 제시; 새 결과는 사용자 확인 대기; 전체 재현 또는 단계 종료 승인 아님

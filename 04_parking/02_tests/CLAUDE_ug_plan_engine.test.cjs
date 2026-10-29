@@ -641,7 +641,7 @@ console.log('empty island ok');
   test('source row audit exposes omissions and extra candidates while keeping actual accepted parking separate',()=>{
     const r=candidate('reviewed'),audit=F.auditB1(r,G),before=JSON.stringify(r);assert.deepStrictEqual(audit,F.auditB1(r,G));assert.equal(JSON.stringify(r),before);
     assert.equal(audit.rows.length,13);assert.equal(audit.candidateCount,62);assert.equal(audit.keptCount,0);assert.equal(audit.outsideRows.length,8);assert.deepStrictEqual(audit.emptyRows,['동측 북단']);
-    assert.equal(audit.rows.find(x=>x.id==='서측 안쪽').coveragePct,64.1);assert.equal(audit.rows.find(x=>x.id==='남서측 쌍열').coveragePct,65.6);
+    assert.equal(audit.rows.find(x=>x.id==='서측 안쪽').coveragePct,69.6);assert.equal(audit.rows.find(x=>x.id==='남서측 쌍열').coveragePct,64.5);
     assert.equal(audit.status,'DIFFERENCES_REQUIRE_REVIEW');assert(audit.rows.every(x=>x.kept===0));
     const noCandidates=F.auditB1({...r,stalls:[],lost:[]},G);assert.equal(noCandidates.emptyRows.length,13);assert(noCandidates.rows.every(x=>x.coveragePct===0));
   });
@@ -656,7 +656,7 @@ console.log('empty island ok');
     assert.equal(row('남측 단열').candidates,4);assert.equal(row('남측 단열').matchingFacing,2,'same count and area do not certify direction');
   });
   test('occupied bands recover source-facing candidates lost between boundary-touching obstacles, without certifying reach',()=>{
-    const input=inputFor('reviewed');input.phase=E.generate(input).grid.phase;
+    const input=inputFor('reviewed');input.stallRowSelection='sequential';input.phase=E.generate(input).grid.phase;
     const before=JSON.stringify(input),routes=F.floors[0].reviewedTrace.routes;
     const old=E.generateConnected({...input,stallStripProjection:'envelope'},routes),r=E.generateConnected(input,routes);
     const oldAudit=F.auditB1(old,G),audit=F.auditB1(r,G),row=(a,id)=>a.rows.find(x=>x.id===id);
@@ -676,6 +676,38 @@ console.log('empty island ok');
     const vertical=blocked.lost.filter(P=>{const b=G.bbox(P);return b[2]-b[0]>b[3]-b[1];});
     assert.equal(Math.abs(G.areaOf(G.boolOp(vertical,[gap],G.CL.ClipType.ctIntersection))),0,'a positive-width obstruction must still remove the blocked vertical-row height');
     assert.throws(()=>E.generateConnected({...input,stallStripProjection:'unknown'},routes),RangeError);
+  });
+  test('local row selection replaces crossing pairs, preserves confirmed slots and leaves other B1 rows unchanged',()=>{
+    const input=inputFor('reviewed');input.phase=E.generate(input).grid.phase;
+    const routes=F.floors[0].reviewedTrace.routes,unchanged=JSON.stringify([input,routes]);
+    const old=E.generateConnected({...input,stallRowSelection:'sequential'},routes),r=E.generateConnected(input,routes);
+    const before=F.auditB1(old,G),after=F.auditB1(r,G),polys=x=>x.stalls.map(s=>s.pts).concat(x.lost),has=(x,b)=>polys(x).some(P=>JSON.stringify(G.bbox(P))===JSON.stringify(b));
+    assert.equal(JSON.stringify([input,routes]),unchanged);assert.deepEqual(r,E.generateConnected(input,routes));
+    assert.deepEqual([before.candidateCount,after.candidateCount],[62,62]);
+    assert.deepEqual(after.rows.map(x=>x.matchingFacing),[11,4,6,3,3,3,3,12,3,2,4,0,2]);
+    assert.deepEqual(after.rows.map(x=>x.wrongFacing),[0,1,0,0,0,0,0,0,0,2,0,0,0]);
+    for(const b of [[19700,5550,24700,8050],[19700,8050,24700,10550],[19700,28550,24700,31050],[19700,32100,24700,34600]])assert(has(r,b),'preserve the four user-confirmed polygons');
+    const removed=polys(old).filter(P=>!polys(r).some(Q=>JSON.stringify(P)===JSON.stringify(Q)));
+    assert.equal(removed.length,4);assert(removed.every(P=>{const b=G.bbox(P);return b[2]-b[0]===2500&&b[3]-b[1]===5000;}));
+    const affected=new Set([1,2]);for(let i=0;i<13;i++)if(!affected.has(i))assert.deepEqual(after.rows[i],before.rows[i],'other source rows must not regress');
+    for(const k of ['columns','cores','occupants','aisles','ramp','graph'])assert.deepEqual(r[k],old[k]);
+    assert.equal(r.stallCount,0);assert.equal(r.status,'INFEASIBLE');assert.equal(r.placementReport.counts.unreachable,62);assert.equal(r.placementReport.counts.clash,0);
+    const blocks=r.aisles.concat(r.columns,r.cores.map(c=>c.pts),r.occupants.map(c=>c.pts),[r.ramp.body]);
+    assert.equal(Math.abs(G.areaOf(G.boolOp(polys(r),blocks,G.CL.ClipType.ctIntersection))),0);
+    const permuted=E.generateConnected(input,routes.slice().reverse().map(p=>({...p,points:p.points.slice().reverse()})));
+    assert.deepEqual(polys(permuted).map(P=>JSON.stringify(G.bbox(P))).sort(),polys(r).map(P=>JSON.stringify(G.bbox(P))).sort());
+    assert.throws(()=>E.generateConnected({...input,stallRowSelection:'unknown'},routes),RangeError);
+  });
+  test('row selection also works on a non-SGHS T network and keeps true gaps and obstacles failing',()=>{
+    const input={mass:M([[0,0],[60,0],[60,50],[0,50]]),ucs:0,cores:[],phase:[0,0],grid:{aisleMm:6000,columnAxes:{x:[20000,40000],y:[12000,30000]}},ramp:E.createStraightRamp({landing:[15000,42000],angleDeg:0,widthMm:6000,lengthMm:10000}),autoZones:false,stallRowSelection:'continuous'};
+    const routes=[{points:[[15000,42000],[33000,42000],[50000,42000],[50000,8000]]},{points:[[33000,42000],[33000,18000]]}];
+    const old=E.generateConnected({...input,stallRowSelection:'sequential'},routes),r=E.generateConnected(input,routes);
+    assert.deepEqual([old.stallCount,r.stallCount],[46,47]);assert.equal(r.placementReport.counts.clash,0);assert.equal(r.placementReport.counts.noFront,0);
+    assert(r.graph.edges.every(e=>e.ok&&e.reached));assert(r.violations.some(v=>v.id==='NO_LOOP'));assert.equal(r.status,'INFEASIBLE');
+    const gap=structuredClone(routes);gap[1].points[0][1]-=500;const disconnected=E.generateConnected(input,gap);
+    assert(disconnected.placementReport.counts.unreachable>0);assert(!disconnected.graph.edges.every(e=>e.reached));
+    const blocked=E.generateConnected({...input,cores:[{c:[33000,30000],w:8000,d:6000,keep:{x:true,y:true}}]},routes);
+    assert(blocked.violations.some(v=>v.id==='CORE_IN_AISLE'));assert(blocked.placementReport.counts.unreachable>0);
   });
 }
 

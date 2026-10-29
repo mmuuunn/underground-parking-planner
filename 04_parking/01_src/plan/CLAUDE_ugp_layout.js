@@ -71,19 +71,70 @@
     }
     return columns;
   }
+  // Competing row fragments are alternatives. Prefer continuous groups, then capacity and retained geometry.
+  function selectRows(groups, baseline) {
+    const old = new Set(baseline.map(s => JSON.stringify(s.poly)));
+    const fragments=groups.flatMap(g=>{
+      const parts=[];let previous=null;
+      for(const s of g){
+        const axis=s.rowId.startsWith('h:')?0:1,other=1-axis;
+        if(!previous||Math.abs(previous.bb[axis+2]-s.bb[axis])>1||Math.abs(previous.bb[other]-s.bb[other])>1||Math.abs(previous.bb[other+2]-s.bb[other+2])>1)parts.push([]);
+        parts.at(-1).push(s);previous=s;
+      }
+      return parts;
+    });
+    const rows = fragments.map(g => ({stalls:g, weight:g.length*g.length,
+      kept:g.filter(s=>old.has(JSON.stringify(s.poly))).length, bb:bbox(g.flatMap(s=>s.poly))}));
+    rows.sort((p,q)=>p.bb[0]-q.bb[0]||p.bb[1]-q.bb[1]||p.bb[2]-q.bb[2]||p.bb[3]-q.bb[3]);
+    const links = rows.map(()=>new Set());
+    for(let i=0;i<rows.length;i++)for(let j=i+1;j<rows.length;j++){
+      if(boxHit(rows[i].bb,rows[j].bb)&&rows[i].stalls.some(s=>rows[j].stalls.some(t=>boxHit(s.bb,t.bb)&&hitArea(s.poly,[t.poly])))){
+        links[i].add(j);links[j].add(i);
+      }
+    }
+    const pending = new Set(rows.map((_,i)=>i)), chosen=[];
+    while(pending.size){
+      const component=[], todo=[pending.values().next().value];pending.delete(todo[0]);
+      while(todo.length){const i=todo.pop();component.push(i);for(const j of links[i])if(pending.delete(j))todo.push(j);}
+      component.sort((i,j)=>rows[j].weight-rows[i].weight||rows[j].kept-rows[i].kept||i-j);
+      let best=[], bestScore=[-1,-1,-1], visits=0;
+      const consider=ids=>{
+        const score=ids.reduce((a,i)=>[a[0]+rows[i].weight,a[1]+rows[i].stalls.length,a[2]+rows[i].kept],[0,0,0]);
+        if(score[0]>bestScore[0]||score[0]===bestScore[0]&&(score[1]>bestScore[1]||score[1]===bestScore[1]&&score[2]>bestScore[2])){best=ids.slice();bestScore=score;}
+      };
+      const greedy=[];for(const i of component)if(greedy.every(j=>!links[i].has(j)))greedy.push(i);consider(greedy);
+      // shortcut: bounded search for unusually dense row conflicts; retain the best valid selection at the limit.
+      const search=(left,ids,score)=>{
+        if(++visits>20000)return;
+        if(!left.length){consider(ids);return;}
+        if(score+left.reduce((s,i)=>s+rows[i].weight,0)<bestScore[0])return;
+        const i=left[0],rest=left.slice(1);
+        search(rest.filter(j=>!links[i].has(j)),ids.concat(i),score+rows[i].weight);
+        search(rest,ids,score);
+      };
+      search(component,[],0);chosen.push(...best);
+    }
+    const picked=chosen.sort((i,j)=>i-j).flatMap(i=>rows[i].stalls), selected=new Set(chosen);
+    // Choosing one row must not erase the non-overlapping tail of a competing row.
+    const tails=rows.flatMap((r,i)=>selected.has(i)?[]:[r.stalls.filter(s=>!picked.some(t=>boxHit(s.bb,t.bb)&&hitArea(s.poly,[t.poly])))]).filter(g=>g.length);
+    return tails.length?picked.concat(selectRows(tails,baseline)):picked;
+  }
   // S6 칸. 반환 {stalls:[{poly,bb,cl,kind}], excluded, dbg}
   function placeStalls(G, segs, area, aisleU, blockedStatic, columns, debug, options = {}) {
     const {cfg, a, d, n, inner, xLines} = G, w = cfg.stallW, inside = insideOf(inner);
     const projection = options.stallStripProjection || 'envelope';
     if (!['envelope', 'occupied-bands'].includes(projection)) throw new RangeError('알 수 없는 주차열 장애물 투영: ' + projection);
+    const selection=options.stallRowSelection||'sequential';
+    if(!['sequential','continuous'].includes(selection))throw new RangeError('알 수 없는 주차열 선택: '+selection);
+    const baseline=selection==='continuous'?placeStalls(G,segs,area,aisleU,blockedStatic,columns,false,{...options,stallRowSelection:'sequential'}).stalls:null;
     const blocked = aisleU.concat(blockedStatic, columns);
     const stalls = [], rows = [], excluded = {wall: 0, blocked: 0, overlap: 0, unreachable: 0}, dbg = debug ? [] : null;
-    let activeRow = null;
+    const groups=[];let activeRow = null,activeGroup=null;
     const tryStall = (poly, front, toAisle, kind) => {
       if (!inside(poly)) { excluded.wall++; if (dbg) dbg.push({poly, why: 'wall'}); return; }
       if (hitArea(poly, blocked)) { excluded.blocked++; if (dbg) dbg.push({poly, why: hitArea(poly, aisleU) ? 'aisle' : hitArea(poly, columns) ? 'column' : 'core/ramp'}); return; }
-      const bb = bbox(poly); if (stalls.some((s) => boxHit(bb, s.bb) && hitArea(poly, [s.poly]))) { excluded.overlap++; return; }
-      stalls.push({poly, bb, cl: add(front, mul(toAisle, a / 2)), kind, stallType: activeRow?.stallType || 'normal', rowId: activeRow?.id || null});
+      const bb = bbox(poly); if (!activeGroup&&stalls.some((s) => boxHit(bb, s.bb) && hitArea(poly, [s.poly]))) { excluded.overlap++; return; }
+      (activeGroup||stalls).push({poly, bb, cl: add(front, mul(toAisle, a / 2)), kind, stallType: activeRow?.stallType || 'normal', rowId: activeRow?.id || null});
     };
     const hLines = segs.filter((s) => s.h !== null), vLines = segs.filter((s) => s.v !== null);
     const margin = (cfg.gx - n * w) / 2;
@@ -102,6 +153,7 @@
         if (activeRow.stallType === 'accessible') continue; // location reservation only; shared access is not yet laid out
         const yA = ln.k + sg * a / 2, yB = yA + sg * d;
         for (const [x, end] of G.xBays) {
+          if(baseline){activeGroup=[];groups.push(activeGroup);}
           const span = end - x, n = Math.floor((span - cfg.columnMm) / w), margin = (span - n * w) / 2;
           for (let m = 0; m < n; m++) {
           const sx = x + margin + m * w; if (sx < x1 - 1 || sx + w > x2 + 1) continue;
@@ -135,11 +187,18 @@
         const fits = (y) => { const poly = rectPoly([x0, y, x1, y + w]), bb = bbox(poly); return inside(poly) && !hitArea(poly, blocked) && !stalls.some((s) => boxHit(bb, s.bb) && hitArea(poly, [s.poly])); };
         for (const [k, [f0, f1]] of free.entries()) {
           const cnt = Math.floor((f1 - f0 + 1) / w), spare = f1 - f0 - cnt * w, packed = k % 2 ? spare : 0;
-          const off = Array.from({length: cnt}, (_, m) => f0 + packed + m * w).every(fits) ? packed : spare / 2;
+          let off = Array.from({length: cnt}, (_, m) => f0 + packed + m * w).every(fits) ? packed : spare / 2;
+          if(baseline){
+            activeGroup=[];groups.push(activeGroup);
+            const anchors=baseline.filter(s=>s.rowId===activeRow.id&&s.bb[1]>=f0-1&&s.bb[3]<=f1+1);
+            // Extend an existing row's spacing without moving its valid members when a crossing row is replaced.
+            off=anchors.length?((Math.min(...anchors.map(s=>s.bb[1]))-f0)%w+w)%w:spare/2;
+          }
           for (let m = 0; m < cnt; m++) { const y = f0 + off + m * w; tryStall(rectPoly([x0, y, x1, y + w]), [xA, y + w / 2], [-sg, 0], ln.kind); }
         }
       }
     }
+    if(baseline){activeGroup=null;const picked=selectRows(groups,baseline);stalls.push(...picked);excluded.overlap+=groups.reduce((n,g)=>n+g.length,0)-picked.length;}
     // 사선 벽(램프 옆면 포함): 벽에 직각인 칸. 바깥 경로의 방향으로 안쪽을 정한다(구멍은 반대 방향이라 같은 쪽이 안쪽)
     const outerSign = Math.sign(signedArea(area.reduce((m, q) => (Math.abs(signedArea(q)) > Math.abs(signedArea(m)) ? q : m))));
     activeRow = null;
