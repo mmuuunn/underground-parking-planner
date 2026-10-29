@@ -27,6 +27,8 @@
   function build(input, phase, alternative = null, connected = null) {
     input={...input,mass:Boundary.outer(input.parkingMass||input.mass)};
     const G = Grid.frame(input), {cfg, a, d, W, L, inner, b} = G, warnings = [], violations = [];
+    G.aisleSurfaceMode=input.aisleSurfaceMode||'legacy';
+    if(!['legacy','network'].includes(G.aisleSurfaceMode)||G.aisleSurfaceMode==='network'&&!connected)throw new RangeError('차로 면 모드를 확인하세요; network는 명시 연결망 전용입니다');
     if (G.lostParts.length) violations.push({id: 'SPLIT_INNER', note: `외벽 두께를 빼면 실내 면이 ${G.lostParts.length + 1}조각으로 갈라집니다 — 가장 큰 조각만 계산했고 ${G.lostParts.map((x) => Math.round(x)).join('·')}㎡는 빠졌습니다`});
     // S2 구조 격자
     Grid.setPhase(G, phase);
@@ -315,7 +317,7 @@
     if (!okPhase(input.phase) || !Array.isArray(routes)) throw new RangeError('연결망 후보는 고정 주차 모듈 위상과 연결선 목록이 필요합니다');
     const r=build(input,input.phase,null,routes);
     r.grid.phaseFrom='input';
-    r.networkCandidate={source:'supplied-centerlines',widthMm:r.grid.aisleMm,turning:'UNVERIFIED'};
+    r.networkCandidate={source:'supplied-centerlines',widthMm:r.grid.aisleMm,surfaceMode:input.aisleSurfaceMode||'legacy',turning:'UNVERIFIED'};
     return r;
   }
   // Experimental, conditional alternative: the returned dead end still needs turning and traffic review.

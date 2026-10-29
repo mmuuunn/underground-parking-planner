@@ -711,6 +711,73 @@ console.log('empty island ok');
   });
 }
 
+// Endpoint-aware lane geometry is opt-in; historical placement fixtures above remain explicit baselines.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js'),G=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const Lay=require('../01_src/plan/CLAUDE_ugp_layout.js'),Net=require('../01_src/plan/CLAUDE_ugp_network.js'),I=G.CL.ClipType.ctIntersection,D=G.CL.ClipType.ctDifference;
+  const area=P=>Math.abs(G.areaOf(P)),over=(A,B,type=I)=>area(G.boolOp(A,B,type)),box=G.rectPoly;
+  const surface=(pieces,obstacles=[])=>Lay.aisleSurface({a:6000,aisleSurfaceMode:'network'},[],pieces,[box([-50000,-50000,100000,100000])],obstacles);
+  const seg=(a,b)=>({a,b,kind:'spur',h:G.isH(a,b)?a[1]:null,v:G.isV(a,b)?a[0]:null});
+  const band=(a,b)=>{const u=G.norm(G.sub(b,a)),n=[-u[1]*3000,u[0]*3000];return[G.add(a,n),G.add(b,n),G.sub(b,n),G.sub(a,n)];};
+  test('obstacle cut endpoints and axis metadata survive repeated cutting',()=>{
+    const s=seg([10000,0],[10000,30000]),G0={a:6000},once=Lay.cutByCores(G0,[s],[{r:[9000,14000,11000,16000]}],[]);
+    assert.equal(once.length,2);assert.deepEqual(once.map(p=>[p.aEnd,p.bEnd]),[['network','cut'],['cut','network']]);assert(once.every(p=>p.v===10000));
+    const twice=Lay.cutByCores(G0,once,[{r:[9000,24000,11000,26000]}],[]);
+    assert.equal(twice[0].bEnd,'cut');assert.equal(twice[1].aEnd,'cut');assert.equal(twice[1].bEnd,'cut');
+    assert.equal(over(surface(once),[box([7000,11200,13000,18800])]),0,'cuts must not grow back into the removed interval');
+  });
+  test('flat terminals and actual 45-degree, right-angle and T joins preserve full six-metre bands without end overhangs',()=>{
+    const cases=[
+      [seg([0,0],[20000,0])],
+      [seg([0,0],[20000,0]),seg([20000,0],[35000,15000])],
+      [seg([0,0],[20000,0]),seg([20000,0],[20000,20000])],
+      [seg([0,0],[40000,0]),seg([20000,0],[20000,20000])]
+    ];
+    for(const pieces of cases){const before=JSON.stringify(pieces),paths=surface(pieces);assert.equal(JSON.stringify(pieces),before);
+      for(const p of pieces)assert(over([band(p.a,p.b)],paths,D)<=1e4,'full width must exist on every unobstructed straight segment');
+      const reordered=surface(pieces.slice().reverse().map(p=>({...p,a:p.b,b:p.a})));
+      assert(over(paths,reordered,G.CL.ClipType.ctXor)<=1e4,'surface must not depend on segment ordering');
+    }
+    const straight=surface(cases[0]);assert.equal(over(straight,[box([-3000,-3000,-1,3000])]),0);assert.equal(over(straight,[box([20001,-3000,23000,3000])]),0);
+    const gap=surface([seg([0,0],[10000,0]),seg([10500,0],[20000,0])]);assert.equal(over(gap,[box([10001,-2900,10499,2900])]),0,'a true gap is not a junction');
+  });
+  test('a short clipped diagonal cannot manufacture the former C1 square-cap triangle',()=>{
+    const pieces=[{...seg([17091.24087591241,37600],[16700,37200]),aEnd:'cut',bEnd:'network'},seg([16700,37200],[16700,19500])];
+    const P=box([19700,34600,24700,37100]),old=Lay.aisleSurface({a:6000},[],pieces,[box([0,0,100000,100000])],[]),paths=surface(pieces);
+    assert.equal(over([P],old),615417);assert.equal(over([P],paths),0);
+    const graph=Net.buildGraph(pieces);assert.equal(graph.nodes.filter(n=>graph.edges.filter(e=>e.a===n.id||e.b===n.id).length===2).length,1);
+  });
+  test('B1 C1 regains its fifth correctly oriented candidate while width failures, new front failures and unreachable status stay visible',()=>{
+    const d=structuredClone(F.floors[0].reviewed),rp=d.ramp,input={...d,phase:[6400,8000],grid:{...F.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+    const routes=F.floors[0].reviewedTrace.routes,old=E.generateConnected(input,routes),r=E.generateConnected({...input,aisleSurfaceMode:'network'},routes),audit=F.auditB1(r,G);
+    assert.deepEqual(r,E.generateConnected({...input,aisleSurfaceMode:'network'},routes));
+    for(const key of ['columns','cores','occupants','ramp'])assert.deepEqual(r[key],old[key]);assert.deepEqual(r.graph.nodes,old.graph.nodes);
+    assert.deepEqual(r.graph.edges.map(e=>[e.a,e.b]),old.graph.edges.map(e=>[e.a,e.b]));assert.equal(r.grid.aisleMm,6000);
+    assert.deepEqual(audit.rows.map(x=>x.candidates),[11,5,6,3,3,3,3,10,3,4,4,0,2]);
+    assert.deepEqual(audit.rows.map(x=>x.matchingFacing),[11,5,6,3,2,3,2,10,3,2,4,0,2]);
+    const target=box([19700,34600,24700,37100]);assert.equal(over([target],old.aisles),615417);assert.equal(over([target],r.aisles),0);
+    assert(r.lost.some(P=>JSON.stringify(G.bbox(P))===JSON.stringify(G.bbox(target))));
+    for(const b of [[19700,5550,24700,8050],[19700,8050,24700,10550],[19700,28550,24700,31050],[19700,32100,24700,34600]])assert(r.lost.some(P=>JSON.stringify(G.bbox(P))===JSON.stringify(b)));
+    assert.equal(r.lostCount,64);assert.equal(audit.outsideRows.length,11);assert.equal(r.placementReport.counts.unreachable,61);assert.equal(r.placementReport.counts.noFront,3);assert.equal(r.placementReport.counts.clash,0);
+    assert.equal(r.stallCount,0);assert.equal(r.status,'INFEASIBLE');assert.equal(r.graph.edges.filter(e=>e.reached).length,0);
+    assert(r.violations.some(v=>v.id==='EDGE_OFF_AISLE'));assert(r.violations.some(v=>v.id==='NO_LOOP'));assert(r.violations.some(v=>v.id==='STALL_NO_FRONT'));
+    assert.equal(over(r.aisles,r.columns.concat(r.cores.map(c=>c.pts),r.occupants.map(c=>c.pts))),0);
+    assert.equal(over(r.lost,r.aisles.concat(r.columns,r.cores.map(c=>c.pts),r.occupants.map(c=>c.pts),[r.ramp.body])),0);
+  });
+  test('endpoint-aware networks retain six-metre T reach, real gap rejection and the existing vehicle turn/body checker',()=>{
+    const input={mass:M([[0,0],[60,0],[60,50],[0,50]]),ucs:0,cores:[],phase:[0,0],grid:{aisleMm:6000,columnAxes:{x:[20000,40000],y:[12000,30000]}},ramp:E.createStraightRamp({landing:[15000,42000],angleDeg:0,widthMm:6000,lengthMm:10000}),autoZones:false,aisleSurfaceMode:'network'};
+    const tree=[{points:[[15000,42000],[33000,42000],[50000,42000],[50000,8000]]},{points:[[33000,42000],[33000,18000]]}],r=E.generateConnected(input,tree);
+    assert.equal(r.stallCount,40);assert.equal(r.graph.edges.length,4);assert(r.graph.edges.every(e=>e.ok&&e.reached));assert.equal(r.placementReport.counts.clash,0);assert.equal(r.placementReport.counts.noFront,0);assert(r.violations.some(v=>v.id==='NO_LOOP'));
+    const gap=structuredClone(tree);gap[1].points[0][1]-=500;assert(E.generateConnected(input,gap).placementReport.counts.unreachable>0);
+    const loop=[{points:[[15000,42000],[25000,42000]]},{points:[[25000,42000],[50000,42000],[50000,8000],[25000,8000],[25000,42000]]}],cyclic=E.generateConnected(input,loop);
+    assert.equal(cyclic.stallCount,49);assert(cyclic.graph.hasLoop);assert.equal(cyclic.status,'CONDITIONAL');assert(cyclic.violations.some(v=>v.id==='SUPPLIED_NETWORK_UNVERIFIED'));
+    assert.equal(E.checkVehiclePath(cyclic,[[25000,42000],[45000,42000]]).state,'clear');
+    const sharp=E.checkVehiclePath(cyclic,[[43000,42000],[50000,42000],[50000,40000],[43000,40000]]);assert.equal(sharp.state,'blocked');assert.equal(sharp.firstIssue.id,'VEHICLE_SHARP_TURN');
+    assert.notEqual(E.checkVehiclePath(cyclic,[[25000,42000],[45000,42000]],{widthMm:7000}).state,'clear');
+    assert.throws(()=>E.generateConnected({...input,aisleSurfaceMode:'unknown'},tree),RangeError);assert.throws(()=>E.generate(input),RangeError);
+  });
+}
+
 // 파란 표시의 중앙 가지는 가로 동선과 실제 분기점을 공유한다.
 {
   const {test}=require('node:test'),F=require('../01_src/sghs-reference.js');

@@ -1,0 +1,76 @@
+id: UG-SGHS-AISLE-ENDS-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: 6m 차로 면 생성에서 연결·절단·진짜 끝을 구분하면 C1의 인위적 침범이 제거되고 폭·장애물·회전 판정이 유지되는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - 04_parking/sghs-compare.html
+  - tools/harness/work-items/UG-SGHS-AISLE-ENDS-001.yaml
+acceptance:
+  - 기존 입력·39기둥·코어·램프·주차 깊이5m·차로6m·위상을 유지하고 차로 면 생성 전후 비교
+  - 원래 연결점과 장애물 절단 끝을 구분하고 반복 절단에서도 끝의 의미 보존
+  - 절단 조각을 사각 끝으로 재확장하지 않는 공유 차로 면 생성 모드 구현; 원본 칸 좌표 특례 없음
+  - 접합부는 실제 연결점에서만 생성; 실제 단절을 면 겹침으로 연결했다고 판정하지 않음
+  - C1 가상 누락칸과 차로의 0.615417㎡ 침범 감소를 확인하고 원본13곳·기존 확인4칸 변화 직접 보고
+  - 직선·45도 접속·직각·T·절단·500mm 단절의 면/폭/장애물 반례 검사
+  - 기존 차량 회전·차체 검사를 유지; 둥근 도형 또는 칸 복구만으로 주행 합격 선언 금지
+  - npm test 및 하네스; 골든6·SGHS과거7 보존; 사용자 화면 검토 대기
+not_doing:
+  - 남서측100mm 추정 오차 보정·기둥 삭제·외곽/코어/램프 변경·회차/교행 정밀 모형 구현
+  - 안전 판정·공차·골든 기대값 변경·다른 모델/서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 원본 재현을 막는 차로 면 생성 문제 점검 및 수정
+  reference_change: ○ 기존 기준값 유지; 새 차로 면 모드는 같은 입력으로 비교해 사용자 확인
+  excluded_scope: ○ 한 생성 원인; 차량/법규 판정 완화 없음
+stop_conditions:
+  - 허용 파일 밖 수정 또는 세 번째 구현 필요
+  - 입력 치수나 안전 조건을 바꾸어야만 침범을 제거할 수 있음
+  - 단절을 숨기거나 후보 복구만으로 주행 합격을 주장해야 진행 가능
+results:
+  implementation_rounds: 1
+  cause: 장애물로 잘린 길이559.526mm 사선도 openSquare로 양끝3000mm 확장되어 C1 최상단 후보에 0.615417㎡ 침범; 같은 입력의 평평한 끝에서는 침범0
+  mechanism: 절단별 끝 의미와 축 정보를 보존; 명시 연결망은 각 구간을 openButt로 오프셋하고 실제 연결점에만 볼록 접합면 추가; 절단 끝과 실제 끝은 확장하지 않음
+  geometry_limit: 접합면은 기하학적 bevel이며 차량의 조향반경 모형이 아님; 기존30mm 연결망 공차 유지; 원본 칸 좌표는 엔진에 없음
+  rollout: aisleSurfaceMode=network를 명시 연결망 API와 B1 reviewed 비교에서 먼저 적용; 기본 legacy와 일반 생성기 출력은 유지; 전역 기본 전환 아님
+  same_input: 입력 외곽·중심선·39기둥·코어·램프·깊이5000mm·폭6000mm·위상[6400,8000] 유지; 그래프 노드·연결관계 동일; 차로 면·후보·판정은 재계산
+  c1_result: 최상단 [19700,34600,24700,37100] 후보 복구; 차로 침범0.615417㎡→0; 원본 방향 대응4→5; 기존 확인4칸의 정확한 다각형 보존
+  candidate_result: 검사 전62→64후보; 미도달61·입출차 접면 없음3·충돌0·실제 채택0·INFEASIBLE; NO_LOOP·폭 부족·램프와 기둥 충돌 유지
+  source_review:
+    - 서측 외벽 원본11; 후보11→11·방향11→11; 전기차7칸 용도 미재현
+    - 서측 안쪽 원본5; 후보5→5·방향4→5; 최상단 세로칸 복구; 위치·간격 전체 일치 인증 아님
+    - 남서측 쌍열 원본8; 후보6→6·방향6→6; 양쪽 최상단 각1칸 누락; 2400mm 여유와2500mm 칸 폭의100mm 추정 불일치 및 동측 위치 차이는 별도 유지
+    - 중앙 북1 원본3; 후보3→3·방향3→3
+    - 중앙 북2 원본3; 후보3→3·방향3→2; 차로 끝의 지지 제거로 접면 부족1칸 드러남
+    - 중앙 남1 원본3; 후보3→3·방향3→3
+    - 중앙 남2 원본3; 후보3→3·방향3→2; 차로 끝의 지지 제거로 접면 부족1칸 드러남
+    - 동측 외벽 원본12; 후보12→10·방향12→10; 끝단 과확장이 지지하던 후보 감소를 개선으로 숨기지 않음
+    - 중앙 장애인 원본2; 일반후보3→3·방향3→3; 전용칸·해치 통로 미재현
+    - 남측 단열 원본4; 후보4→4·방향2→2; 기존 오방향 유지
+    - 남측 장애인 원본2; 일반후보4→4·방향4→4; 전용칸·해치 통로 미재현
+    - 동측 북단 원본2; 후보0→0; 연결선 누락 유지
+    - 동측 남단 원본1; 후보2→2·방향2→2; 추적 범위 과대 유지
+  source_metric_limit: 추적 열 밖 후보8→11; 방향 대응은 위치·간격·용도·실제 주행의 재현 인증 아님; 전체 배치의 재현도 향상 또는 원본 재현 완료 선언 없음
+  width_obstacle_review: 모든 장애물 없는 단순 직선 띠에서6m 확보; 실제 B1 첫 구간은 전체6m 띠 중 외곽 밖1.5684035㎡가 남아 EDGE_OFF_AISLE 유지; 물리 장애물과 차로 면 겹침0; 접근망 도달0
+  turning_review: 기존 차체·급격 방향변화 검사 보존; 수동4분원 반경6000·2000·500mm 모두 clear로 판정하는 한계 재현; 최소 조향반경 검사가 아니므로 차량 회전 가능성은 미검증
+  turning_decision: 반경500mm 통과를 안전 기준으로 고정하지 않음; 차량 휠베이스·조향 한계 기반 검증은 별도 범위이며 이번5파일 밖 수정하지 않음; networkCandidate.turning=UNVERIFIED 유지
+  counterexamples: 직선·45도·직각·T의6m 띠 및 순서 반전 결정성; 반복 절단·실제 끝 과확장 없음·500mm 단절 보존; 단순T40칸과 순환망49칸 도달; NO_LOOP 또는 SUPPLIED_NETWORK_UNVERIFIED 유지; 과대 차체·급회전 거부
+  preflight: 100/100; 51.014초; 20261029-192040-UG-SGHS-AISLE-ENDS-001-b061e615
+  targeted: 새5시험 통과; 약6.6초
+  npm_test: 105/105; 51.192초
+  harness: 105/105; 51.285초; 동일 시험 실행으로 독립 검토 아님
+  preservation: 골든6·과거SGHS7의 기본 E.generate 전체 SHA256 동일; 기존 사용자3파일 바이트 동일; 안전 공차·판정·골든 기대값 변경 없음
+  browser: 원본 로드·13행·legacy62와network64 비교; 추적/연결망 전환·B2·clearance59·저장 보존; 실제720px에서body703px; 제품 콘솔 오류0
+  scope: 허용5파일; 프로덕션 추가37줄로400줄 이내; 임시 증거와 원본 바이너리는 저장소 밖 보관
+  evidence: C:/Users/seok2/.codex/research/SGHS-AISLE-ENDS-20261029; semantic-evidence.json·turning-limit-evidence.json·B1-aisle-source-before-after.png·reviewed-comparison.png·npm-test.log·preservation.log
+  independent_review: 미실시; 다른 모델·서브에이전트 호출 없음
+  user_visual_review: 원본·수정 전·수정 후 이미지 제공; 사용자 확인 대기; 실제 조향 검증 및 전체 재현 완료 아님

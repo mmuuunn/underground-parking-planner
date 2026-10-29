@@ -10,6 +10,7 @@
   const Gm = isNode ? require('./CLAUDE_ugp_geom.js') : root.UGP.geom;
   const Modules = isNode ? require('./stall-modules.js') : root.UGP.stallModules;
   const CoreFit = isNode ? require('./core-fit.js') : root.UGP.coreFit;
+  const Net = isNode ? require('./CLAUDE_ugp_network.js') : root.UGP.network;
   const {CL, add, sub, mul, len, bbox, boxHit, rectPoly, signedArea, toC, fromC, boolOp, areaOf, clipSeg, isH, isV} = Gm;
 
   const coreMargin = (G) => G.a / 2 - 100; // 띠가 코어에 맞닿기만 하면 막힌 것이 아니다
@@ -37,13 +38,39 @@
     for (const s of segs) {
       let keep = [[0, 1]];
       for (const r of obsR) { const c = clipSeg(s.a, s.b, r); if (!c) continue; keep = keep.flatMap(([t0, t1]) => [[t0, Math.min(t1, c[0])], [Math.max(t0, c[1]), t1]]).filter(([t0, t1]) => (t1 - t0) * len(sub(s.b, s.a)) > 300); }
-      for (const [t0, t1] of keep) pieces.push({a: add(s.a, mul(sub(s.b, s.a), t0)), b: add(s.a, mul(sub(s.b, s.a), t1)), kind: s.kind, h: s.h, ri: s.ri, cut: keep.length !== 1 || keep[0][0] > 0 || keep[0][1] < 1});
+      for (const [t0, t1] of keep) pieces.push({a: add(s.a, mul(sub(s.b, s.a), t0)), b: add(s.a, mul(sub(s.b, s.a), t1)), kind: s.kind, h: s.h, v:s.v, ri: s.ri,
+        aEnd:t0>0?'cut':s.aEnd||'network',bEnd:t1<1?'cut':s.bEnd||'network',cut: keep.length !== 1 || keep[0][0] > 0 || keep[0][1] < 1});
     }
     if (cores.some((c, i) => segs.some((s) => clipSeg(s.a, s.b, obsR[i])))) violations.push({id: 'CORE_IN_AISLE', note: '코어가 차로를 막습니다 — 코어를 칸 자리로 옮기면 동선이 이어집니다'});
     return pieces;
   }
+  function convexHull(points) {
+    const sorted=points.slice().sort((p,q)=>p[0]-q[0]||p[1]-q[1]);
+    const cross=(o,p,q)=>(p[0]-o[0])*(q[1]-o[1])-(p[1]-o[1])*(q[0]-o[0]);
+    const side=P=>{const out=[];for(const p of P){while(out.length>1&&cross(out.at(-2),out.at(-1),p)<=0)out.pop();out.push(p);}return out.slice(0,-1);};
+    return side(sorted).concat(side(sorted.slice().reverse()));
+  }
+  function networkSurface(G,pieces,area,cores) {
+    const co=new CL.ClipperOffset(2,2),out=new CL.Paths(),half=G.a/2;
+    for(const p of pieces)co.AddPath(toC([p.a,p.b]),CL.JoinType.jtMiter,CL.EndType.etOpenButt);
+    co.Execute(out,half);const paths=out.map(fromC),graph=Net.buildGraph(pieces);
+    for(const node of graph.nodes){
+      const neighbours=[...new Set(graph.edges.flatMap(e=>e.a===node.id?[e.b]:e.b===node.id?[e.a]:[]))];
+      // Obstacle cuts and genuine terminals are flat ends, never new junctions or extended caps.
+      const cut=pieces.some(p=>p.aEnd==='cut'&&len(sub(p.a,node.p))<=30||p.bEnd==='cut'&&len(sub(p.b,node.p))<=30);
+      if(cut||neighbours.length<2)continue;
+      const offsets=neighbours.flatMap(i=>{const u=Gm.norm(sub(graph.nodes[i].p,node.p)),n=[-u[1]*half,u[0]*half];return [add(node.p,n),sub(node.p,n)];});
+      const join=convexHull(offsets);if(join.length>=3)paths.push(join);
+    }
+    // These bevelled junctions define lane geometry, not a vehicle turning-radius guarantee.
+    return boolOp(boolOp(boolOp(paths,[],CL.ClipType.ctUnion),area,CL.ClipType.ctIntersection),cores.map(c=>rectPoly(c.r)),CL.ClipType.ctDifference);
+  }
   // S5 차로 면: 끊기지 않은 순환 고리는 닫힌 선, 나머지(끊긴 고리 조각·줄·가지)는 끝을 a/2 내민 열린 선, 램프 진입은 착지에서 바로
   function aisleSurface(G, ringCL, pieces, area, cores) {
+    if(G.aisleSurfaceMode==='network'){
+      if(ringCL.length)throw new RangeError('연결 차로 면 모드는 명시적인 연결망 구간을 사용하세요');
+      return networkSurface(G,pieces,area,cores);
+    }
     const co = new CL.ClipperOffset(2, 2), bandOut = new CL.Paths(), cutRings = new Set(pieces.filter((pc) => pc.kind === 'ring' && pc.cut).map((pc) => pc.ri));
     ringCL.forEach((Pg, ri) => { if (!cutRings.has(ri)) co.AddPath(toC(Pg), CL.JoinType.jtMiter, CL.EndType.etClosedLine); });
     pieces.filter((pc) => pc.kind !== 'ring' || cutRings.has(pc.ri)).forEach((pc) => co.AddPath(toC([pc.a, pc.b]), CL.JoinType.jtMiter, pc.kind === 'ramp' ? CL.EndType.etOpenButt : CL.EndType.etOpenSquare));
@@ -146,7 +173,7 @@
     };
     // 가로 차로 양옆: 기둥 사이 n대
     for (const ln of merged(hLines, 'h', 0)) {
-      const x1 = ln.s - a / 2, x2 = ln.e + a / 2;
+      const cap=G.aisleSurfaceMode==='network'?0:a/2,x1 = ln.s - cap, x2 = ln.e + cap;
       for (const sg of [1, -1]) {
         activeRow = Modules.row(G, options, 'h', ln.k, sg); rows.push({...activeRow,span:[x1,x2]});
         const w = activeRow.widthMm, d = activeRow.depthMm;
@@ -165,7 +192,7 @@
     // 세로 차로 양옆: 칸 줄 띠에서 실제 기둥·코어·램프·차로가 차지한 구간을 먼저 빼고, 남은 빈 구간마다 칸을 가운데 맞춰 채운다
     //   (세로 기둥 간격 gy에 칸 폭이 딱 맞지 않아도 기둥 사이마다 같은 묶음 — 이어 놓고 기둥에 걸린 칸을 지우던 '이빨 빠짐'을 없앤다)
     for (const ln of merged(vLines, 'v', 1)) {
-      const y1 = ln.s - a / 2, y2 = ln.e + a / 2;
+      const cap=G.aisleSurfaceMode==='network'?0:a/2,y1 = ln.s - cap, y2 = ln.e + cap;
       for (const sg of [1, -1]) {
         activeRow = Modules.row(G, options, 'v', ln.k, sg); rows.push({...activeRow,span:[y1,y2]});
         const w = activeRow.widthMm, d = activeRow.depthMm;
