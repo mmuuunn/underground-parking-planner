@@ -1,84 +1,82 @@
 # 지하주차 개발 하네스
 
-이 폴더는 AI를 계속 자동 호출하는 장치가 아니라, 한 번의 작업 범위를 고정하고 결과를 같은 기준으로 확인하는 최소 안전장치다.
+하네스는 **시작 조건 → 실제 검증 → 검토·승인**을 확인한다. 공통 시험 통과와 작업 완료를 구분하며, 다른 모델을 자동 호출하지 않는다.
 
-## 구성
+| 단계 | 확인하는 것 | 막는 상황 |
+|---|---|---|
+| 시작 | 목표, 현재 단계, 실행 경로, 작업별 검사, 선행작업 | 조건 누락, 미완료 선행작업, 참고 실험을 제품 작업으로 지정 |
+| 검증 | 공통 시험 + 실행형 작업 검사 + 제품 전후 측정 | 시험만 통과, 참고 연결망 대체, 동일 입력에서 개선 없음, 재열기 불일치 |
+| 종료 | 필요한 독립 검토와 사용자 승인 | 승인 누락, 다른 실행이나 변경 전 코드의 승인 재사용 |
 
-- `policy.yaml`: 모든 작업에 공통으로 적용하는 운영 규칙
-- `stages/`: 제품 단계별 합격 조건
-- `work-items/`: 한 번에 처리할 작업지시서
-- `scripts/preflight.ps1`: AI 작업을 시작하기 전 준비 상태 확인
-- `scripts/verify.ps1`: 지정된 계산 시험 실행 및 결과 기록
-- `runs/`: 실행별 작업 영수증과 시험 결과. Git에는 `.gitignore`만 보관한다.
+## 실행
 
-상시 감시, 자동 모델 호출, Claude-Codex 간 무한 왕복은 하지 않는다.
-
-## 처음 사용하는 방법
-
-저장소 루트에서 다음을 실행한다.
+저장소 루트에서 작업표를 만든 뒤 다음 순서로 실행한다.
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\harness\scripts\preflight.ps1 `
-  -WorkItem .\tools\harness\work-items\UG-VEHICLE-001.yaml
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/harness/scripts/preflight.ps1 -WorkItem tools/harness/work-items/UG-HARNESS-005.yaml
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/harness/scripts/verify.ps1 -WorkItem tools/harness/work-items/UG-HARNESS-005.yaml -RunId <첫 명령에서 출력한 run_id>
 ```
 
-점검이 성공하면 `run_id`와 `tools/harness/runs/<run_id>/manifest.json`이 생긴다. 계산 시험만 다시 실행하려면:
+계산 시험만 실행할 때는 `npm test`를 쓴다. 작업 검증에는 시작 기록의 RunId가 필요하다. 시작 후 목표·실행 경로·기대값·검사·허용 파일을 바꾸면 기존 RunId로 통과할 수 없다. 수정된 범위로 새로 시작한다.
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\harness\scripts\verify.ps1 `
-  -WorkItem .\tools\harness\work-items\UG-VEHICLE-001.yaml
+공통 시험 결과도 검사 당시 코드 지문에 묶는다. 코드가 바뀌면 예전 시험 통과와 검토·승인을 재사용할 수 없다.
+
+## 작업표에 고정할 것
+
+기존 작업표에 `completion_contract: |`와 들여쓴 JSON을 추가한다. 실제 예시는 `work-items/UG-HARNESS-005.yaml`에 있다.
+
+- `kind`: `product`는 실제 제품 개선, `experiment`는 참고 실험, `support`는 하네스·정리 같은 지원 작업이다. 뒤의 두 종류는 제품 진척으로 집계하지 않는다.
+- `goal`, `stage_goal`, `target`: 이번 결과, 현재 단계의 목표 문장, 실제 실행 대상을 적는다. stage_goal은 현재 단계 파일의 문장과 일치해야 한다.
+- `depends_on`: 완료가 필요한 작업표의 저장소 상대 경로다. 선행작업은 ACCEPTED 상태와 유효한 완료 영수증이 있어야 한다.
+- `checks`: `{ "id":"검사명", "script":"저장소 안의 검사.cjs", "args":[] }` 목록이다. 각 Node 스크립트를 실제 실행하며 실패·시간 초과는 작업 실패다. 자연어 합격 조건 전체의 의미를 자동 판독하는 기능은 아니다.
+- `review_required`, `user_required`: 필요한 검토와 승인을 명시한다. 제품 작업은 사용자 승인이 필수다. 제품 코드·화면을 바꾸면서 사용자 확인을 끌 수 없다. 계산 코드 변경이나 활성 코드 5개 이상은 독립 검토를 자동 요구한다. 다른 위험 조건은 policy.yaml에 따라 선언한다.
+
+제품 작업은 `target`을 `04_parking/underground-compare.html`로 지정하고 다음 항목을 추가한다.
+
+```json
+"product": {
+  "url": "http://127.0.0.1:8874/04_parking/underground-compare.html?reference=sghs&floor=B1&revision=calibrated",
+  "expect": {
+    "result.stallCount": {"gte": 60},
+    "result.graph.hasLoop": {"eq": true},
+    "routes.entry.state": {"eq": "clear"},
+    "routes.exit.state": {"eq": "clear"}
+  }
+}
 ```
 
-특정 작업 영수증에 시험 결과를 연결하려면 위 명령에 `-RunId <run_id>`를 추가한다.
+이 수치는 형식 예시이며 SGHS의 승인된 대수·완성 기준이 아니다. 작업마다 기대값을 먼저 정한다. `eq`, `gte`, `lte`로 실제 결과를 검사하고, 적어도 하나의 미달 조건이 충족으로 바뀌어야 제품 개선으로 본다.
 
-## 상태
+제품 검증은 새 브라우저 저장공간에서 **실제 제품 페이지**를 열고 `sghsScene.snapshot()`을 읽는다. 중심선을 제공한 연결망은 거부하고, 전후 입력 지문과 재열기 결과도 비교한다. 현재 관찰 어댑터는 SGHS 화면용이다. 다음 사례에 다른 관찰 API가 필요하면 먼저 어댑터를 추가한다. 기존 Playwright 설치가 필요하며 자동 설치하지 않는다. 저장소에서 모듈을 찾지 못하면 해당 설치의 `node_modules`를 `NODE_PATH`에 지정한다.
 
-- `DRAFT`: 작성 중, 구현 금지
-- `SCOPED`: 범위와 합격 조건 확정, 기준 재현 전
-- `BASELINED`: 변경 전 결과 재현 완료
-- `IMPLEMENTING`: 구현 담당 한 명이 작업 중
-- `VERIFYING`: 기계 시험 중
-- `USER_GATE`: 사용자가 결과 화면을 판단할 차례
-- `ACCEPTED`: 종료
-- `RESCOPE_REQUIRED`: 추가 패치 대신 범위를 다시 정해야 함
+## 결과 읽기
 
-`preflight.ps1`은 `SCOPED` 또는 `BASELINED`만 시작한다.
+`runs/<run_id>/completion.json`에 공통 시험·작업 검사·제품 측정·독립 검토·사용자 승인이 각각 기록된다. 전후 제품 화면과 측정 JSON도 같은 실행 폴더에 저장한다.
 
-## 운영 원칙
+| 실행 상태 | 의미 |
+|---|---|
+| BASELINED | 변경 전 공통 시험 통과. 완료 아님 |
+| TASK_FAILED | 필수 검사 실패 또는 유효하지 않은 승인 |
+| REVIEW_PENDING | 기계 검사는 통과했지만 독립 검토 대기 |
+| USER_GATE | 필요한 검사·검토 통과, 사용자 승인 대기 |
+| TASK_VERIFIED | 이번 작업에 필요한 모든 관문 충족 |
 
-1. 한 작업에는 구현 담당 한 명만 둔다.
-2. 허용 파일 밖 변경은 별도 작업으로 분리한다.
-3. 시험 통과를 건축계획 합격으로 표현하지 않는다.
-4. 대수·램프 자리·판정 변경은 사용자 확인을 거친다.
-5. 같은 원인의 세 번째 수정은 금지한다.
-6. 독립검토는 위험 조건에 해당할 때만 한 번 요청한다.
+필수 관문이 남아 있으면 verify는 종료 코드 1을 반환한다. 성공한 지원 작업의 `productProgress`는 false다. 작업표 상태는 자동 변경하지 않는다. 완료 기록을 확인한 뒤 작업표를 ACCEPTED로 바꾸고 최상위 `completion_run: <run_id>`를 적는다. 단계 종료와 제품 방향의 최종 판단은 사용자에게 있다.
 
-## 권한 구조
+예전 실행의 VERIFIED는 당시 공통 시험 통과 기록이다. 새 완료 관문을 통과했다는 뜻으로 소급하지 않는다. 예전 작업표도 새 작업을 시작하려면 계약을 보완해야 한다. 이전의 실패·실험 결과나 기준값은 덮어쓰지 않는다.
 
-- 사용자: 제품 방향과 화면 결과의 최종 승인
-- Codex: 하네스 운영, 단계 설계, 작업지시서 발행, 담당 배정, 독립검토 판단, 단계 종료 제안의 상위 책임
-- Claude: Codex가 정한 범위 안의 구현 또는 반례 검토. 목표·정책·골든값·다음 단계를 임의로 바꾸지 않음
-- 시험 스크립트: 어느 모델도 우회할 수 없는 기계 증거
+## 검토·승인 기록
 
-상위 판단이 필요한 경우 Claude가 사용자에게 직접 범위를 넓히지 않고 Codex에 `NEEDS_AUTHORITY_DECISION`으로 돌려보낸다. Codex도 사용자 화면 합격과 법규·골든값 결정을 대신하지 않는다.
+독립 검토가 필요하면 실행 폴더의 `review.json`에 다음을 기록한다. `sourceDigest`는 completion.json의 코드 지문을 사용한다.
 
-첫 작업 `UG-VEHICLE-001`은 새 기능 지시가 아니라 다음 개발 단위를 고정하는 문서다. L자·전변사선·오각형 안쪽의 차량 정지 이유를 정확히 만들고 이미 통과하는 기준 도면을 보존한다. 코어·보행·다층·화면 장식은 포함하지 않는다.
+```json
+{"workItem":"작업ID","runId":"실행ID","sourceDigest":"코드 지문","status":"passed","role":"independent","actor":"구현자와 다른 검토자","evidence":"검토 보고서 경로"}
+```
 
+사용자가 승인하면 **실제 승인 내용을 확인한 후** `user-approval.json`에 기록한다. 형식은 workItem/runId/sourceDigest/status/actor/evidence이며 status는 `approved`, actor는 `user`, evidence에는 승인 발언이나 근거를 적는다. 기록을 만든 사람의 신원이나 실제 승인 발언을 기계가 증명하지는 못한다. 구현자의 자기 확인을 독립 검토나 사용자 승인으로 기록하면 안 된다.
 
-## 작업별 증거 확인
+승인 대상 실행과 코드 지문이 다르면 거부한다. 새로 코드를 고쳤다면 새 검토·승인이 필요하다. 모델 호출이나 승인 기록을 자동 생성하지 않는다.
 
-verify.ps1의 PASSED 및 manifest의 VERIFIED는 공통 계산 시험의 결과다. 허용 파일 준수, 작업별 합격 조건, 독립 검토, 사용자 승인이나 실제 주행을 자동 확인하지 않는다. 작업을 끝내기 전 작업지시서에 다음을 각각 기록한다. 미확인 항목은 통과로 간주하지 않는다.
+## 보존 원칙
 
-- 비교 입력: 외곽·코어·기둥·램프·대지 및 도로 조건과 변경 여부
-- 작업별 결과: 합격 조건별 측정값, 실패 또는 미검증 이유, 재현 가능한 시험이나 화면
-- 공통 계산 시험: 실행 시점과 결과. 같은 시험을 두 번 실행해도 별개 증거가 아니다.
-- 독립 검토: 필요 여부, 확인 대상과 결과 또는 미실시. 구현자가 스스로 확인한 것은 독립 검토가 아니다.
-- 사용자 확인: 필요한 화면과 확인 결과 또는 대기. 제품 방향과 화면의 최종 판단은 사용자에게 있다.
-
-같은 원인에 대한 두 번째 수정이 필요하면 추가 패치 전에 원인과 구조를 재검토한다. 제품에 영향을 주는 변경은 작업지시서의 중단 조건과 사용자 확인 단계를 따른다. 시간 간격은 작업 단위별로 정하며 30분이나 3시간을 자동 강제하지 않는다.
-
-## 제품 점수 기록
-
-`progress.json`은 동일 평가표에 따른 잠정 평가의 시간순 기록이다. 첫 52점은 2026-10-28 대화에서 제안한 추정치이며, 이전 평가가 없어 변화는 알 수 없다. 대시보드는 이 기록을 자동으로 다시 읽는다. 기록을 추가하기 전에는 자동으로 점수가 오르지 않는다.
-
-제품에 의미 있는 작업을 끝낼 때 기존 항목과 배점을 유지하고 새 평가의 날짜, 점수, 항목별 근거, 변화와 미검증을 기록한다. 기존 기록은 지우지 않는다. 점수는 낮아지거나 그대로일 수 있다. 공통 시험과 하네스 화면 개선만으로 제품 성능 상승을 주장하지 않으며, 사용자 화면 승인과 독립 검토는 별도로 남긴다. 기준을 바꿔야 한다면 기존 점수와 직접 비교하지 않도록 별도 기준을 설계한다.
+기존 골든·안전 판정·사용자 입력은 작업 지침대로 보존한다. `progress.json`의 제품 점수는 실제 결과와 사용자 확인 근거에 따라 별도로 관리한다. 하네스 개선이나 공통 시험 수 증가만으로 제품 점수를 올리지 않는다. 대시보드는 기존 작업표와 실행 기록을 읽으며, 새 관문의 상세 결과는 completion.json에서 확인한다.

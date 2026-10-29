@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory)][string]$WorkItem,
   [string]$RepoRoot,
   [string]$RunId,
@@ -9,6 +9,13 @@ param(
 $repo = Resolve-RepoRoot $RepoRoot
 $harnessRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $info = Get-WorkItemInfo $WorkItem
+if ($Mode -eq 'VERIFY' -and -not $RunId) { throw '작업 검증에는 preflight의 RunId가 필요합니다. 공통 시험만 실행하려면 npm test를 사용하세요.' }
+if ($RunId) {
+  if ($RunId -notmatch '^[A-Za-z0-9_-]+$') { throw 'Invalid RunId' }
+  $receiptDir = Join-Path $harnessRoot (Join-Path 'runs' $RunId)
+  $scopeCheck = & node (Join-Path $PSScriptRoot 'completion-gate.cjs') scope $repo $info.path $receiptDir | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0) { throw '시작 시 고정한 작업 범위 또는 선행작업 검증 실패' }
+}
 if ($info.verifyProfile -ne 'vehicle-circulation') { Write-Error "Unsupported verify_profile: $($info.verifyProfile)" }
 $tests = @(
   '04_parking/02_tests/planning-backend.test.cjs',
@@ -60,8 +67,8 @@ if ($RunId) {
   $manifestPath = Join-Path $resultDir 'manifest.json'
   if (Test-Path -LiteralPath $manifestPath) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $manifest.verification = [ordered]@{ mode=$Mode; passed=$summary.passed; exitCode=$exitCode; tests=$summary.tap.tests; pass=$summary.tap.pass; fail=$summary.tap.fail; elapsedSeconds=$summary.elapsedSeconds; result='verification.json'; log='verification.log' }
-    $manifest.status = if($summary.passed){if($Mode -eq 'BASELINE'){'BASELINED'}else{'VERIFIED'}}else{'VERIFICATION_FAILED'}
+    $manifest.verification = [ordered]@{ mode=$Mode; passed=$summary.passed; exitCode=$exitCode; tests=$summary.tap.tests; pass=$summary.tap.pass; fail=$summary.tap.fail; elapsedSeconds=$summary.elapsedSeconds; result='verification.json'; log='verification.log'; sourceDigest=$scopeCheck.sourceDigest }
+    $manifest.status = if($summary.passed){if($Mode -eq 'BASELINE'){'BASELINED'}else{'TESTS_PASSED'}}else{'VERIFICATION_FAILED'}
     Write-JsonUtf8 $manifest $manifestPath
   }
 }
@@ -70,4 +77,15 @@ if ($summary.passed) { Write-Host ("VERIFICATION PASSED: {0}/{1} tests, {2}s" -f
 else { Write-Host ("VERIFICATION FAILED: exit {0}, {1}s" -f $exitCode,$summary.elapsedSeconds) -ForegroundColor Red }
 Write-Host ("result: " + $verificationPath)
 Write-Host ("log: " + $logPath)
+if ($Mode -eq 'VERIFY') {
+  & node (Join-Path $PSScriptRoot 'completion-gate.cjs') verify $repo $info.path $resultDir | Out-Null
+  $gateExit = $LASTEXITCODE
+  $completionPath = Join-Path $resultDir 'completion.json'
+  if (Test-Path -LiteralPath $completionPath) {
+    $g = Get-Content -LiteralPath $completionPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Write-Host ("WORK GATES: {0} | checks {1}/{2} | product {3} | review {4} | user {5}" -f $g.status, @($g.checks | Where-Object { $_.passed }).Count, @($g.checks).Count, $(if($g.product.required){$g.product.passed}else{'not credited'}), $g.review.status, $g.user.status)
+    Write-Host ("completion: " + $completionPath)
+  }
+  exit $gateExit
+}
 exit $exitCode

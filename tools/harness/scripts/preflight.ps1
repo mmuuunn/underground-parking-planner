@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$WorkItem, [string]$RepoRoot, [switch]$SkipBaseline)
+﻿param([Parameter(Mandatory)][string]$WorkItem, [string]$RepoRoot, [switch]$SkipBaseline)
 . (Join-Path $PSScriptRoot 'common.ps1')
 
 $repo = Resolve-RepoRoot $RepoRoot
@@ -53,6 +53,14 @@ $manifest = [ordered]@{
   userGate = [ordered]@{ required=$true; status='PENDING' }
 }
 Write-JsonUtf8 $manifest $manifestPath
+$gateScript = Join-Path $PSScriptRoot 'completion-gate.cjs'
+& node $gateScript preflight $repo $info.path $runDir | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  $manifest.status = 'SCOPE_BLOCKED'
+  Write-JsonUtf8 $manifest $manifestPath
+  Write-Host '작업 시작 차단: 목표·실행 경로·검사·선행작업을 확인하세요.' -ForegroundColor Red
+  exit 1
+}
 Write-Host 'PRECHECK PASSED' -ForegroundColor Green
 Write-Host ("run_id: " + $runId)
 Write-Host ("manifest: " + $manifestPath)

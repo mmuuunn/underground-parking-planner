@@ -1,0 +1,59 @@
+id: UG-HARNESS-005
+status: ACCEPTED
+completion_run: 20261030-004137-UG-HARNESS-005-583c2a43
+stage: vehicle-circulation
+authority: codex
+owner: codex-sol
+reviewer: not-required-harness-only
+verify_profile: vehicle-circulation
+question: 공통 시험만 통과한 작업이 실제 제품 진척이나 완료로 오인되지 않도록 시작·검증·승인 관문을 강제할 수 있는가?
+allowed_files:
+  - tools/harness/scripts/preflight.ps1
+  - tools/harness/scripts/verify.ps1
+  - tools/harness/scripts/completion-gate.cjs
+  - tools/harness/README.md
+  - tools/harness/work-items/UG-HARNESS-005.yaml
+acceptance:
+  - 목표·산출물 종류·실제 실행 경로·실행형 작업검사·선행작업을 시작 전에 고정하고 누락·미완료 의존 작업을 차단
+  - 제품 작업은 실제 제품 화면의 일반 생성 결과를 전후 측정; 참고 연결망과 단순 시험 통과를 제품 개선으로 인정하지 않음
+  - 공통시험·작업별검사·제품결과·독립검토·사용자승인을 별도 상태로 기록;필수 항목 미충족 시 완료와0종료코드 거부
+  - SGHS 실제 제품9칸·INFEASIBLE을 기대값 미달로 거부하고 공급망66칸의 제품 증거 대체도 거부
+  - 성공·실패·누락·오래된 승인·지원작업·의존관계 반례와 기존 대시보드 시험·공통109시험 통과
+not_doing:
+  - SGHS 생성기·주차 판정·골든값·제품 점수 변경·다른 모델 호출·원격 push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 실제 제품 진척과 참고 모형을 혼동한 원인을 하네스에서 차단
+  reference_change: ○ 제품 결과는 보존하고 작업 종료 판단만 보강
+  excluded_scope: ○ 사용자가 명시적으로 요청한 하네스 개선;제품 개발 범위 확장 없음
+completion_contract: |
+  {
+    "kind": "support",
+    "goal": "SGHS 실제 제품의 진척 없이 하네스 공통시험만으로 완료되는 일을 막는다",
+    "stage_goal": "기준 매스별 주차대수와 램프 위치가 재현된다",
+    "target": "tools/harness/scripts/preflight.ps1 + tools/harness/scripts/verify.ps1",
+    "depends_on": [],
+    "checks": [{"id":"gate-counterexamples","script":"tools/harness/scripts/completion-gate.cjs","args":["--self-test"]},{"id":"existing-dashboard","script":"tools/harness/scripts/dashboard.test.cjs","args":[]}],
+    "review_required": false,
+    "user_required": false
+  }
+results:
+  implementation_rounds: 1
+  outcome: TASK_VERIFIED;지원작업으로productProgress=false;제품 점수와SGHS 완성도는 올리지 않음
+  structure: 시작조건 고정→공통시험·실행형작업검사·실제제품검증→독립검토·사용자승인 확인
+  preflight: 목표·현재단계·산출물종류·실행경로·검사·선행작업 필수;미완료/영수증없는 선행작업 차단;계약지문 저장
+  verify: 공통시험만으로VERIFIED를 기록하던 경로 제거;RunId와작업범위 결속;코드 지문이 다른 시험·검토·승인 재사용 거부
+  product: 새 브라우저 저장공간의 실제SGHS 제품화면에서 일반generate를 전후 관찰;동일입력·기대값충족·실제개선·재열기 동일성 요구;공급연결망 대체 거부
+  approval: 위험한 계산코드 변경과활성코드5파일 이상은 독립검토 자동요구;제품작업과제품코드/화면변경은 사용자승인 필수;수동승인 기록의 실제 발언과 신원은 사람이 확인
+  self_test: 27/27;목표누락·범위밖목표·선행대기·완료라벨만있음·제품9칸·공급망66대체·변화없음·입력변경·재열기불일치·승인누락·자기검토·오래된시험/승인 등 거부
+  existing_dashboard: 4/4;기존 기록 표시 유지;상세 관문은completion.json에서 확인
+  common: 변경전109/109;최종109/109;53.419초;실행형 작업검사2/2와별도 집계
+  live_counterexample: 20261030-004719-UG-HARNESS-005-SGHS-FAILURE-829e6685;실제SGHS9→9·고리false·진입/진출unconnected;공통109/109와작업검사통과에도TASK_FAILED·종료코드1·제품진척false
+  counterexample_note: 60칸 기대값은 거부 동작을 입증하기 위한 시험용 값이며SGHS의승인된 대수나완성 기준이 아님
+  operational_failure: 제품서버 중단 시 시작관문이차단됨을 확인;기존 설치Playwright로재실행;WindowsPowerShell의한글오류표시도UTF8BOM으로확인
+  preserved: SGHS생성기·판정·골든·제품점수변경0;사용자AGENTS.md·루트README.md·docs/COMPLETION_BASELINE.md SHA256동일;다른모델호출0
+  limits: 현재실제제품 관찰어댑터는SGHS용;작업별검사의의미·건축계획의가치·승인발언의진실성을 기계가대신판단하지 않음;기존완료기록소급승격 없음
+  evidence: tools/harness/runs/20261030-004137-UG-HARNESS-005-583c2a43/completion.json;C:/Users/seok2/.codex/research/HARNESS-IMPROVEMENT-20261030/sghs-rejection.json
