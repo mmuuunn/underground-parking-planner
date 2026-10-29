@@ -1,5 +1,5 @@
 id: UG-SGHS-ROW-ORDER-001
-status: USER_GATE
+status: RESCOPE_REQUIRED
 stage: vehicle-circulation
 authority: codex
 owner: codex
@@ -64,4 +64,12 @@ results:
   evidence: C:/Users/seok2/.codex/research/SGHS-ROW-ORDER-20261029; semantic-evidence.json·before.json·after.json·npm-test.log·reviewed-comparison.png
   screen: http://127.0.0.1:8874/04_parking/sghs-compare.html?floor=B1&revision=reviewed&candidate=connected
   independent_review: 미실시; 다른 모델·서브에이전트 호출 없음
-  user_visual_review: 새 화면 확인 대기; 단계 종료 또는 원본 재현 완료 승인 아님
+  user_visual_review: 2026-10-29 사용자 부분 확인 수신; 파란·주황 구역의 초록색 4칸은 원본 차량배치와 동일; 두 구역 안의 분홍색 후보는 전부 오류; 전체 재현·주행·단계 종료 승인 아님
+user_feedback:
+  date: 2026-10-29
+  reference_image: C:/Users/seok2/.codex/research/SGHS-ROW-ORDER-20261029/B1-check-two-regions.png
+  accepted_scope: 파란 구역 초록색 2칸 및 주황 구역 초록색 2칸의 원본 차량배치 일치
+  rejected_scope: 파란 구역 내 분홍색 후보 3칸 및 주황 구역 내 분홍색 후보 4칸; 두 구역 밖 후보의 판정으로 확대하지 않음
+  interpretation: 입출차 접면 방향이 같거나 추적 면적에 겹치는 후보라도 원본 배치 일치로 세지 않음; 남서측의 기존 동향 후보도 이번 사용자 확인에서 오류로 분류
+  unchanged_limits: 사용자 확인은 배치에 한정; 현재 모든 후보 미도달·채택 0 및 원본 작동 전제·순폭 6m·깊이 5m 유지
+  next_scope: 이 단위의 구현 2회를 소진하여 추가 구현은 중단; 다음 단위에서 두 구역 내 분홍 후보의 원본 불일치 원인을 위치·입출차 접면·열 구성으로 분리하고 새 작업표·preflight로 진행
