@@ -106,6 +106,8 @@
       if(routing.created.length)warnings.push(`막힌 구간 ${routing.created.length}곳에 우회 차로를 만들었습니다`);
       if(routing.failed.length||(routing.blockedCount&&!routing.created.length))violations.push({id:'BYPASS_UNAVAILABLE',note:`차로 폭을 확보할 수 없는 우회 ${routing.failed.length||routing.blockedCount}곳은 만들지 못했습니다`,at:W(routing.failed[0]?.a||segs[0].a).map(Math.round)});
     }else pieces=originalPieces;
+    // Clearance cuts constrain graph evidence, not the physical floor; retain the designed lanes and detours.
+    const surfacePieces=segs.concat(routing.created.flatMap(P=>P.slice(1).map((b,i)=>({a:P[i],b,kind:'bypass'}))));
     let aisleObstacles = obstacles;
     if (G.columnAxes) {
       const fixed = columns.map(P => ({r:Gm.bbox(P)})), margin = a / 2 - 100;
@@ -116,7 +118,8 @@
       pieces.forEach(p=>{if(p.kind==='ring'&&cutRings.has(p.ri))p.cut=true;});
       aisleObstacles = obstacles.concat(fixed);
     }
-    let aisleU = Lay.aisleSurface(G, ringCL, pieces, area, aisleObstacles);
+    const surfaceObstacles=connected?aisleObstacles:obstacles.concat(columns.map(P=>({r:Gm.bbox(P)})));
+    let aisleU = Lay.aisleSurface(G, ringCL, connected?pieces:surfacePieces, area, surfaceObstacles);
     if (alternative) {
       const bay=rectPoly(alternative.bounds), blocks=columns.concat(obstacles.map(c=>rectPoly(c.r)));
       aisleU=boolOp(boolOp(boolOp(aisleU.concat([bay]),[],CL.ClipType.ctUnion),area,CL.ClipType.ctIntersection),blocks,CL.ClipType.ctDifference);

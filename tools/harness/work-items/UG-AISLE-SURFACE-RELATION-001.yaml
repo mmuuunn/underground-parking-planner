@@ -1,0 +1,59 @@
+id: UG-AISLE-SURFACE-RELATION-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-session-pending
+verify_profile: vehicle-circulation
+question: 충돌 검사 여유로 절단한 선 대신 설계선을 사용하여 실제 차로 면을 만들고 구조와 물리적 단절을 보존하는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_layout.js
+  - 04_parking/02_tests/aisle-surface-relation.cjs
+  - tools/harness/work-items/UG-AISLE-SURFACE-RELATION-001.yaml
+acceptance:
+  - 일반 generate의 최종 면은 설계선에서 생성;충돌 여유로 절단한 선은 그래프 검사에만 사용
+  - 대표500mm기둥 구역37.55㎡ 복구;검사용6300mm절단과300mm바닥틈을 구분;기둥0.25㎡ 보존
+  - 물리장애물·층외곽·실제바닥단절 보존;정상직선·꺾임·T접합 전폭과연속성 보존
+  - 기존6골든 기대값과기둥좌표 보존;SGHS기둥·코어·램프·설계선·그래프위치 보존;칸변화는개별보고
+  - 실제일반제품 최초열기·재열기 일치;6m기준유지;NO_LOOP·폭부족·합류문제·차량미검증을합격으로승격하지않음
+not_doing:
+  - 입출차경로탐색·정밀차량검사·NO_LOOP변경·설계종점정책전면개편·NURBS·B2·다른모델호출·골든값변경·원격push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 120
+start_gate:
+  contribution: ○ 설계선과충돌검사선의혼동을수리하여실제차로바닥결손해소
+  reference_change: △ 면적과접면후보변화가능;구조와기존골든보존및전체결과비교
+  excluded_scope: ○ 차량경로와NO_LOOP변경없음
+completion_contract: |
+  {
+    "kind": "product",
+    "goal": "일반 생성의 설계선과 충돌 검사선의 책임을 분리하여 실제 장애물로 차로 면을 자른다",
+    "stage_goal": "대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target": "04_parking/underground-compare.html",
+    "depends_on": [],
+    "checks": [{"id":"design-surface-and-live-product","script":"04_parking/02_tests/aisle-surface-relation.cjs","args":["--verify","C:/Users/seok2/.codex/research/AISLE-SURFACE-RELATION-20261030"]}],
+    "review_required": true,
+    "user_required": true,
+    "product": {
+      "url": "http://127.0.0.1:8874/04_parking/underground-compare.html?reference=sghs&floor=B1&revision=calibrated",
+      "expect": {
+        "result.grid.aisleMm": {"eq":6000},
+        "result.graph.hasLoop": {"eq":false},
+        "routes.entry.state": {"eq":"unconnected"},
+        "routes.exit.state": {"eq":"unconnected"},
+        "result.areas.unassignedFreeM2": {"lte":1485.32}
+      }
+    }
+  }
+results:
+  verification_run: 20261030-025919-UG-AISLE-SURFACE-RELATION-001-8840e6d8
+  outcome: REVIEW_PENDING;구현과기계검사통과;독립검토와사용자화면확인대기
+  implementation_rounds: 1
+  sghs: 9칸전부유지;차로747.692013→802.154080㎡;양의면조각8→3;대표구역35.90→37.55㎡
+  preserved: SGHS기둥·코어·램프·그래프위치와기존6골든전체결과동일;사용자문서3개보존
+  checks: 공통109/109;정상3·기둥위치585·실제바닥틈6·물리벽1·실제생성위상25;최초저장과재열기일치
+  limits: 요구폭6m유지;고정기둥차단·램프합류·NO_LOOP와입출차unconnected유지;정밀차량·칸별입출고미검증;기존종점정책유지
+  evidence: C:/Users/seok2/.codex/research/AISLE-SURFACE-RELATION-20261030/validation.json
