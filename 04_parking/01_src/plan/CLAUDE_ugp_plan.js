@@ -24,16 +24,16 @@
   const {CL, add, sub, mul, len, rectPoly, signedArea, boolOp, areaOf, offsP} = Gm;
 
   // 위상 하나로 계획 전체. phase = 실내 면 상자(UCS 좌표) 기준 [x, y] mm
-  function build(input, phase, alternative = null) {
+  function build(input, phase, alternative = null, connected = null) {
     input={...input,mass:Boundary.outer(input.parkingMass||input.mass)};
     const G = Grid.frame(input), {cfg, a, d, W, L, inner, b} = G, warnings = [], violations = [];
     if (G.lostParts.length) violations.push({id: 'SPLIT_INNER', note: `외벽 두께를 빼면 실내 면이 ${G.lostParts.length + 1}조각으로 갈라집니다 — 가장 큰 조각만 계산했고 ${G.lostParts.map((x) => Math.round(x)).join('·')}㎡는 빠졌습니다`});
     // S2 구조 격자
     Grid.setPhase(G, phase);
     // S4 동선망(램프 없이) → S3 램프(몸체를 뺀 동선망 + 접속선)
-    const base = Net.lanes(G, null);
-    if (!base.ringCL.length) throw new RangeError(`매스 폭이 너무 좁아 외곽 순환 차로를 둘 수 없습니다(폭 ${(2 * (d + a)) / 1000}m 이상 필요)`);
-    const {rampOut, area:baseArea, lanesOut} = Ramp.placeRamp(G, input, base, violations);
+    const base = connected ? suppliedNetwork(G, input, connected, violations) : Net.lanes(G, null);
+    if (!connected && !base.ringCL.length) throw new RangeError(`매스 폭이 너무 좁아 외곽 순환 차로를 둘 수 없습니다(폭 ${(2 * (d + a)) / 1000}m 이상 필요)`);
+    const {rampOut, area:baseArea, lanesOut} = connected ? base : Ramp.placeRamp(G, input, base, violations);
     const boundary=Boundary.resolve(input,rampOut?{...input.ramp,body:rampOut.body.map(W),kind:rampOut.kind}:null);
     if(boundary.issue)violations.push({id:boundary.disconnected?'RAMP_DISCONNECTED':'RAMP_BOUNDARY',note:boundary.issue,at:rampOut?W(rampOut.landing):null});
     const manualZones=Zones.explicit(input).filter(z=>z.kind!=='keep'),zoneLocal=manualZones.flatMap(z=>z.paths.map(P=>P.map(L)));
@@ -42,7 +42,7 @@
     const {ringCL, segs} = lanesOut;
     if (alternative) segs.push({a: [alternative.attach, alternative.y], b: [alternative.end, alternative.y], kind: 'spur', h: alternative.y, v: null});
     for(const t of lanesOut.unresolvedTurns||[])violations.push({id:'RING_SHARP_TURN',at:W(t.at).map(Math.round),angleDeg:t.angleDeg,note:`순환 차로에서 진행 방향이 ${t.angleDeg.toFixed(1)}° 바뀝니다 — 이 구간을 지나지 않도록 차로·램프 자리를 조정하세요`});
-    if (!ringCL.length) throw new RangeError('램프를 빼고 나니 순환 차로를 둘 자리가 없습니다');
+    if (!connected && !ringCL.length) throw new RangeError('램프를 빼고 나니 순환 차로를 둘 자리가 없습니다');
     // 점유물(코어) → 동선 자르기 → S5 차로 면
     const cores = Lay.snapCores(G, input, segs);
     { const e1 = a / 2 - 100; cores.forEach((c) => { c.blocks = segs.some((sg) => Gm.clipSeg(sg.a, sg.b, [c.r[0] - e1, c.r[1] - e1, c.r[2] + e1, c.r[3] + e1])); }); }
@@ -290,6 +290,34 @@
     r.grid.phaseFrom = given ? 'input' : 'auto';
     return r;
   }
+  // Explicit candidate experiment: preserve fixed structure and straight ramp; S7 still decides every result.
+  function suppliedNetwork(G, input, routes, violations) {
+    const r = input.ramp, point = p => Array.isArray(p) && p.length === 2 && Array.from(p).every(Number.isFinite);
+    if (!Number.isFinite(G.a)) throw new RangeError('차로 폭은 유한한 mm 값이어야 합니다');
+    if (!G.columnAxes || !input.cores?.every(c=>c.keep?.x===true&&c.keep?.y===true) || input.occupantPolicy==='bypass') throw new RangeError('연결망 후보는 고정 구조축·고정 코어와 report 정책이 필요합니다');
+    if (r?.kind !== 'straight' || !point(r.landing) || !point(r.tangent) || !Number.isFinite(len(r.tangent)) || ![r.widthMm,r.lengthMm].every(v=>Number.isFinite(v)&&v>0)) throw new RangeError('연결망 후보는 몸체·착지·접선을 가진 직선 램프가 필요합니다');
+    const exact = Ramp.createStraight(r);
+    if (!Array.isArray(r.body) || r.body.length!==4 || !Array.from(r.body).every((p,i)=>point(p)&&len(sub(p,exact.body[i]))<=.01)) throw new RangeError('연결망 후보의 직선 램프 몸체가 착지·접선·길이와 다릅니다');
+    if (!Array.isArray(routes) || !routes.length || routes.length>128 || !Array.from(routes).every(route=>Array.isArray(route?.points)&&route.points.length>=2&&route.points.length<=128&&Array.from(route.points).every(point))) throw new RangeError('연결망 후보는 유한한 mm 좌표의 열린 선 목록이어야 합니다');
+    const segs = routes.flatMap(route=>route.points.slice(1).map((p,i)=>{
+      const a=G.L(route.points[i]),b=G.L(p);
+      if(len(sub(b,a))<30)throw new RangeError('연결망 후보의 구간 길이는 30mm 이상이어야 합니다');
+      return {a,b,kind:'spur',h:Gm.isH(a,b)?(a[1]+b[1])/2:null,v:Gm.isV(a,b)?(a[0]+b[0])/2:null};
+    }));
+    const body=r.body.map(G.L),slope=Number.isFinite(input.floorMm)?Math.round(input.floorMm/r.lengthMm*1000)/10:null;
+    if(slope!==null&&slope>17)violations.push({id:'RAMP_SLOPE',note:`램프 경사 ${slope}%가 직선 기준 17%를 넘습니다 — 길이를 늘리세요`});
+    violations.push({id:'SUPPLIED_NETWORK_UNVERIFIED',note:'입력 연결망의 실제 차로 후보입니다 — 램프 합류·회차·칸별 조향은 미검증입니다',at:r.landing.slice()});
+    return {ringCL:[],segs,lanesOut:{ringCL:[],segs},area:boolOp([G.inner],[body],CL.ClipType.ctDifference),
+      rampOut:{kind:'straight',body,landing:G.L(r.landing),u:G.L(exact.tangent),widthMm:r.widthMm,lengthMm:r.lengthMm,start:G.L(exact.start),slopePct:slope,shiftMm:0,approach:[]}};
+  }
+  function generateConnected(input, routes) {
+    Zones.explicit(input);Allocation.rules(input,false);
+    if (!okPhase(input.phase) || !Array.isArray(routes)) throw new RangeError('연결망 후보는 고정 주차 모듈 위상과 연결선 목록이 필요합니다');
+    const r=build(input,input.phase,null,routes);
+    r.grid.phaseFrom='input';
+    r.networkCandidate={source:'supplied-centerlines',widthMm:r.grid.aisleMm,turning:'UNVERIFIED'};
+    return r;
+  }
   // Experimental, conditional alternative: the returned dead end still needs turning and traffic review.
   // shortcut: only positive grid-aligned straight ramps; expand after other orientations are verified.
   function suggestTurnBay(input) {
@@ -394,6 +422,6 @@
     const r = generate(input);
     return {cores: r.cores.map((c) => c.center), ramp: r.ramp ? r.ramp.landing : null};
   }
-  const api = {_emptyIslands: emptyIslands, generate, snap, suggestTurnBay, suggestPhases, suggestRamps, suggestUcs, suggestCoreMoves, configureCore:CoreFit.configure,planningBoundary:Boundary.resolve,rampReview,inspectVehicleRoutes:VehicleRoutes.routes,checkVehiclePath:VehicleRoutes.check,curveEvaluationFixed, curveEvaluationSource, createStraightRamp:Ramp.createStraight, createCurveRamp:Curve.createCurve, DEFAULTS: Grid.DEFAULTS, STALL_MODULES: Modules.CATALOGUE};
+  const api = {_emptyIslands: emptyIslands, generate, generateConnected, snap, suggestTurnBay, suggestPhases, suggestRamps, suggestUcs, suggestCoreMoves, configureCore:CoreFit.configure,planningBoundary:Boundary.resolve,rampReview,inspectVehicleRoutes:VehicleRoutes.routes,checkVehiclePath:VehicleRoutes.check,curveEvaluationFixed, curveEvaluationSource, createStraightRamp:Ramp.createStraight, createCurveRamp:Curve.createCurve, DEFAULTS: Grid.DEFAULTS, STALL_MODULES: Modules.CATALOGUE};
   if (isNode) module.exports = api; else root.UGPlan = api;
 })(this);

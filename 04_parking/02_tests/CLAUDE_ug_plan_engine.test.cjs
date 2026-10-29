@@ -561,6 +561,62 @@ console.log('empty island ok');
   });
 }
 
+// Explicit connected candidates use the production surfaces, stall placement and unchanged S7 checker.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js'),Gm=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const V=require('../01_src/plan/CLAUDE_ugp_verify.js');
+  const simple=()=>({mass:M([[0,0],[60,0],[60,50],[0,50]]),ucs:0,cores:[],phase:[0,0],grid:{aisleMm:6000,columnAxes:{x:[20000,40000],y:[12000,30000]}},ramp:E.createStraightRamp({landing:[15000,42000],angleDeg:0,widthMm:6000,lengthMm:10000}),autoZones:false});
+  const tree=()=>[{points:[[15000,42000],[33000,42000],[50000,42000],[50000,8000]]},{points:[[33000,42000],[33000,18000]]}];
+  const overlap=(A,B,type=Gm.CL.ClipType.ctIntersection)=>Math.abs(Gm.areaOf(Gm.boolOp(A,B,type)));
+  const reached=(r,p)=>{const n=r.graph.nodes.find(n=>Gm.len(Gm.sub(n.p,p))<1);return !!n&&r.graph.edges.some(e=>e.reached&&(e.a===n.id||e.b===n.id));};
+  test('supplied T network creates physical six-metre aisles and accessible candidate stalls without waiving NO_LOOP',()=>{
+    const input=simple(),routes=tree(),before=JSON.stringify([input,routes]),r=E.generateConnected(input,routes);
+    assert.equal(JSON.stringify([input,routes]),before);assert.deepStrictEqual(r,E.generateConnected(input,routes));
+    assert.equal(r.grid.aisleMm,6000);assert.equal(r.stallCount,46);assert.equal(r.graph.edges.length,4);assert(r.graph.edges.every(e=>e.ok&&e.reached));
+    assert(reached(r,[33000,18000]));assert.equal(r.placementReport.counts.clash,0);assert.equal(r.placementReport.counts.noFront,0);
+    assert.equal(overlap(r.aisles,r.columns),0);assert(r.violations.some(v=>v.id==='NO_LOOP'));assert.equal(r.status,'INFEASIBLE');
+    const check=V.check(r,input);assert.equal(check.counts.deadSide,46);assert(check.edges.every(e=>e.ok&&e.reached));assert.equal(check.status,'INFEASIBLE');
+  });
+  test('a real 500mm centerline gap remains disconnected even when square end surfaces overlap',()=>{
+    const routes=tree();routes[1].points[0][1]-=500;const r=E.generateConnected(simple(),routes);
+    assert(!reached(r,[33000,18000]));assert.equal(r.graph.edges.filter(e=>e.reached).length,3);assert.equal(r.stallCount,33);assert.equal(r.placementReport.counts.unreachable,13);
+  });
+  test('supplied candidates retain obstacle, width, landing, slope and loop checks',()=>{
+    const input=simple(),routes=tree();
+    const blocked=E.generateConnected({...input,cores:[{c:[33000,30000],w:8000,d:6000,keep:{x:true,y:true}}]},routes);
+    assert(blocked.violations.some(v=>v.id==='CORE_IN_AISLE'));assert(!reached(blocked,[33000,18000]));assert.equal(overlap(blocked.aisles,blocked.cores.map(c=>c.pts)),0);
+    const narrow=structuredClone(input);narrow.mass[1][0]=52000;narrow.mass[2][0]=52000;
+    const nr=E.generateConnected(narrow,routes);assert(nr.violations.some(v=>v.id==='EDGE_OFF_AISLE'));assert(!reached(nr,[50000,8000]));
+    const off=tree();off[0].points[0][0]+=500;assert(E.generateConnected(input,off).violations.some(v=>v.id==='LANDING'));
+    assert(E.generateConnected({...input,floorMm:4000},routes).violations.some(v=>v.id==='RAMP_SLOPE'));
+    const loop=[{points:[[15000,42000],[25000,42000]]},{points:[[25000,42000],[50000,42000],[50000,8000],[25000,8000],[25000,42000]]}];
+    const lr=E.generateConnected(input,loop);assert(lr.graph.hasLoop);assert(!lr.violations.some(v=>v.id==='NO_LOOP'));assert.equal(lr.status,'CONDITIONAL');
+    assert(lr.violations.some(v=>v.id==='SUPPLIED_NETWORK_UNVERIFIED'),'graph connectivity never establishes actual vehicle travel');
+  });
+  test('B1 supplied routes enter real placement and retain all fixed input geometry and terminal widths',()=>{
+    for(const cm of [400,600,800]){
+      const c=F.calibrateClearance(cm),d=c.input,rp=d.ramp,input={...d,grid:{...F.grid,columnAxes:d.columnAxes,columnMm:cm},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+      const old=E.generate(input);input.phase=old.grid.phase;const before=JSON.stringify([input,c.trace.routes]),r=E.generateConnected(input,c.trace.routes);
+      assert.equal(JSON.stringify([input,c.trace.routes]),before);assert.deepStrictEqual(r.columns,old.columns);assert.deepStrictEqual(r.cores,old.cores);assert.deepStrictEqual(r.occupants,old.occupants);
+      assert.deepStrictEqual(r.ramp.body,input.ramp.body);assert.deepStrictEqual(r.ramp.landing,input.ramp.landing);assert.equal(r.ramp.shiftMm,0);assert.equal(r.grid.aisleMm,6000);
+      for(const a of c.trace.terminalAisles){assert.equal(overlap([a.polygon],r.aisles,Gm.CL.ClipType.ctDifference),0);assert.equal(overlap([a.polygon],r.columns.concat(r.cores.map(c=>c.pts),r.occupants.map(c=>c.pts))),0);}
+      const join=r.graph.nodes.find(n=>n.p[0]===33000&&n.p[1]===19500);assert(join);assert.equal(r.graph.edges.filter(e=>e.a===join.id||e.b===join.id).length,3);
+      assert.equal(r.status,'INFEASIBLE');assert.equal(r.stallCount,0);assert.equal(r.graph.edges.filter(e=>e.reached).length,0);
+      if(cm===600){assert.equal(r.columns.length,39);assert.equal(r.placementReport.counts.unreachable,58);assert.equal(r.placementReport.counts.noFront,1);assert.equal(r.graph.edges.length,13);assert.equal(r.graph.rootId,0);}
+      assert(r.violations.some(v=>v.id===(cm===800?'LANDING':'EDGE_OFF_AISLE')));assert(r.violations.some(v=>v.id==='COLUMN_IN_AISLE'));assert(!reached(r,[33000,5600]));
+    }
+  });
+  test('supplied connection boundary rejects malformed or unsupported inputs',()=>{
+    const input=simple();for(const routes of [null,[],[{}],[{points:[[0,0],[NaN,1]]}],[{points:[[0,0],[0,0]]}],[{points:[[0,0],new Array(2)]}]])assert.throws(()=>E.generateConnected(input,routes),RangeError);
+    assert.throws(()=>E.generateConnected({...input,phase:undefined},tree()),RangeError);
+    assert.throws(()=>E.generateConnected({...input,grid:{aisleMm:6000}},tree()),RangeError);
+    assert.throws(()=>E.generateConnected({...input,occupantPolicy:'bypass'},tree()),RangeError);
+    assert.throws(()=>E.generateConnected({...input,grid:{...input.grid,aisleMm:5900}},tree()),RangeError);
+    assert.throws(()=>E.generateConnected({...input,ramp:{...input.ramp,lengthMm:Infinity}},tree()),RangeError);
+    const wrong=structuredClone(input);wrong.ramp.body[0][0]+=500;assert.throws(()=>E.generateConnected(wrong,tree()),RangeError);
+  });
+}
+
 // 파란 표시의 중앙 가지는 가로 동선과 실제 분기점을 공유한다.
 {
   const {test}=require('node:test'),F=require('../01_src/sghs-reference.js');

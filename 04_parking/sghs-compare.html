@@ -8,7 +8,7 @@
 <p id="landingNote" class="callout" role="note" style="margin:12px 24px" hidden></p>
 <p id="terminalNote" class="callout" role="note" style="margin:12px 24px" hidden></p>
 <main><div class="views"><section class="pane"><div class="pane-head"><h2 id="sourceTitle">원도</h2><button id="wholeSource" aria-pressed="false">전체 원도</button><a id="sourceLink" target="_blank" rel="noopener">원본 이미지 열기 ↗</a></div><svg class="drawing" id="sourcePlan" role="img" aria-label="SGHS 원본 지하 평면도"></svg><img id="sourceFull" class="drawing" alt="전체 원본 지하 평면도" style="object-fit:contain" hidden><p id="sourceError" hidden>원도 서버를 읽지 못했습니다. 기존 underground-parking-pilot/serve-pilot.py의 8873 서버가 필요합니다.</p><p class="pane-foot">치수선의 숫자는 도면 관찰값. 외곽·실·램프 형상은 도면 비례로 근사했습니다.</p></section>
-<section class="pane"><div class="pane-head"><button id="traceMode" aria-pressed="true">입력 해석 · 수동 추적</button><button id="autoMode" aria-pressed="false">자동 생성 · 편집</button><label><input id="showRoutes" type="checkbox" checked> 추정 연결선</label></div><svg class="drawing" id="tracePlan" role="img" aria-label="원도에서 수동 추적한 코어·램프·주차열과 추정 동선"></svg><div id="automatic" hidden><iframe id="editor" title="기존 불균등 구조축·캔버스 편집 화면"></iframe></div><p class="pane-foot" id="traceCaption">주차열 범위와 빈 공간의 연결 추정입니다. 자동 생성 주차칸이나 주행 합격선이 아닙니다.</p></section></div>
+<section class="pane"><div class="pane-head" style="flex-wrap:wrap"><button id="traceMode" aria-pressed="true">입력 해석 · 수동 추적</button><button id="autoMode" aria-pressed="false">자동 생성 · 편집</button><button id="connectedMode" aria-pressed="false" disabled>연결망 엔진 후보 · B1</button><label><input id="showRoutes" type="checkbox" checked> 추정 연결선</label></div><svg class="drawing" id="tracePlan" role="img" aria-label="원도에서 수동 추적한 코어·램프·주차열과 추정 동선"></svg><div id="automatic" hidden><iframe id="editor" title="기존 불균등 구조축·캔버스 편집 화면"></iframe></div><p class="pane-foot" id="traceCaption">주차열 범위와 빈 공간의 연결 추정입니다. 자동 생성 주차칸이나 주행 합격선이 아닙니다.</p></section></div>
 <div class="legend"><span><i style="background:#e5edf7;border-color:#6689b1"></i>주차열 범위 · 추적</span><span><i style="background:#d9d9d9;border-color:#555"></i>코어·실 · 추적</span><span><i style="background:#ffedcc;border-color:#b77b2e"></i>램프 노출부 · 근사</span><span><i style="height:0;border-top:2px dashed #ad5d22"></i>접속 후보 · 추정, 방향 미확인</span><span><i style="border-radius:50%;width:9px;height:9px;border-color:#7a6996"></i>전교점 기둥 가정</span></div>
 <div class="details"><section><h2>확인값과 추정값의 근거</h2><table><thead><tr><th>구분</th><th>대상</th><th>내용 / 위치</th></tr></thead><tbody id="evidence"></tbody></table><p id="editNote"></p></section><section><h2>보완 전후의 초기 계산</h2><table><thead><tr><th>층</th><th>보완 전 → 후</th><th>진입·진출 / 순환</th></tr></thead><tbody><tr><td>B1</td><td>0대 → 0대 · INFEASIBLE<br>기둥 28 → 39개</td><td>연결 안 됨 / 순환 없음</td></tr><tr><td>B2</td><td>0대 → 0대 · INFEASIBLE<br>기둥 30 → 39개</td><td>연결 안 됨 / 순환 없음</td></tr></tbody></table><p class="muted" style="font-size:12px">2026-10-29 초기 입력 계산 기록. 편집 후 현재 결과는 위 요약을 보세요. 초기 네 입력 모두 코어·램프 이동 0mm. 원안 총대수와의 차이는 산정할 수 없습니다.</p><div class="callout">입력 해석을 보완했지만 자동 재현은 달성하지 못했습니다. 고정 기둥·코어 사이의 생성 차로와 램프 합류가 연결되지 않습니다. 원도 추적 동선을 자동 생성 결과에 덧씌워 성공으로 판정하지 않습니다.</div><p id="liveIssues"></p><ul id="limits"></ul><p class="muted" style="font-size:12px">주 경로 검사와 각 칸 입출차·후진·교행·도로 진입은 다른 검토입니다. 남측 가지와 하역장 접속은 미검증입니다. B2 램프의 사선 단부도 사각형 근사에 남아 있습니다.</p></section></div></main>
 <script src="01_src/sghs-reference.js"></script><script>
@@ -20,7 +20,31 @@ const box=r=>[[r.c[0]-r.w/2,r.c[1]-r.d/2],[r.c[0]+r.w/2,r.c[1]-r.d/2],[r.c[0]+r.
 const labels={user_assumption:'사용자 전제',user_confirmed:'사용자 확인 기준',explicit_in_source:'도면 관찰',derived:'관찰값 누적',estimated:'추정',assumed:'시험 가정',unknown:'미확인'};
 for(const e of c.evidence){const tr=document.createElement('tr');for(const text of [labels[e.certainty],e.item,e.value+' / '+e.source]){const td=document.createElement('td');td.textContent=text;tr.append(td);}tr.firstChild.className=e.certainty;$('evidence').append(tr);}
 for(const text of c.limits){const li=document.createElement('li');li.textContent=text;$('limits').append(li);}
-let last='',f,revision,readyTimer;
+let last='',f,revision,readyTimer,mode='trace',connectedSnapshot=null;
+function connectedCandidate(){
+ if(connectedSnapshot)return connectedSnapshot;
+ const E=$('editor').contentWindow.UGPlan;if(!E?.generateConnected)return null;
+ const d=structuredClone(f.clearance),rp=d.ramp,input={...d,debug:true,grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+ try{input.phase=E.generate(input).grid.phase;const result=E.generateConnected(input,f.clearanceTrace.routes);connectedSnapshot={input:d,result,routes:E.inspectVehicleRoutes(result)};}
+ catch(e){connectedSnapshot={input:d,result:{fail:e.message}};}
+ return connectedSnapshot;
+}
+function drawConnected(r){
+ const s=$('tracePlan');s.replaceChildren();s.setAttribute('viewBox','6500 -49000 65000 49000');s.setAttribute('aria-label','B1 연결망의 실제 차로 면과 검사 결과');
+ if(!r||r.fail){make(s,'text',{x:10000,y:-25000,'font-size':1000,fill:'#922'},r?.fail||'연결망 후보 계산 중');return;}
+ const g=make(s,'g',{transform:'scale(1,-1)'});
+ polygon(g,r.innerOutline,{fill:'#fafaf8',stroke:'#333','stroke-width':120});
+ for(const p of r.aisles)polygon(g,p,{fill:'#d4e9e2',stroke:'#71a491','stroke-width':40,'data-candidate-aisle':'true'});
+ for(const s of r.stalls)polygon(g,s.pts,{fill:'#d5e3f6',stroke:'#52789e','stroke-width':50,'data-candidate-stall':'true'});
+ for(const p of r.lost)polygon(g,p,{fill:'#f5dfdd',stroke:'#d7aaa5','stroke-width':25,'fill-opacity':.45});
+ for(const o of r.cores.concat(r.occupants))polygon(g,o.pts,{fill:'#bbb',stroke:'#555','stroke-width':70});
+ polygon(g,r.ramp.body,{fill:'#ffedcc',stroke:'#b77b2e','stroke-width':70});
+ for(const p of r.columns)polygon(g,p,{fill:'#555','data-candidate-column':'true'});
+ for(const e of r.graph.edges){const a=r.graph.nodes[e.a].p,b=r.graph.nodes[e.b].p;make(g,'line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:!e.ok?'#c22':e.reached?'#237c64':'#887c76','stroke-width':!e.ok?180:95,'stroke-dasharray':e.reached?'0':'260 160','data-candidate-edge':e.id,'data-reached':e.reached});}
+ const issues=r.violations.filter(v=>v.at&&v.id!=='SUPPLIED_NETWORK_UNVERIFIED');
+ issues.forEach((v,i)=>{make(g,'circle',{cx:v.at[0],cy:v.at[1],r:420,fill:'#fff',stroke:'#b22','stroke-width':80});make(s,'text',{x:v.at[0],y:-v.at[1]+210,'font-size':630,fill:'#922','text-anchor':'middle'},String(i+1));});
+ $('liveIssues').textContent=issues.map((v,i)=>(i+1)+'. '+v.note).concat(r.violations.filter(v=>!v.at).map(v=>v.note)).join(' / ');
+}
 function trace(){
  const s=$('tracePlan');s.replaceChildren();s.setAttribute('viewBox','6500 -49000 65000 49000');const g=make(s,'g',{transform:'scale(1,-1)'}),d=f[revision],tr=revision==='clearance'?f.clearanceTrace:revision==='aligned'?f.alignedTrace:null;
  polygon(g,d.mass,{fill:'#fbfbfa',stroke:'#333','stroke-width':180});
@@ -47,8 +71,17 @@ function trace(){
   if($('showRoutes').checked&&tr.centralConnection){const p=tr.centralConnection.junction;make(g,'circle',{cx:p[0],cy:p[1],r:180,fill:'#ad5d22','data-route-junction':'central-south'});}
  }
 }
-function view(next){const auto=next==='auto';$('tracePlan').toggleAttribute('hidden',auto);$('automatic').hidden=!auto;document.body.classList.toggle('editing',auto);$('traceMode').setAttribute('aria-pressed',String(!auto));$('autoMode').setAttribute('aria-pressed',String(auto));$('showRoutes').disabled=auto;$('traceCaption').textContent=auto?'기존 엔진의 실제 생성·검사 결과입니다. 원도 추적선은 이 도면에 합성하지 않습니다. 구조·코어·램프 편집은 이 비교 사례에만 저장됩니다.':revision==='clearance'?'녹색 면은 기둥 면을 제외한 순폭 6m의 역산 영역입니다. 원본 작동을 전제로 추적 치수를 정합한 값이며 실측값과 구분합니다.':revision==='aligned'?'녹색 면은 폭 6m의 하단 차로 후보, 적색 사각형은 겹치는 가정 기둥입니다. 연결선·주차열 접면 보정이며 자동 생성·회차 합격선이 아닙니다.':revision==='landing'?'상부 파란 점선은 원도의 벽 안쪽 기준 해석입니다. 바깥면만 400mm 보정한 시험이며 원도 실측값은 미확정입니다.':'주차열 범위와 빈 공간의 연결 추정입니다. 자동 생성 주차칸이나 주행 합격선이 아닙니다.';}
+function ordinaryView(next){const auto=next==='auto';$('tracePlan').toggleAttribute('hidden',auto);$('automatic').hidden=!auto;document.body.classList.toggle('editing',auto);$('traceMode').setAttribute('aria-pressed',String(!auto));$('autoMode').setAttribute('aria-pressed',String(auto));$('showRoutes').disabled=auto;$('traceCaption').textContent=auto?'기존 엔진의 실제 생성·검사 결과입니다. 원도 추적선은 이 도면에 합성하지 않습니다. 구조·코어·램프 편집은 이 비교 사례에만 저장됩니다.':revision==='clearance'?'녹색 면은 기둥 면을 제외한 순폭 6m의 역산 영역입니다. 원본 작동을 전제로 추적 치수를 정합한 값이며 실측값과 구분합니다.':revision==='aligned'?'녹색 면은 폭 6m의 하단 차로 후보, 적색 사각형은 겹치는 가정 기둥입니다. 연결선·주차열 접면 보정이며 자동 생성·회차 합격선이 아닙니다.':revision==='landing'?'상부 파란 점선은 원도의 벽 안쪽 기준 해석입니다. 바깥면만 400mm 보정한 시험이며 원도 실측값은 미확정입니다.':'주차열 범위와 빈 공간의 연결 추정입니다. 자동 생성 주차칸이나 주행 합격선이 아닙니다.';}
+function view(next){
+ mode=next==='connected'&&f.id==='B1'&&revision==='clearance'?'connected':next==='auto'?'auto':'trace';
+ ordinaryView(mode==='auto'?'auto':'trace');$('connectedMode').setAttribute('aria-pressed',String(mode==='connected'));
+ $('traceMode').setAttribute('aria-pressed',String(mode==='trace'));$('showRoutes').disabled=mode!=='trace';
+ if(mode==='connected'){$('traceCaption').textContent='고정 B1 · 원본 작동 / 순폭 6m 전제. 녹색은 실제 차로 면, 연분홍은 검사에서 제외된 칸, 적색 점선은 폭 검사 실패, 갈색은 램프에서 미도달입니다. 회차·조향은 미검증입니다.';drawConnected(connectedCandidate()?.result);}
+ else{trace();$('tracePlan').setAttribute('aria-label','원본 이미지에서 수동 추적한 참고 연결망');}
+ last='';if(f)history.replaceState(null,'','?floor='+f.id+'&revision='+revision+(mode==='connected'?'&candidate=connected':''));
+}
 function show(){
+ connectedSnapshot=null;
  f=c.floors.find(f=>f.id===$('floor').value);for(const id of ['landingOption','alignedOption','clearanceOption'])$(id).disabled=f.id!=='B1';
  if(f.id!=='B1'&&['landing','aligned','clearance'].includes($('revision').value))$('revision').value='revised';
  revision=$('revision').value;last='';$('landingNote').hidden=!['landing','aligned','clearance'].includes(revision);const boundary=revision==='clearance'?f.clearanceBoundary:revision==='aligned'?f.alignedBoundary:f.landingBoundary;$('landingNote').textContent=(boundary?.note||'')+(revision==='clearance'?' 자동 계산의 미달은 현재 생성 모형의 재현 정도를 뜻합니다.':' 착지 검사 통과와 전체 주행 합격은 다릅니다. 남은 합류·기둥 충돌을 확인하세요.');
@@ -58,11 +91,11 @@ function show(){
  const s=$('sourcePlan');s.replaceChildren();s.setAttribute('viewBox',f.crop.join(' '));make(s,'image',{href:image,x:0,y:0,width:2480,height:2126});
  const probe=new Image();probe.onerror=()=>{$('sourceError').hidden=false;};probe.onload=()=>{$('sourceError').hidden=true;};probe.src=image;
  const url='underground-compare.html?reference=sghs&floor='+f.id+'&revision='+revision;$('editor').src=url;$('openEditor').href=url;
- $('liveCount').textContent='계산 중';$('liveState').textContent='현재 선택 입력의 실제 계산';$('liveRoutes').textContent='확인 중';$('liveColumns').textContent='—';$('liveLanding').textContent='확인 중';trace();view($('autoMode').getAttribute('aria-pressed')==='true'?'auto':'trace');history.replaceState(null,'','?floor='+f.id+'&revision='+revision);
+ $('liveCount').textContent='계산 중';$('liveState').textContent='현재 선택 입력의 실제 계산';$('liveRoutes').textContent='확인 중';$('liveColumns').textContent='—';$('liveLanding').textContent='확인 중';trace();$('connectedMode').disabled=f.id!=='B1'||revision!=='clearance';view(mode);
 }
 function refresh(){
  const state=$('editor').contentWindow.sghsScene;if(!state||state.floor!==f.id||state.revision!==revision)return;
- const snap=state.snapshot(),r=snap.result;if(!r)return;const key=JSON.stringify([snap.input,r.stallCount,r.status,r.fail]);if(key===last)return;last=key;
+ const snap=mode==='connected'?connectedCandidate():state.snapshot(),r=snap?.result;if(!r)return;const key=JSON.stringify([mode,snap.input,r.stallCount,r.status,r.fail]);if(key===last)return;last=key;
  $('liveCount').textContent=r.fail?'계산 중단':(revision==='clearance'?'모형 후보 '+r.stallCount+'칸 · 생성안 '+r.status:(['landing','aligned'].includes(revision)?'접근 후보 '+r.stallCount+'칸':r.stallCount+'대')+' · '+r.status);
  const routeName=x=>({clear:'검사 범위 통과',blocked:'차단',unconnected:'연결 안 됨',unverified:'미검증'}[x]||'미검증');$('liveRoutes').textContent=snap.routes?routeName(snap.routes.entry.state)+' / '+routeName(snap.routes.exit.state):'미검증';
  $('liveColumns').textContent=(r.columns?.length??'—')+'개 기둥';
@@ -71,10 +104,12 @@ function refresh(){
  $('liveState').textContent=revision==='clearance'?'원본 작동 전제 · 현재 역산 모형의 계산':edited?'사용자 편집 입력 · 초기 기록과 구분':'현재 선택 입력의 실제 계산';
  $('liveIssues').textContent=r.fail||'생성기의 안내(원도 코어 오류 판정과 별개): '+[...new Set((r.violations||[]).map(v=>v.note))].slice(0,3).join(' / ');
  $('editNote').textContent='현재 입력은 '+(edited?'초기 입력에서 수정됨':'초기 입력과 같음')+' · 코어 계산 이동 '+(r.cores||[]).map(k=>k.shiftMm+'mm').join(' / ')+' · 램프 계산 이동 '+(r.ramp?.shiftMm??'미확인')+'mm. '+(snap.input.ramp.referenceVisibleOnly?'노출 구간만 입력하여 전체 경사 판정 보류.':'보완 전 전체 램프 길이는 시험 가정.');
+ if(mode==='connected'){$('liveCount').textContent=r.fail?'연결망 후보 계산 중단':'연결망 후보 '+r.stallCount+'칸 · '+r.status;$('liveState').textContent='고정 B1 역산 입력 · 편집 화면 저장과 별개';$('editNote').textContent+=' 연결망 후보는 고정된 역산 입력으로 계산합니다. 다른 입력의 편집 결과를 함께 사용하지 않습니다.';drawConnected(r);}
 }
 $('floor').onchange=show;$('revision').onchange=show;$('showRoutes').onchange=trace;$('traceMode').onclick=()=>view('trace');$('autoMode').onclick=()=>view('auto');
 $('wholeSource').onclick=()=>{const full=$('sourceFull').hidden;$('sourceFull').hidden=!full;$('sourcePlan').toggleAttribute('hidden',full);$('wholeSource').setAttribute('aria-pressed',String(full));};
 $('editAxes').onclick=()=>{view('auto');let attempts=0;clearInterval(readyTimer);readyTimer=setInterval(()=>{const w=$('editor').contentWindow;if(w.sghsScene?.floor===f.id&&w.sghsScene?.revision===revision){const btn=w.document.getElementById('editStructureCanvas');if(btn&&btn.getAttribute('aria-pressed')!=='true')btn.click();clearInterval(readyTimer);}else if(++attempts>100)clearInterval(readyTimer);},100);};
 const query=new URL(location.href).searchParams;if(['B1','B2'].includes(query.get('floor')))$('floor').value=query.get('floor');if(['before','revised','landing','aligned','clearance'].includes(query.get('revision')))$('revision').value=query.get('revision');
+$('connectedMode').onclick=()=>view('connected');if(query.get('candidate')==='connected')mode='connected';
 show();setInterval(refresh,350);
 </script></body></html>

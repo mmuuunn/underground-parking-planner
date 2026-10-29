@@ -1,0 +1,53 @@
+id: UG-SGHS-NETWORK-001
+status: RESCOPE_REQUIRED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: B1 순폭 6m 참고 연결망을 실제 차로 후보로 넣으면 기존 기하·칸 배치·도달 검사가 어떤 결과를 내는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - 04_parking/sghs-compare.html
+  - tools/harness/work-items/UG-SGHS-NETWORK-001.yaml
+acceptance:
+  - 원본 작동·기둥 면 제외 순폭 6m·주차 깊이 5m 전제 유지
+  - 명시 호출한 연결망만 기존 차로 면·장애물 절단·칸 생성·독립 판정기로 전달
+  - 외곽·39개 고정 기둥·코어·실·램프 몸체와 착지 보존; 입력 불변 및 반복 재현
+  - 성공 가능한 단순 연결 입력 및 실제 단절·장애물·폭 부족 반례 확인
+  - 중앙 T 접속과 세 남부 가지의 실제 차로 면·도달 결과와 실패 위치 기록
+  - 기존 여섯 골든과 SGHS 일곱 입력의 전체 계산 결과 보존
+  - B1 비교 화면에서 별도 연결망 후보와 실제 검사 결과 표시; 일반 제품·B2·저장 보존
+not_doing:
+  - NO_LOOP·차량 합격 기준·공차·골든값 완화
+  - 교점 예외 UI·코어 벽 상세·회차 조향·일반 자동 연결망 탐색
+  - 다른 모델·서브에이전트 호출 또는 독립 검토 완료 선언
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 400
+start_gate:
+  contribution: 연결 구조를 실제 생성·검사에 전달하여 차량 순환 단계의 미재현 원인을 좁힘
+  reference_change: 기존 생성 결과와 골든 기대값 유지; 별도 명시 호출한 후보만 추가
+  excluded_scope: 화면 합성 성공 선언·판정 완화·다른 모델 호출 없음
+stop_conditions:
+  - 허용 파일 밖 수정 또는 같은 원인의 세 번째 구현 필요
+  - 기준 시험 재현 불가 또는 합격 기준 변경 필요
+  - 검사 실패는 원본 실패로 해석하지 않고 미재현 위치를 기록
+results:
+  implementation_rounds: 1
+  transport: generateConnected 명시 호출로 연결망을 기존 차로 면·장애물 절단·칸 생성·S7 검사에 전달; 일반 generate 보존
+  baseline: preflight 88/88; 50.636초
+  npm_test: 93/93; 50.895초
+  harness: 93/93; 51.261초; run 20261029-110913-UG-SGHS-NETWORK-001-0b02d38a
+  preservation: 기존 골든 6개와 SGHS 7개 전체 계산 결과 SHA256 동일; 기존 사용자 변경 3파일 보존
+  simple_tree: 46칸·4구간 도달; 고리 없음으로 INFEASIBLE 유지; 접속 500mm 단절 반례는 33칸·3구간 및 가지 13칸 미도달
+  b1_600mm: 검사 전 59칸 중 미도달 58·앞면 없음 1; 채택 0칸·도달 0구간·INFEASIBLE
+  clear_width: 기둥 400/600/800mm 모두 세 남부 가지 6m 면 전체 포함·장애물 겹침 0; 중앙 T 차수 3
+  first_failure: 상부 첫 구간의 5.8m 검사 띠 약 1.205㎡가 추적 실내 외곽에서 잘림; 램프 몸체는 기둥 3개와 겹침
+  browser: 엔진 면 4개·그래프 13구간·기둥 39개 일치; 추적/자동 화면·재열기·B2·aligned·저장 보존; 720px 넘침 및 pageerror/HTTP 오류 0
+  independent_review: 사용자 금지에 따라 미실시; 자체 시험을 독립 검토로 세지 않음
+  user_review: 사용자가 화면을 보고 C3 코어 해치 오인·B2 하행 램프 접속부 누락 및 원본 주차배치 대조 공백 지적; 승인 아님
+  conclusion: 엔진 후보 전달 구현은 저장하되 원본 대조가 부족하여 재현 완료/단계 종료 선언 금지; 입력 보정과 의미 대조를 새 범위로 전환
+  evidence: C:/Users/seok2/.codex/research/SGHS-NETWORK-20261029; before.json·after.json·candidate.json·geometry-evidence.json·connected-candidate.png
