@@ -1,0 +1,60 @@
+id: UG-SGHS-SW-DIMENSION-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: 남서측 최상단 두 칸의100mm 부족은 어떤 추정 치수의 불일치이며 고정 구조와6m 순폭을 유지하는 입력 보정으로 해소할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - 04_parking/sghs-compare.html
+  - tools/harness/work-items/UG-SGHS-SW-DIMENSION-001.yaml
+acceptance:
+  - 원본 이미지의 남서4+4칸·인접 기둥·9m 치수열·차로와 중앙 주차열의 관계를 직접 대조
+  - 추정값을 실측 확정으로 다루지 않고 부족100mm의 치수 사슬을 제시; 원본 자체 오류로 판단하지 않음
+  - 입력 보정이 가능하면 원본 근거가 있는 최소 항목만 변경; 고정 구조축·기둥·코어·램프·6m 순폭·5m 깊이·기존 확인4칸 보존
+  - 차로만100mm 이동하거나 칸만100mm 이동한 반례에서 인접 구조·차로·칸의 영향을 확인
+  - 보정의 제약이 양립하지 않으면 개수 맞춤 패치 대신 근거 이미지와 필요한 결정 한 가지를 보고
+  - 변경 시 원본13곳의 전후 대조·npm test·하네스·기존 골든6 및 과거SGHS7 보존; 화면 사용자 확인
+not_doing:
+  - 근거 없는 구조축 변경·기둥 축소/삭제·차로 순폭 완화·주차칸 깊이 축소·안전 판정이나 골든 기대값 변경
+  - 최소 조향반경 모형·장애인/전기차 배정·다른 원인 수정·다른 모델/서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 원본 재현을 막는 입력 치수 불일치 분리 및 가능 보정
+  reference_change: ○ 근거가 있는 reviewed 입력에 한정; 과거 입력 및 고정 조건 보존
+  excluded_scope: ○ 한 치수 원인; 차량/구조/법규 판정 수정 없음
+stop_conditions:
+  - 보정하려면 고정 구조·6m 순폭·5m 깊이·기존 확인4칸을 변경해야 함
+  - 원본 치수 근거 없이 숫자를 맞춰야 함
+  - 허용 파일 밖 수정 또는 세 번째 구현 필요
+results:
+  implementation_rounds: 1
+  outcome: 원인 분리 완료; 단순 이동안 및 수치 보정 미채택; 원본 치수 가정 재검토가 필요한 상태
+  cause: 구조축 간격9000mm 안에서 기둥600mm·칸 폭2500mm·차로 순폭6000mm를 동시에 요구하면9100mm가 필요하여100mm 부족; 이 입력 가정 충돌을 원본 계획의 실패로 다루지 않음
+  dimension_chain: 아래축13800·위축22800·차로중심19500; 아래 기둥 윗면14100부터 차로 아랫면16500까지2400mm; 위쪽 기둥 아랫면22500과 차로 윗면22500 사이 여유0
+  feasibility_bound: 필요한 차로 중심 최소19600mm와 반대편 기둥을 피하는 최대19500mm가 겹치지 않음; 현재 고정 조건에서 수직 이동만으로 해결 불가
+  source_review: plan_06 전체 및 남서측4+4칸·인접 기둥·좌측9m 치수열 직접 대조; 원본 JPG만 있으며 정확한 기둥 치수 표기 확인 못함
+  source_pixel_limit: 최상단 회색 두 칸은 각150×75px·고립 기둥16~17px; 선 굵기·경계·축 사이 픽셀 간격의 차이가 있어 이를 정확한 기둥 치수 확정값으로 사용하지 않음
+  lane_shift_counterexample: 차로만 위로100mm 이동하면 남서측 후보6→8이나 전체64→69·채택0·INFEASIBLE; 의도한6m 가로 띠가 고정 기둥6개와 총0.36㎡ 충돌하고 절단으로 동선이 더 끊김; 기존4칸 보존만으로 이 안을 채택하지 않음
+  stall_shift_counterexample: 누락 가상칸을 아래로100mm 이동하면 차로와 겹침은0이지만 서쪽0.06㎡·동쪽0.12㎡의 아래 기둥 침범 발생
+  sensitivity_only: 기둥500mm와 차로+50mm는 남서측8후보를 만들지만 기둥 가정과 기존 확인1칸이 달라짐; 칸 폭2400mm도8후보를 만들지만 기존4칸 모두 변함; 두 안 모두 원본 확정 또는 실제 입력으로 채택하지 않음
+  change: B1 reviewed 참고 데이터에 가정 충돌의 치수 사슬 추가; 비교 화면에 도면 관찰값과 가정값·이동안 미채택 이유 표시; 생성/판정 엔진·입력 배치 수치는 변경하지 않음
+  preservation: B1 reviewed network 전체 계산 JSON이 변경 전과 동일; 고정 구조·외곽·중심선·39기둥·코어·램프·깊이5m·차로6m·확인4칸·C1 최상단 복구 그대로
+  source_13_results: 원본13곳의 후보·방향·면적·용도 차이 전부 그대로; 후보64·미도달61·앞면 없음3·채택0·INFEASIBLE; 남서측6후보 대 원본8·동측 북단0 대 원본2 등 남음
+  regressions: 기본 골든6·과거SGHS7 전체 계산 SHA256 동일; 사용자 기존3파일 바이트 동일; 안전 공차·골든 기대값 변경 없음
+  preflight: 105/105; 51.159초; 20261029-194710-UG-SGHS-SW-DIMENSION-001-dc047862
+  targeted: 새2시험 통과; 6.702초; 입력 치수 양립 불가 및100mm 이동의 실제 충돌 반례
+  npm_test: 107/107; 52.558초
+  harness: 107/107; 52.836초; 같은 시험 반복이며 독립 검토 아님
+  browser: 원본 로드·13행·64후보/0채택 확인; reviewed의 진단 표시·trace/clearance/B2의 진단 숨김·저장 보존; 실제720px에서body703px·페이지 오류0
+  scope: 허용4파일; 프로덕션 추가14줄; 한도400줄 이내; 원본·이미지·실험 증거는 저장소 밖 보관
+  independent_review: 미실시; 다른 모델·서브에이전트 호출 없음; 차량/램프/구조/법규 판정 코드 및 골든 기준 변경 없음
+  stop_decision: 고정 구조와6m 순폭을 바꾸는 이동 보정을 중단; 다음 수치 보정은 기둥600mm 가정의 원본 근거를 확보하고 범위를 다시 정한 뒤 판단
+  user_visual_review: 원본·현재·미채택 이동안의 주석 이미지 제공; 화면 확인 대기; 전체 재현·차량 주행 합격 아님
+  evidence: C:/Users/seok2/.codex/research/SGHS-SW-DIMENSION-20261029; dimension-experiment.json·source-pixel-measurements.json·unchanged-evidence.json·B1-southwest-dimension-conflict.png·product-dimension-review.png·npm-test.log·preservation.log

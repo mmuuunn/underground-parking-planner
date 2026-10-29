@@ -778,6 +778,36 @@ console.log('empty island ok');
   });
 }
 
+// Counterexamples for the southwest input mismatch: capacity alone cannot justify moving a six-metre lane.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js'),G=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const overlap=(A,B)=>Math.abs(G.areaOf(G.boolOp(A,B,G.CL.ClipType.ctIntersection))),box=G.rectPoly;
+  test('B1 southwest assumed dimensions cannot fit between fixed axes and neither one-sided 100mm move solves it',()=>{
+    const d=F.floors[0].reviewedDimensionReview;
+    assert.equal(d.status,'ASSUMPTIONS_CONFLICT');assert.equal(d.certainty,'derived-from-assumptions');
+    assert.deepEqual([d.axisSpacingMm,d.requiredMm,d.shortfallMm,d.availableStallWidthMm,d.oppositeFaceMarginMm],[9000,9100,100,2400,0]);
+    const lowerFace=d.lowerAxisMm+d.columnMm/2,upperFace=d.upperAxisMm-d.columnMm/2;
+    const minLane=lowerFace+d.stallWidthMm+d.clearLaneMm/2,maxLane=upperFace-d.clearLaneMm/2;
+    assert.equal(minLane-maxLane,100,'no lane centre satisfies both parking width and opposite column clearance');
+    const columns=[box([19700,13500,20300,14100]),box([25700,13500,26300,14100]),box([28700,13500,29300,14100])];
+    const wanted=[box([19700,14100,24700,16600]),box([25000,14100,30000,16600])];
+    const lane=box([16700,16500,60750,22500]);assert(wanted.every(P=>overlap([P],[lane])===500000));
+    const moved=wanted.map(P=>P.map(([x,y])=>[x,y-100]));assert.deepEqual(moved.map(P=>overlap([P],columns)),[60000,120000]);
+    assert.equal(overlap(moved,[lane]),0,'avoiding the lane alone does not remove column collisions');
+  });
+  test('B1 moving the horizontal lane up100 increases southwest candidates while intruding into fixed columns',()=>{
+    const d=structuredClone(F.floors[0].reviewed),rp=d.ramp,input={...d,phase:[6400,8000],aisleSurfaceMode:'network',grid:{...F.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+    const routes=F.floors[0].reviewedTrace.routes,snapshot=JSON.stringify({input,routes}),old=E.generateConnected(input,routes);
+    const shifted=routes.map(r=>({...r,points:r.points.map(([x,y])=>[x,y===19500?y+100:y])})),r=E.generateConnected(input,shifted);
+    assert.equal(JSON.stringify({input,routes}),snapshot);assert.deepEqual(r.columns,old.columns);
+    assert.equal(overlap([box([16700,16500,60750,22500])],old.columns),0);
+    assert.equal(overlap([box([16700,16600,60750,22600])],r.columns),360000,'intended full-width lane intrudes into six fixed columns');
+    assert.equal(F.auditB1(old,G).rows[2].candidates,6);assert.equal(F.auditB1(r,G).rows[2].candidates,8);
+    assert.equal(r.stallCount,0);assert.equal(r.status,'INFEASIBLE');assert(r.violations.some(v=>v.id==='FIXED_COLUMN_BLOCKS_ROUTE'));assert(r.violations.some(v=>v.id==='EDGE_OFF_AISLE'));
+    const all=r.stalls.map(s=>s.pts).concat(r.lost);for(const b of [[19700,5550,24700,8050],[19700,8050,24700,10550],[19700,28550,24700,31050],[19700,32100,24700,34600]])assert(all.some(P=>JSON.stringify(G.bbox(P))===JSON.stringify(b)));
+  });
+}
+
 // 파란 표시의 중앙 가지는 가로 동선과 실제 분기점을 공유한다.
 {
   const {test}=require('node:test'),F=require('../01_src/sghs-reference.js');

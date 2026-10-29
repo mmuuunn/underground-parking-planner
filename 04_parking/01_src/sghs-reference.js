@@ -94,6 +94,16 @@
   Object.assign(floors[0],{reviewed,reviewedTrace:structuredClone(calibrated.trace),reviewedBoundary:{...calibrated.boundary,note:calibrated.boundary.note+' C3의 좌측 해치 과대영역을 제거하고 B2 하행 램프의 동측 접속부를 주차 제외 공간으로 예약했습니다. 접속부의 실제 주행·회차는 미검증입니다.'}});
   reviewed.stallStripProjection='occupied-bands';
   reviewed.stallRowSelection='continuous';
+  // This is a conflict between drawing-derived axes and assumed dimensions, not a defect in the original plan.
+  const southwestLaneY=floors[0].reviewedTrace.routes.find(r=>r.id==='동측·중앙 연결 후보').points[0][1];
+  const lowerAxisMm=reviewed.columnAxes.y.filter(y=>y<southwestLaneY).at(-1),upperAxisMm=reviewed.columnAxes.y.find(y=>y>southwestLaneY);
+  const columnMm=reviewed.referenceColumnMm,stallWidthMm=referenceGrid.stallW,clearLaneMm=referenceGrid.aisleMm,axisSpacingMm=upperAxisMm-lowerAxisMm;
+  floors[0].reviewedDimensionReview={status:'ASSUMPTIONS_CONFLICT',certainty:'derived-from-assumptions',
+    lowerAxisMm,upperAxisMm,laneCenterMm:southwestLaneY,columnMm,stallWidthMm,clearLaneMm,axisSpacingMm,
+    requiredMm:columnMm+stallWidthMm+clearLaneMm,shortfallMm:columnMm+stallWidthMm+clearLaneMm-axisSpacingMm,
+    availableStallWidthMm:southwestLaneY-clearLaneMm/2-lowerAxisMm-columnMm/2,
+    oppositeFaceMarginMm:upperAxisMm-columnMm/2-southwestLaneY-clearLaneMm/2,
+    note:'9m 구조축 간격은 도면 숫자, 기둥600mm·칸 폭2500mm는 가정입니다. 차로만 위로100mm 이동하면 반대편 기둥과 충돌하고 칸만 아래로100mm 이동하면 아래 기둥과 충돌합니다. 원본 실패가 아니며 수치 보정은 미채택입니다.'};
   // plan_06 직접 판독. 앞면은 인접 차로 쪽이며 짧은 흰 선(차막이) 쪽과 구분한다. 형상은 여전히 근사다.
   const observations=[
     ['서측 외벽',11,'E','전기차 표시 7 + 일반 4','상부 1+3+3, 하부 3+1; 전기차 충전 설비 상세 미확인'],
