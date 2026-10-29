@@ -1,0 +1,89 @@
+id: UG-SGHS-NETWORK-CALIBRATION-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: 기둥500mm와 원본 작동 전제로 추정 입력을 정합한 뒤 B1 전체에서 가장 영향이 큰 차로 연결 단절 원인 하나를 해소할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/sghs-compare.html
+  - tools/harness/work-items/UG-SGHS-NETWORK-CALIBRATION-001.yaml
+acceptance:
+  - 기둥500mm와 필요한 차로 중심선 정합은 사용자 승인된 추정치 보정이며 실측 확정 아님; 기존600mm와 과거 입력은 비교 기준으로 보존
+  - 원본13곳의 위치·방향·확인 칸 수·용도 및 주 연결망을 직접 전후 대조; 악화도 숨기지 않음
+  - 원본 구조축과 의미·차로 순폭6m·주차 깊이5m 유지; 외곽·코어·램프·기둥 크기 등 추정치는 원본 작동과 도면 근거에 맞게 보정 가능
+  - 램프에서 주차열까지 단절의 입력 오류/엔진 규칙/장애물 판정을 분리하고 가장 많은 열에 영향을 주는 원인 하나 수정
+  - 엔진 규칙에 결함이 없으면 입력 오류 수정으로 명시; 시험 통과를 원본 전체 재현이나 실제 조향 합격으로 표현하지 않음
+  - 구간별6m 전체 띠 및 실제 장애물 겹침·도달·13곳 배치의 전후 차이 제시; 단절·부족 폭 반례는 계속 실패
+  - npm test·하네스·기본 골든6·과거SGHS7 및 사용자 기존3파일 보존; 새 화면과 변경된 확인칸을 주석 이미지로 제시
+  - source 참고 파일의 기존 실행형 자체검사에 공통 절단 성공/충돌/접촉/단절 반례와 B1 전후 검사를 추가하고 별도 실행; 공통107시험과 구분
+not_doing:
+  - 개별 칸 좌표 특례·안전 공차/판정 완화·법규 해석 확정·정밀 조향/교행 구현
+  - 원본 작동 전제를 뒤집는 판단·추정 치수의 절대화·다른 모델/서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: ○ 원본 전체 배치와 램프-차로 연결 재현에 직접 기여
+  reference_change: ○ 사용자 승인된 추정치 보정; 기존 기준 입력 보존하고 새 비교 버전에서 검증
+  excluded_scope: ○ 입력 정합과 하나의 공통 연결 원인; 정밀 조향은 제외
+stop_conditions:
+  - 같은 원인의 세 번째 구현 또는 허용 파일 밖 수정 필요
+  - 차로6m·주차 깊이5m·원본 구조축을 완화해야 진행 가능
+  - 원본에 없는 개별 칸 특례 또는 안전 판정 완화 필요
+scope_decision:
+  reason: 읽기 전용 조사에서 사각 장애물 확장이 실제6m 띠와 겹치지 않는 사선을 절단함을 확인; 구현 전 허용 시험 파일을 공통 조립 파일로 교체하여5파일 유지; 시험은 기존 source 자체검사 진입점 활용
+  input_calibration: 사용자가 추정치 보정을 승인; 500mm·기둥 면 정합·원본 빈 교점·외곽 곡선·램프 유효 폭을 개별 칸 특례 없이 정합하고 모든 차이를 공개
+results:
+  implementation_rounds: 2
+  round_1: 승인된 추정 입력 정합 및 공통 원형 모서리 이격 절단; 실제 충돌·접촉·회전 좌표·B1 전체 띠 검사
+  round_2: 원격 칸이 자동 생성되지 않는 단절 반례에 검사 대상 칸을 명시해 미도달 거부 확인; 채택 후보에도 추적 열 밖 적색 테두리 표시; 공통 엔진 알고리즘 추가 변경 없음
+  premise: SGHS 원본은 작동하는 계획으로 전제; 기둥600mm 등 추정값을 고정 진리로 다루지 않음; 사용자 승인에 따라500mm 정합 가정으로 보정하며 실측 확정과 구분
+  source_review: plan_06 전체·13곳·상부 곡선·C1 북서쪽 빈 교점 직접 확인; 해당 예상 기둥ROI는 crop(375,501)의[368,210,385,227]에서 흰색100%·검정0%; 독립 기둥 표시가 없어 전교점 가정을1곳 보정
+  input_changes: 새 calibrated 버전에 기둥500mm·구조축 동일·기둥39→38개·램프 폭6500→6000mm·C3 북단16800→16550mm·가로 차로19500→19550mm·C2 북측 차로36700→36800mm·상부 곡선 재추적과200mm 역산 정합·장애물 이격 중심선 반영
+  source_curve_basis: 원본 흰 바닥 연결 영역의 상부 픽셀 경계와 기존 축/북측 치수 기준을 사용; 사각선 근사의 부족을200mm 이내 추가 정합; 정확한 측량값이나 실제 벽 상세 확정 아님
+  preserved_conditions: 원본 구조축·주차 모듈2500×5000mm·차로 순폭6000mm·주차 위상[6400,8000]·C1/C2 위치·C3 좌측54200·하행 램프 예약 의미 유지; 과거600mm 입력은 그대로 보존
+  common_cause: 장애물의 사각 확대가 실제6m 띠와 겹치지 않는 사선까지 잘라 연결망을 끊음; 비SGHS 단순 직사각형 코어와 사선에서 독립 재현
+  common_fix: 공통 plan 조립 단계에서 직선 면+원형 모서리의 유클리드 이격 구간을 계산해 코어/점유물/고정 기둥에 동일 적용; 반경은 차로 반폭3000mm이며 차량 조향반경이 아님; 접촉과 실제 관통 구분 및 반복 절단 끝 의미 보존
+  rollout: obstacleClearance=euclidean은 명시 연결망 network 모드에서만 opt-in; 기본 box 및 일반 generate 출력 유지; 특정SGHS 칸 좌표 특례 없음; 일반 자동 생성기 전역 기본 전환 아님
+  effects_separated:
+    - 기존600mm 입력과 기존 절단은 후보64·기하/도달 채택0·도달0/13구간
+    - 기둥500mm와 가로 차로50mm 정합만 적용하면 후보66·채택0; 남서측6→8이지만 전체 단절은 남음
+    - 전체 입력 정합 후 같은 입력의 사각 절단은 후보60·채택1·도달4/15구간
+    - 같은 입력의 유클리드 절단은 후보60·기하/도달 채택60·도달19/19구간; 이60칸은 전부 막다른 동선에 면한 후보
+  safety_state: INFEASIBLE·NO_LOOP·DEAD_END 유지; 순환·회차·최소 조향반경·교행은 미검증; source59 대 model60을 재현 성공으로 해석하지 않음
+  full_width_evidence: 원래 공급한 모든 중심선의 전체6000mm 띠를 최종 차로 면과 별도 비교; 최대 누락93.5mm²로 정수 반올림 수준이며 기존5800mm 검사 띠로 대체하지 않음
+  physical_evidence: 차로 면과 기둥·코어·점유물·램프 겹침0; 충돌0·미도달0·앞면 없음0; LANDING/EDGE_OFF_AISLE/FIXED_COLUMN_BLOCKS_ROUTE/COLUMN_IN_AISLE 거짓 실패 제거
+  source_13_review:
+    - 서측 외벽 원본11; 후보11→11·방향11→11; 전기차7칸 용도 미재현
+    - 서측 안쪽 원본5; 후보5→4·방향5→4; 실제6m 상부 연결 확보 과정에서 최상단1칸 누락이 드러남; 악화로 명시
+    - 남서측 쌍열 원본8; 후보6→8·방향6→8; 양측4+4 회복; 개별 위치·간격은 근사
+    - 중앙 북1 원본3; 후보3→3·방향3→3; 위치 근사
+    - 중앙 북2 원본3; 후보3→3·방향2→3; 접면 부족 해소
+    - 중앙 남1 원본3; 후보3→3·방향3→3; 위치 근사
+    - 중앙 남2 원본3; 후보3→3·방향2→3; 접면 부족 해소
+    - 동측 외벽 원본12; 후보10→10·방향10→10;2칸 누락 유지
+    - 중앙 장애인 원본2; 일반후보3→3; 장애인 용도·공유 통로 미재현
+    - 남측 단열 원본4; 후보4→4·방향2→4; 위치 근사
+    - 남측 장애인 원본2; 일반후보4→3; 장애인 용도·공유 통로 미재현
+    - 동측 북단 원본2; 후보0→0;2칸 누락 및 추적 연결선 부족 유지
+    - 동측 남단 원본1; 후보2→2; 추가후보와 과대 추적 유지
+  confirmed_four: 이전 확인4칸은 전부 대응 위치가 있으나 정확한 다각형 불변은 아님; X 모두+50mm·C1 상부1칸 Y-50mm; 겹침99/99/99/97.02%; 새 입력 정합에 따른 변화로 이미지에 표시
+  other_differences: 추적 열 밖 후보11→6; 현재 채택 후보에도 적색 테두리 표시; 면적/방향 대응은 원본 개별 칸 위치·용도·차량 합격 인증 아님
+  counterexamples: 실제6m 띠가 비접촉인 사선은 연결 보존; 실제 침범은 절단; 정확한 접촉은 보존;500mm 단절 건너편 명시 칸은 미도달 거부;90도 회전 좌표에서 동일; 원도 빈 교점에 기둥을 복원하면 실제 차단 재발; 반복 결정성·입력 불변·잘못된 모드 거부
+  preflight_baseline: 107/107; 51.790초; 20261029-200457-UG-SGHS-NETWORK-CALIBRATION-001-3d786e69
+  scoped_precheck: 20261029-201745-UG-SGHS-NETWORK-CALIBRATION-001-15c2b3a9; 구현 전5파일 범위 갱신; 동일 코드의 기준 재실행 없이 앞 영수증의 기준 결과 보존
+  calibration_checks: node 04_parking/01_src/sghs-reference.js --calibration; 별도8사례 및 기존 source 실행형 자체검사 통과; npm107개에 포함된 것으로 중복 집계하지 않음
+  npm_test: 107/107; 51.726초
+  harness: 107/107; 51.609초; 같은 공통 시험 반복이며 독립 검토 아님
+  preservation: 골든6·과거SGHS7 전체 계산 SHA256 동일; 기존 사용자3파일 바이트 동일; 공차·골든 기대값·안전 상태 승격 없음
+  browser: calibrated60칸·38기둥·500mm 편집 입력·13행·열 밖6칸 표시 확인; reviewed64/clearance59/B2/추적/편집 전환·기존 저장 보존; 실제720px에서body703px·페이지 오류0
+  independent_review: 필요하나 미실시; 사용자 지시대로 다른 모델·서브에이전트 호출 없음; 구현자의 검사와 독립 검토를 혼동하지 않음
+  user_visual_review: 원본/600mm기존/500mm같은입력사각절단/500mm공통수정의4열 주석 이미지와13곳 표 제공; 사용자 확인 대기; 단계 종료 아님
+  scope: 허용5파일; 자체검사 코드까지 포함한 프로덕션 파일 추가126줄로400줄 이내; 원본 바이너리·임시 증거는 저장소 밖 보관
+  evidence: C:/Users/seok2/.codex/research/SGHS-NETWORK-CALIBRATION-20261029; semantic-evidence.json·source-empty-intersection.json·B1-global-source-calibration.png·reviewed-comparison.png·calibration-check.log·npm-test.log·preservation.log

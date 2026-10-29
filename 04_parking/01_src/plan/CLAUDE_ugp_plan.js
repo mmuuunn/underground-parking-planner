@@ -23,12 +23,44 @@
   const VehicleRoutes=need('vehicleRoutes','./vehicle-routes.js');
   const {CL, add, sub, mul, len, rectPoly, signedArea, boolOp, areaOf, offsP} = Gm;
 
+  // A rectangle plus a clearance disc has round corners. A square expansion falsely cuts clear diagonals.
+  function obstacleIntervals(G,s,c) {
+    const r=G.a/2,b=c.r,u=sub(s.b,s.a),spans=[];
+    if(!Gm.clipSeg(s.a,s.b,[b[0]-r,b[1]-r,b[2]+r,b[3]+r]))return spans;
+    for(const box of [[b[0]-r,b[1],b[2]+r,b[3]],[b[0],b[1]-r,b[2],b[3]+r]]){
+      const t=Gm.clipSeg(s.a,s.b,box);if(!t||t[1]-t[0]<=1e-9)continue;
+      const p=add(s.a,mul(u,(t[0]+t[1])/2));
+      if(p[0]>box[0]+1e-7&&p[0]<box[2]-1e-7&&p[1]>box[1]+1e-7&&p[1]<box[3]-1e-7)spans.push(t);
+    }
+    for(const x of [b[0],b[2]])for(const y of [b[1],b[3]]){
+      const w=sub(s.a,[x,y]),a=Gm.dot(u,u),q=2*Gm.dot(w,u),v=Gm.dot(w,w)-r*r,disc=q*q-4*a*v;
+      if(disc<0)continue;const h=Math.sqrt(disc),lo=Math.max(0,(-q-h)/(2*a)),hi=Math.min(1,(-q+h)/(2*a));
+      if(hi-lo>1e-9)spans.push([lo,hi]);
+    }
+    return spans;
+  }
+  function cutObstacles(G,segs,cores,violations) {
+    if(G.obstacleClearance!=='euclidean')return Lay.cutByCores(G,segs,cores,violations);
+    const pieces=[];let blocked=false;
+    for(const s of segs){
+      const u=sub(s.b,s.a),length=len(u),spans=cores.flatMap(c=>obstacleIntervals(G,s,c)).sort((a,b)=>a[0]-b[0]),union=[];
+      for(const t of spans){const last=union.at(-1);if(last&&t[0]<=last[1]+1e-9)last[1]=Math.max(last[1],t[1]);else union.push(t.slice());}
+      let p=0;const keep=[];for(const[lo,hi]of union){if((lo-p)*length>300)keep.push([p,lo]);p=Math.max(p,hi);}if((1-p)*length>300)keep.push([p,1]);
+      blocked ||= union.length>0;
+      for(const[t0,t1]of keep)pieces.push({...s,a:add(s.a,mul(u,t0)),b:add(s.a,mul(u,t1)),aEnd:t0>0?'cut':s.aEnd||'network',bEnd:t1<1?'cut':s.bEnd||'network',cut:!!s.cut||t0>0||t1<1});
+    }
+    if(blocked)violations.push({id:'CORE_IN_AISLE',note:'장애물과 차로 순폭이 겹치는 구간을 동선에서 제외했습니다'});
+    return pieces;
+  }
+
   // 위상 하나로 계획 전체. phase = 실내 면 상자(UCS 좌표) 기준 [x, y] mm
   function build(input, phase, alternative = null, connected = null) {
     input={...input,mass:Boundary.outer(input.parkingMass||input.mass)};
     const G = Grid.frame(input), {cfg, a, d, W, L, inner, b} = G, warnings = [], violations = [];
     G.aisleSurfaceMode=input.aisleSurfaceMode||'legacy';
     if(!['legacy','network'].includes(G.aisleSurfaceMode)||G.aisleSurfaceMode==='network'&&!connected)throw new RangeError('차로 면 모드를 확인하세요; network는 명시 연결망 전용입니다');
+    G.obstacleClearance=input.obstacleClearance||'box';
+    if(!['box','euclidean'].includes(G.obstacleClearance)||G.obstacleClearance==='euclidean'&&(!connected||G.aisleSurfaceMode!=='network'))throw new RangeError('euclidean 장애물 여유는 명시 연결망의 network 차로 면 전용입니다');
     if (G.lostParts.length) violations.push({id: 'SPLIT_INNER', note: `외벽 두께를 빼면 실내 면이 ${G.lostParts.length + 1}조각으로 갈라집니다 — 가장 큰 조각만 계산했고 ${G.lostParts.map((x) => Math.round(x)).join('·')}㎡는 빠졌습니다`});
     // S2 구조 격자
     Grid.setPhase(G, phase);
@@ -62,7 +94,7 @@
     const obstacles=cores.concat(occupants),policy=input.occupantPolicy||'report';
     if(!['report','bypass'].includes(policy))throw new RangeError('알 수 없는 코어 차단 정책입니다');
     // 우회 전 구조를 먼저 고정한다. 새 차로와 겹친다는 이유로 기둥을 지우지 않는다.
-    const originalPieces=Lay.cutByCores(G,segs,obstacles,policy==='report'?violations:[]);
+    const originalPieces=cutObstacles(G,segs,obstacles,policy==='report'?violations:[]);
     const originalAisle=Lay.aisleSurface(G,ringCL,originalPieces,area,obstacles);
     const columns=alternative ? alternative.columns.map(poly=>poly.map(L)) : Lay.placeColumns(G,originalAisle,rampOut);
     let pieces,routing={created:[],failed:[]};
@@ -74,10 +106,10 @@
     let aisleObstacles = obstacles;
     if (G.columnAxes) {
       const fixed = columns.map(P => ({r:Gm.bbox(P)})), margin = a / 2 - 100;
-      const blocking = fixed.filter(c => pieces.some(s => Gm.clipSeg(s.a,s.b,[c.r[0]-margin,c.r[1]-margin,c.r[2]+margin,c.r[3]+margin])));
+      const blocking = fixed.filter(c => pieces.some(s => G.obstacleClearance==='euclidean'?obstacleIntervals(G,s,c).length:Gm.clipSeg(s.a,s.b,[c.r[0]-margin,c.r[1]-margin,c.r[2]+margin,c.r[3]+margin])));
       if (blocking.length) violations.push({id:'FIXED_COLUMN_BLOCKS_ROUTE',note:`고정 기둥 ${blocking.length}개가 막는 차로 구간을 동선에서 제외했습니다 — 구조를 유지한 차로 재배치가 필요합니다`,at:W([(blocking[0].r[0]+blocking[0].r[2])/2,(blocking[0].r[1]+blocking[0].r[3])/2]).map(Math.round)});
       const cutRings = new Set(pieces.filter(p=>p.kind==='ring'&&p.cut).map(p=>p.ri));
-      pieces = Lay.cutByCores(G,pieces,fixed,[]);
+      pieces = cutObstacles(G,pieces,fixed,[]);
       pieces.forEach(p=>{if(p.kind==='ring'&&cutRings.has(p.ri))p.cut=true;});
       aisleObstacles = obstacles.concat(fixed);
     }
@@ -318,6 +350,7 @@
     const r=build(input,input.phase,null,routes);
     r.grid.phaseFrom='input';
     r.networkCandidate={source:'supplied-centerlines',widthMm:r.grid.aisleMm,surfaceMode:input.aisleSurfaceMode||'legacy',turning:'UNVERIFIED'};
+    if(input.obstacleClearance)r.networkCandidate.obstacleClearance=input.obstacleClearance;
     return r;
   }
   // Experimental, conditional alternative: the returned dead end still needs turning and traffic review.

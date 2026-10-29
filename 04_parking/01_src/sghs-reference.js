@@ -124,12 +124,35 @@
     const row=floors[0].reviewedTrace.rows.find(r=>r.id===id);
     Object.assign(row,{facing,observation:{visibleCount,facing,use,note,source:'DG-80514_plan_06.jpg',basis:'direct-image-reading'}});
   }
+  // Operable-plan reconstruction: these replace assumptions, not measured structural facts.
+  const calibratedInput=structuredClone(reviewed),calibratedTrace=structuredClone(calibrateClearance(500).trace);
+  calibratedInput.referenceColumnMm=500;calibratedInput.ramp.w=6000;calibratedInput.phase=[6400,8000];
+  calibratedInput.columnIntersections=[{ix:1,iy:4,state:'omitted',reason:'C1 북서측 교점은 원도에서 독립 기둥 없이 빈 통로로 보임',source:'DG-80514_plan_06.jpg; crop(375,501), pixel(376,218.5)'}];
+  // Upper inner-wall curve retraced from pixels; 200mm inverse calibration keeps the assumed six-metre corridor.
+  calibratedInput.mass=[[69400,47700],[25485,47700],[24626,47532],[23812,47267],[22988,46966],[22174,46602],[21338,46126],[20531,45600],[19755,45010],[8000,36381],[8000,1200],[69400,1200]];
+  const c3Bottom=c3.c[1]-c3.d/2,c3Top=reviewed.columnAxes.y[2]-500/2-referenceGrid.aisleMm;
+  calibratedInput.cores[2].d=c3Top-c3Bottom;calibratedInput.cores[2].c[1]=(c3Top+c3Bottom)/2;
+  const corner=[reviewed.columnAxes.x[2]-250,reviewed.columnAxes.y[4]+250],clearanceRadius=3100;
+  const arc=Array.from({length:7},(_,i)=>{const t=(90+i*15)*Math.PI/180;return [Math.round(corner[0]+Math.cos(t)*clearanceRadius),Math.round(corner[1]+Math.sin(t)*clearanceRadius)];});
+  calibratedTrace.routes=[
+    {id:'서측 진입 연결 후보',points:[[37200,44050],[34200,44050],[27400,44150],...arc,[16750,37200],[16750,19550],[32600,19550]]},
+    {id:'동측·중앙 연결 후보',points:[[32600,19550],[33000,19550],[60800,19550],[60800,36800],[37200,36800]]},
+    {id:'서측 남부 가지',points:[[16750,19550],[16750,1800]]},
+    {id:'동측 남부 가지',points:[[60800,19550],[60800,1800]]},
+    {id:'중앙 남측 가지',points:[[33000,19550],[33000,5600]]}
+  ].map(r=>({...r,certainty:'derived-from-operable-source'}));
+  calibratedTrace.rows=structuredClone(floors[0].reviewedTrace.rows);calibratedTrace.obstacleClearance='euclidean';
+  calibratedTrace.terminalAisles=calibratedTrace.terminalAisles.map(a=>({...a,bounds:a.bounds.map((v,i)=>i===3?19550:v),polygon:a.polygon.map(([x,y])=>[x,y===19500?19550:y])}));
+  calibratedTrace.fronts=calibratedTrace.fronts.map(a=>({...a,points:a.points.map(([x,y])=>[x,y===19500?19550:y])}));
+  calibratedTrace.centralConnection={...calibratedTrace.centralConnection,junction:[33000,19550]};
+  calibratedTrace.note='원본 작동 전제의 입력 정합안. 3.1m 원호는 장애물 이격 중심선이며 차량 조향반경이 아닙니다. 순환·주차 용도·칸별 조향은 미재현입니다.';
+  Object.assign(floors[0],{calibrated:calibratedInput,calibratedTrace,calibratedBoundary:{...calibrated.boundary,note:'사용자 승인 추정치 보정: 기둥500mm·램프 유효폭6m·가로 차로+50mm·C2 북측 차로+100mm·C3 추정 북단-250mm·상부 곡선 재추적과200mm 정합·원도 빈 교점1곳 반영. 구조축·칸2.5×5m·차로6m 유지; 실측 확정이나 원본 전체 재현 아님.'},calibratedDimensionReview:{...floors[0].reviewedDimensionReview,status:'ASSUMPTIONS_RECONCILED',columnMm:500,laneCenterMm:19550,requiredMm:9000,shortfallMm:0,availableStallWidthMm:2500,oppositeFaceMarginMm:0,note:'기둥500mm는 승인된 정합 가정이며 원도 실측치가 아닙니다. 600mm 비교 입력은 보존했습니다.'}});
   // Compare supplied geometry against separately identified source regions before judging the engine.
-  function auditB1(plan,G){
+  function auditB1(plan,G,reference='reviewed'){
     const {CL,boolOp,areaOf,rectPoly,bbox}=G,I=CL.ClipType.ctIntersection,U=CL.ClipType.ctUnion;
     const area=P=>Math.abs(areaOf(P)),over=(A,B)=>area(boolOp(A,B,I)),shape=c=>rectPoly([c.c[0]-c.w/2,c.c[1]-c.d/2,c.c[0]+c.w/2,c.c[1]+c.d/2]);
-    const rows=floors[0].reviewedTrace.rows,kept=(plan.stalls||[]).map(s=>s.pts),candidates=kept.concat(plan.lost||[]),union=boolOp(candidates,[],U);
-    const reservation=shape(reviewed.occupants.find(c=>c.kind==='ramp-access')),core=shape(reviewed.cores[2]);
+    const referenceInput=floors[0][reference],rows=floors[0][reference+'Trace'].rows,kept=(plan.stalls||[]).map(s=>s.pts),candidates=kept.concat(plan.lost||[]),union=boolOp(candidates,[],U);
+    const reservation=shape(referenceInput.occupants.find(c=>c.kind==='ramp-access')),core=shape(referenceInput.cores[2]);
     // 국소 앞면의 차로 접면만 확인한다. 램프 도달·차량 회전의 합격이 아니다.
     const fronts=P=>{
       const b=bbox(P),vertical=b[2]-b[0]>b[3]-b[1];
@@ -193,5 +216,37 @@ if(typeof module!=='undefined'&&require.main===module){
   }
   assert.throws(()=>E.generate({mass:[],cores:[]}),/지하층 외곽/);
   assert.throws(()=>E.generate({...c.floors[0].revised,grid:{columnAxes:{x:[0,0],y:[0,9000]}}}),/columnAxes/);
+  if(process.argv.includes('--calibration')){
+    const I=G.CL.ClipType.ctIntersection,D=G.CL.ClipType.ctDifference,over=(A,B,t=I)=>Math.abs(G.areaOf(G.boolOp(A,B,t)));
+    const band=(a,b)=>{const n=G.mul(G.norm(G.sub(b,a)),3000),v=[-n[1],n[0]];return[G.add(a,v),G.add(b,v),G.sub(b,v),G.sub(a,v)];};
+    const generic={mass:[[0,0],[60000,0],[60000,50000],[0,50000]],cores:[{id:'corner',c:[31000,21000],w:2000,d:2000,keep:{x:true,y:true}}],phase:[0,0],autoZones:false,aisleSurfaceMode:'network',grid:{aisleMm:6000,columnAxes:{x:[45000,55000],y:[10000,40000]}},ramp:E.createStraightRamp({landing:[5000,19000],angleDeg:0,widthMm:6000,lengthMm:3000})};
+    const lines=[{points:[[5000,19000],[22000,19000],[30000,27000]]}],before=JSON.stringify({generic,lines});
+    const exact=E.generateConnected({...generic,obstacleClearance:'euclidean'},lines),box=E.generateConnected(generic,lines);
+    assert.equal(over([band([22000,19000],[30000,27000])],exact.cores.map(k=>k.pts)),0);
+    assert(exact.graph.edges.every(e=>e.ok&&e.reached));assert(box.graph.edges.some(e=>!e.reached));assert(!exact.violations.some(v=>v.id==='CORE_IN_AISLE'));
+    assert.equal(JSON.stringify({generic,lines}),before);assert.deepEqual(exact,E.generateConnected({...generic,obstacleClearance:'euclidean'},lines));
+    const colliding=[{points:[[5000,19000],[10000,19000],[22000,18000],[30000,26000]]}],hit=E.generateConnected({...generic,obstacleClearance:'euclidean'},colliding);
+    assert(over([band([22000,18000],[30000,26000])],hit.cores.map(k=>k.pts))>1e4);assert(hit.violations.some(v=>v.id==='CORE_IN_AISLE'));assert(hit.graph.edges.some(e=>!e.reached));
+    const tangentInput={...generic,obstacleClearance:'euclidean',ramp:E.createStraightRamp({landing:[5000,25000],angleDeg:0,widthMm:6000,lengthMm:3000})},tangent=[{points:[[5000,25000],[40000,25000]]}],touch=E.generateConnected(tangentInput,tangent);
+    assert.equal(touch.graph.edges.length,1);assert(touch.graph.edges.every(e=>e.ok&&e.reached));assert(!touch.violations.some(v=>v.id==='CORE_IN_AISLE'));
+    const gap=E.generateConnected(tangentInput,[{points:[[5000,25000],[20000,25000]]},{points:[[20500,25000],[40000,25000]]}]);assert(gap.graph.edges.some(e=>!e.reached));
+    const remote=structuredClone(gap);remote.stalls=[{pts:G.rectPoly([25000,17000,27500,22000]),kind:'h'}];
+    assert.equal(require('./plan/CLAUDE_ugp_verify.js').check(remote,tangentInput).counts.unreachable,1,'a real stall on the far side of the gap must be rejected');
+    const rot=p=>G.rot(p,90),rotated=E.generateConnected({...generic,ucs:90,mass:generic.mass.map(rot),cores:generic.cores.map(k=>({...k,c:rot(k.c)})),obstacleClearance:'euclidean',ramp:E.createStraightRamp({landing:rot([5000,19000]),angleDeg:90,widthMm:6000,lengthMm:3000})},lines.map(r=>({...r,points:r.points.map(rot)})));
+    assert(rotated.graph.edges.every(e=>e.ok&&e.reached));assert.equal(rotated.stallCount,exact.stallCount);
+    const f=c.floors[0],d=structuredClone(f.calibrated),rp=d.ramp,input={...d,aisleSurfaceMode:'network',obstacleClearance:'euclidean',grid:{...c.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm,columnIntersections:d.columnIntersections},floorMm:undefined,ramp:E.createStraightRamp({landing:rp.p,angleDeg:rp.alignedAngleDeg,widthMm:rp.w,lengthMm:rp.len})};
+    const snapshot=JSON.stringify({input,routes:f.calibratedTrace.routes}),r=E.generateConnected(input,f.calibratedTrace.routes),a=c.auditB1(r,G,'calibrated'),square=E.generateConnected({...input,obstacleClearance:'box'},f.calibratedTrace.routes);
+    assert.equal(JSON.stringify({input,routes:f.calibratedTrace.routes}),snapshot);assert.deepEqual(r,E.generateConnected(input,f.calibratedTrace.routes));
+    assert.deepEqual(r.grid.columnAxes,f.reviewed.columnAxes);assert.equal(r.columns.length,38);assert.equal(r.grid.aisleMm,6000);assert.equal(d.referenceColumnMm,500);assert.equal(r.stallCount,60);assert.equal(r.lostCount,0);
+    assert(r.graph.edges.every(e=>e.ok&&e.reached));assert.equal(r.graph.edges.length,19);assert.equal(r.status,'INFEASIBLE');assert(r.violations.some(v=>v.id==='NO_LOOP'));assert.equal(r.networkCandidate.turning,'UNVERIFIED');
+    assert(!r.violations.some(v=>['COLUMN_IN_AISLE','CORE_IN_AISLE','FIXED_COLUMN_BLOCKS_ROUTE','LANDING','EDGE_OFF_AISLE','STALL_NO_FRONT'].includes(v.id)));
+    for(const l of f.calibratedTrace.routes)for(let i=1;i<l.points.length;i++)assert(over([band(l.points[i-1],l.points[i])],r.aisles,D)<=1e4,'the full six-metre band must exist, without using the verifier width tolerance');
+    assert.equal(over(r.aisles,r.columns.concat(r.cores.map(k=>k.pts),r.occupants.map(k=>k.pts),[r.ramp.body])),0);
+    assert.equal(r.placementReport.counts.clash,0);assert.equal(r.placementReport.counts.unreachable,0);assert.equal(r.placementReport.counts.noFront,0);
+    assert.deepEqual(a.rows.map(x=>x.candidates),[11,4,8,3,3,3,3,10,3,4,3,0,2]);assert.equal(a.coreMismatch,false);assert.equal(a.rampCandidateHits,0);assert(square.graph.edges.filter(e=>e.reached).length<19);
+    const realColumn=E.generateConnected({...input,grid:{...input.grid,columnIntersections:[]}},f.calibratedTrace.routes);assert(realColumn.violations.some(v=>v.id==='FIXED_COLUMN_BLOCKS_ROUTE'));assert(realColumn.graph.edges.some(e=>!e.reached));
+    assert.throws(()=>E.generateConnected({...input,obstacleClearance:'unknown'},f.calibratedTrace.routes),RangeError);assert.throws(()=>E.generate({...input}),RangeError);
+    console.log(JSON.stringify({calibrationChecks:'clear diagonal; real collision; exact tangency; 500mm gap; rotation; full B1 bands and physical obstacles; restored blocker; input preservation; invalid modes',cases:8,commonFixSameInput:{boxReached:square.graph.edges.filter(e=>e.reached).length,euclideanReached:19,boxKept:square.stallCount,euclideanKept:r.stallCount},B1:{candidates:60,geometricReachKept:60,deadSide:r.deadSideCount,status:r.status,sourceRows:a.rows.map(x=>[x.id,x.candidates,x.matchingFacing])}}));
+  }
   console.log(JSON.stringify({checks:'source dimensions; baseline reproduction; fixed cores and axes; no slope claim from visible length; no source-count claim; repeatability; input preservation; invalid input rejection',summaries},null,2));
 }
