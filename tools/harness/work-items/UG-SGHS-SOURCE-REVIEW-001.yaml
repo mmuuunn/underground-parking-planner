@@ -1,0 +1,59 @@
+id: UG-SGHS-SOURCE-REVIEW-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-user-prohibits-delegation
+verify_profile: vehicle-circulation
+question: 원본 의미 대조로 C3 해치 오인과 B2 하행 램프 접속부 주차 후보를 제거하고 주차열 차이를 먼저 드러내는가?
+allowed_files:
+  - 04_parking/01_src/sghs-reference.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/sghs-compare.html
+  - 04_parking/02_tests/CLAUDE_ug_plan_engine.test.cjs
+  - tools/harness/work-items/UG-SGHS-SOURCE-REVIEW-001.yaml
+acceptance:
+  - 사용자 파란 표시와 원본 검은 벽 경계에 따라 C3의 좌측 해치 과대영역 제거; 오른쪽·위아래 경계 유지
+  - B2 하행 램프 동측 접속부를 주차 금지 공간으로 예약; 기존 점유물 검사 사용 및 후보/채택 칸 모두 겹침 0
+  - 새 reviewed B1 입력으로 보정; clearance 등 과거 7개 입력과 골든 6개 전체 계산 결과 보존
+  - 모든 추적 주차열별 후보 분포·면적 일치율·추적 열 밖 후보를 계산하고 에이전트가 차이를 확인
+  - 생성 후보와 실제 채택 칸을 명시적으로 구분하고 미도달·회차·층간 주행을 미검증으로 유지
+  - 코어 확대·램프 예약 누락 반례를 대조 검사로 탐지; 화면 재열기와 기존 저장 보존
+not_doing:
+  - 고정 구조축·6m 순폭·주차 깊이 5m·공차·골든값 변경
+  - 주차배치 전체 재현 완료 또는 회차·층간 램프 주행 합격 선언
+  - 다른 모델·서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+start_gate:
+  contribution: 엔진 앞단의 도면 의미 오인 제거와 원본 대조 공백 보완
+  reference_change: 새 reviewed 입력만 추가; 이전 도면 해석과 계산 결과 보존
+  excluded_scope: 일반 자동 탐색·판정 완화·다른 모델 호출 없음
+stop_conditions:
+  - 허용 파일 밖 수정 또는 세 번째 구현 필요
+  - 원본 주차열 대조를 기계·차량 합격으로 대체해야 진행 가능
+results:
+  implementation_rounds: 1
+  c3: 사용자 표시·원본 벽·기둥열 대조; X=54200~57200 / Y=4800~16800; 폭 5600→3000mm·면적 67.2→36㎡; 우측·상하 경계 유지
+  ramp: B2 하행 동측 접속부 X=57400~63750 / Y=40800~47300을 ramp-access 점유물로 예약; 원본 상세 실측 대신 기존 축·순폭 기준의 추적 경계 사용
+  source_counterexamples: 이전 clearance 후보는 C3 불일치·램프 예약 누락·램프 영역 후보 2칸 검출; reviewed는 해당 오류 0; 예약 삭제·램프 안 칸 삽입·C3 재확장 반례 모두 검출
+  row_audit: 13개 추적 열 전체 계산·화면 비교; 동측 북단 후보 0·서측 안쪽 면적 대응 31%·남서측 쌍열 45.3%; 후보 면적 절반 미만이 추적 열에 드는 열 밖 후보 8칸
+  new_extra_candidate: C3 축소로 열린 영역에 생긴 새 후보 1칸도 열 밖으로 검출; 이를 재현 성공으로 표시하지 않음
+  candidate_result: 이전 59→58 생성 후보; 램프 영역 2칸 제거·C3 옆 열 밖 후보 1칸 추가; 최종 채택 0·미도달 58·INFEASIBLE 유지
+  display: 원본 대조 보정 reviewed 추가; 주황 램프 예약·열 밖 진한 테두리·13열 대조표·생성 58칸과 채택 0칸 구분
+  baseline: preflight 93/93; 51.644초
+  npm_test: 96/96; 50.580초
+  harness: 96/96; 50.798초; run 20261029-114535-UG-SGHS-SOURCE-REVIEW-001-9f32870d
+  preservation: 기존 골든 6개와 SGHS 7개 전체 계산 SHA256 동일; 사용자 기존 3파일 및 과거 작업표 보존; 새 입력 저장키는 reviewed로 분리
+  browser: C3 폭 3m·예약 1개·추적 열 밖 후보 8개·대조표 13행 확인; 재열기·기존 입력·B2·추적/자동 모드·저장 보존; 720px 넘침 없음
+  screen: http://127.0.0.1:8874/04_parking/sghs-compare.html?floor=B1&revision=reviewed&candidate=connected
+  evidence: C:/Users/seok2/.codex/research/SGHS-SOURCE-REVIEW-20261029; semantic-evidence.json·before.json·after.json·reviewed-comparison.png
+  independent_review: 미실시; 다른 모델·서브에이전트 호출 없음
+  user_visual_review: 새 보정 화면 확인 대기; 이전 화면 지적을 승인으로 취급하지 않음
+  conclusion: 입력 의미 오인 두 곳 수정과 추적 열 대조 검사 구현; 전체 주차배치 및 동선 재현 완료는 아님
+limitations:
+  - 대조 검사는 수동 추적 열·사용자 확인 의미를 기준으로 하며 원본 이미지 자체의 모든 오독을 자동 판별하지 않음
+  - 원본 개별 칸 수·방향·장애인 공유통로 일치와 하행 램프 실제 회차·층간 주행은 미검증
+  - 상부 연결부 외곽 부족·고정 기둥과 램프의 겹침·고리 없는 연결망 판정은 유지; 원본 실패로 해석하지 않음

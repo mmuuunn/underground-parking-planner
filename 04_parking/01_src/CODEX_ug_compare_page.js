@@ -887,7 +887,7 @@ async function startPlan(){
   if(referenceScene){
     await import('./sghs-reference.js');
     const data=window.SGHSReference,f=data.floors.find(f=>f.id===referenceScene.floor);
-    if(!f||!['before','revised','landing','aligned','clearance'].includes(referenceScene.revision)||!f[referenceScene.revision])throw Error('SGHS 층 또는 입력 버전을 확인하세요');
+    if(!f||!['before','revised','landing','aligned','clearance','reviewed'].includes(referenceScene.revision)||!f[referenceScene.revision])throw Error('SGHS 층 또는 입력 버전을 확인하세요');
     MODULES.sghs={name:'SGHS 시험 모듈 · 칸·벽·기둥 치수는 가정',grid:data.grid};
     SITE.splice(0,SITE.length,...structuredClone(data.site));
     doc=load()||structuredClone(f[referenceScene.revision]);
@@ -896,7 +896,7 @@ async function startPlan(){
     document.querySelector('.project .eyebrow').textContent='동대문구 구민회관 · SGHS';
     document.querySelector('.floor-tab').textContent=f.id+' '+f.label+' 평면도';
     document.querySelector('.sheet-heading h1').textContent=f.label+' 평면도';
-    document.querySelector('.sheet-heading p').textContent='SGHS · '+({before:'보완 전 입력',revised:'보완 입력',landing:'착지 검토 · 상부 벽 기준선 추정',aligned:'피드백 보정 · 외벽 내측 기준 / 벽 두께 가정',clearance:'원본 작동 전제 · 순폭 6m 역산'}[referenceScene.revision])+' / 추정 치수 포함';
+    document.querySelector('.sheet-heading p').textContent='SGHS · '+({before:'보완 전 입력',revised:'보완 입력',landing:'착지 검토 · 상부 벽 기준선 추정',aligned:'피드백 보정 · 외벽 내측 기준 / 벽 두께 가정',clearance:'원본 작동 전제 · 순폭 6m 역산',reviewed:'원본 대조 보정 · C3 / 하행 램프 주차 제외'}[referenceScene.revision])+' / 추정 치수 포함';
     document.querySelector('.sheet-caption strong').textContent=f.label+' 평면도';
     $('north').style.display='none'; // Drawing-up is not a verified geographic north direction.
     $('plan').setAttribute('aria-label','편집 가능한 SGHS '+f.label+' 주차 평면도');

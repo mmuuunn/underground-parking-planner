@@ -617,6 +617,36 @@ console.log('empty island ok');
   });
 }
 
+// Source semantics are checked before any claim about reproducing the drawing.
+{
+  const {test}=require('node:test'),F=require('../01_src/sghs-reference.js'),G=require('../01_src/plan/CLAUDE_ugp_geom.js');
+  const inputFor=rev=>{const d=structuredClone(F.floors[0][rev]),p=d.ramp;return {...d,grid:{...F.grid,columnAxes:d.columnAxes,columnMm:d.referenceColumnMm},floorMm:undefined,ramp:E.createStraightRamp({landing:p.p,angleDeg:p.alignedAngleDeg,widthMm:p.w,lengthMm:p.len})};};
+  const candidate=rev=>{const input=inputFor(rev);input.phase=E.generate(input).grid.phase;return E.generateConnected(input,F.floors[0][rev+'Trace'].routes);};
+  test('reviewed B1 separates C3 wall outline from hatch and reserves the down-ramp access against all stall candidates',()=>{
+    const input=inputFor('reviewed'),before=JSON.stringify(input),old=E.generate(inputFor('clearance')),r=E.generate(input),net=candidate('reviewed');
+    assert.equal(JSON.stringify(input),before);assert.deepStrictEqual(G.bbox(r.cores[2].pts),[54200,4800,57200,16800]);assert.equal(Math.abs(G.areaOf([r.cores[2].pts]))/1e6,36);
+    assert.deepStrictEqual(r.columns,old.columns);assert.deepStrictEqual(r.ramp.body,old.ramp.body);assert.deepStrictEqual(r.cores.slice(0,2),old.cores.slice(0,2));
+    const reserve=r.occupants.find(c=>c.kind==='ramp-access');assert.deepStrictEqual(G.bbox(reserve.pts),[57400,40800,63750,47300]);
+    for(const out of [r,net]){const audit=F.auditB1(out,G);assert.equal(audit.coreMismatch,false);assert.equal(audit.rampReservationMissing,false);assert.equal(audit.rampCandidateHits,0);assert.equal(out.grid.aisleMm,6000);}
+    assert.equal(net.stallCount,0);assert.equal(net.status,'INFEASIBLE');assert.equal(net.placementReport.counts.unreachable,58);
+    assert.equal(F.floors[0].clearance.cores[2].w,5600);assert.equal(F.floors[0].clearance.occupants.length,2);assert.equal(F.floors[1].reviewed,undefined);
+  });
+  test('source audit detects former hatch overread, missing ramp reservation and an introduced ramp stall',()=>{
+    const old=candidate('clearance'),failed=F.auditB1(old,G);assert(failed.coreMismatch);assert(failed.rampReservationMissing);assert.equal(failed.rampCandidateHits,2);
+    const corrected=candidate('reviewed'),good=F.auditB1(corrected,G);assert(!good.coreMismatch&&!good.rampReservationMissing&&good.rampCandidateHits===0);
+    const missing=structuredClone(corrected);missing.occupants=missing.occupants.filter(c=>c.kind!=='ramp-access');assert(F.auditB1(missing,G).rampReservationMissing);
+    const wrong=structuredClone(corrected);wrong.lost.push(G.rectPoly([58000,42000,60500,47000]));assert.equal(F.auditB1(wrong,G).rampCandidateHits,1);
+    const wide=structuredClone(corrected);wide.cores[2].pts=G.rectPoly([51600,4800,57200,16800]);assert(F.auditB1(wide,G).coreMismatch);
+  });
+  test('source row audit exposes omissions and extra candidates while keeping actual accepted parking separate',()=>{
+    const r=candidate('reviewed'),audit=F.auditB1(r,G),before=JSON.stringify(r);assert.deepStrictEqual(audit,F.auditB1(r,G));assert.equal(JSON.stringify(r),before);
+    assert.equal(audit.rows.length,13);assert.equal(audit.candidateCount,58);assert.equal(audit.keptCount,0);assert.equal(audit.outsideRows.length,8);assert.deepStrictEqual(audit.emptyRows,['동측 북단']);
+    assert.equal(audit.rows.find(x=>x.id==='서측 안쪽').coveragePct,31);assert.equal(audit.rows.find(x=>x.id==='남서측 쌍열').coveragePct,45.3);
+    assert.equal(audit.status,'DIFFERENCES_REQUIRE_REVIEW');assert(audit.rows.every(x=>x.kept===0));
+    const noCandidates=F.auditB1({...r,stalls:[],lost:[]},G);assert.equal(noCandidates.emptyRows.length,13);assert(noCandidates.rows.every(x=>x.coveragePct===0));
+  });
+}
+
 // 파란 표시의 중앙 가지는 가로 동선과 실제 분기점을 공유한다.
 {
   const {test}=require('node:test'),F=require('../01_src/sghs-reference.js');
