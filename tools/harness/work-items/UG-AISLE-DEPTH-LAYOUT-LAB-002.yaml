@@ -1,0 +1,52 @@
+id: UG-AISLE-DEPTH-LAYOUT-LAB-002
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: 차로와 주차열을 함께 재생성하는 통제 실험에서 면별깊이 가설의 적용범위와 반례는 무엇인가?
+allowed_files:
+  - tools/depth-layout-lab.cjs
+  - tools/depth-layout-lab.test.cjs
+  - tools/harness/work-items/UG-AISLE-DEPTH-LAYOUT-LAB-002.yaml
+acceptance:
+  - 기존 제품 엔진 입력 골든 자료를 바꾸지 않음; 비교군별 동일 고정 외곽 구조축 교점 코어 램프 규격과 검사 정책
+  - 8.1x8.0m 가정 구조의 전체 교점 존재 또는 외곽 제외를 생성 전에 확인; 주차반복16m를 구조경간으로 바꾸지 않음
+  - 차로 위치 개수 방향과 연결형식을 탐색하고 공유 엔진에서 열을 실제 재생성; 주어진 기존망에 사후주석만 붙이지 않음
+  - 작은홀 정형 고정코어 꺾임 사선 램프차단 사례와 치수경계 실험; 성공 증거와 탐색범위 내 실패와 수학적 불가를 구별
+  - 독립 치수식과 충돌/앞면/그래프 검사; DA 벽 후보와 기타 잔여를 표시; 조향과 설비 기능 미검증 유지
+  - 대수 연속열 충돌 접근과 연결 및 DA를 비교; 제품 자동생성 개선으로 집계하지 않음
+not_doing:
+  - 기존 엔진 또는 안전판정 또는 골든 수정; 전이구조나 기둥생략 확정; 법규 적합 승인
+  - 다른 모델 서브에이전트 호출 또는 전역최적/불가능 증명 또는 제품 배포
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 3
+max_new_production_lines: 0
+start_gate:
+  stage_contribution: ○ 배치와 차량연결의 실패 위치와 미검증을 구별
+  reference_change: △ 별도 실험의 후보 대수와 그림이 달라지며 제품은 보존
+  excluded_scope: ○ 정밀조향과 구조설계 및 법규 판정 변경 없음
+completion_contract: |
+  {"kind":"experiment","goal":"고정 구조에서 차로와 주차열을 재생성하며 면별깊이 가설의 반례와 적용범위를 측정한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"tools/depth-layout-lab.cjs","depends_on":[],"checks":[{"id":"layout-lab-counterexamples","script":"tools/depth-layout-lab.test.cjs","args":["--check"]}],"review_required":true,"user_required":true}
+
+completion_run: 20261103-022650-UG-AISLE-DEPTH-LAYOUT-LAB-002-fb0a8250
+results:
+  implementation_rounds: 2
+  scope: three new experiment files; existing218files byte-identical; product engine and golden untouched
+  premise: normal8.1x8.0m complete axes; hall18,regular36,core36,notch32plus4outside,slope36,landing36;omitted0;partial0
+  dimensional_conditions: 10584;actual width/depth and wall thickness with1mm boundaries
+  transverse_layouts: 14517 finite250mm-grid configurations;analytic16/32/48m packing bounds
+  regenerated_networks: 622;both groups use identical fixed input and generateConnected policies;free control includes hypothesis candidates
+  results_by_case: hall26_26;regular75_75;core53_vs_no_valid_hypothesis;notch28_vs_no_valid_hypothesis;slope66_66;landing0_0_failed
+  failed_recipe_details: core63 and notch53 are rejected illustrated candidates, not accepted parking capacities
+  independent_checks: 26;SAT stall/static collision and separate ray frontage checks;actual mirror pairs18;translation and90deg rotation preserved
+  vehicle: first/middle/last local parking paths found for five representative free-control plans;whole ramp journeys and passing not approved
+  tests: npm133of133;harness110of110;task1of1
+  browser: six scenes;face tables and mobile760px verified;pageErrors0;horizontalOverflow0
+  interpretation: classification is a screening definition;both-outer hall is a real exception;10m does not include next6m lane;uniform16m recipe fails core and notch within this bounded grammar
+  limitations: synthetic fixtures;orthogonal straight networks;no global optimality or universal impossibility;no product automatic generation claim;DAfunction and structure unverified
+  independent_review: PENDING;no other model or subagent called
+  user_review: PENDING;stage remains ACTIVE
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19d26-097b-7e02-9981-0add2515568c/depth-layout-lab/report.html
