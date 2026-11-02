@@ -1,0 +1,49 @@
+id: UG-AISLE-DEPTH-HYPOTHESIS-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-no-other-model-authorized
+verify_profile: vehicle-circulation
+question: 차로 각 면의 외벽 깊이 5m와 10m 분류는 mirror 접근과 DA 후보에 어느 범위에서 유효한가?
+allowed_files:
+  - 04_parking/01_src/plan/aisle-depth-hypothesis.js
+  - 04_parking/underground-compare.html
+  - tools/test-aisle-depth.cjs
+  - tools/harness/work-items/UG-AISLE-DEPTH-HYPOTHESIS-001.yaml
+acceptance:
+  - 기존 엔진 소스와 입력과 골든을 보존; 기본경로 출력 불변; 실험 URL에서만 후보 분석
+  - 각 면 직각거리에서 차로폭 제외; 5와10 경계 및 꺾임과 가변깊이 구간 분리
+  - mirror는 차로없는 등맞댐; 두번째 차로 앞면과 구조충돌 및 기존 판정 별도
+  - 동일 고정입력으로 대수 연속성 충돌 접근 DA벽 잔여를 비교; 대수증가를 목표값으로 두지 않음
+  - 단위 반례 npm 하네스 실제 자동제품 재열기; 다른모델 호출 없이 검토와사용자승인 대기
+not_doing:
+  - 구조축 변경 또는 기둥생략 또는 새 차로망 탐색 또는 기존 골든 변경 또는 법규 확정
+  - 기본 엔진 교체 또는 외부모델 호출 또는 push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 400
+start_gate:
+  stage_contribution: ○ 통과 실패 미검증을 구분하고 차로와 열 관계를 설명
+  reference_change: △ 실험주소에서 DA후보가 달라지므로 전후비교와 사용자확인 필요
+  excluded_scope: ○ 법규 조향 구조설계 변경 없음
+completion_contract: |
+  {"kind":"experiment","goal":"동일 고정입력에서 면별깊이 가설과 DA벽·mirror의 한계를 비교한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"tools/test-aisle-depth.cjs","depends_on":[],"checks":[{"id":"depth-counterexamples","script":"tools/test-aisle-depth.cjs","args":["--check"]}],"review_required":true,"user_required":true}
+
+completion_run: 20261103-014838-UG-AISLE-DEPTH-HYPOTHESIS-001-9bf0d89d
+results:
+  type: opt-in geometric experiment; no new lane search and no extra stalls claimed
+  change_scope: four files; existing engine source bytes preserved; one loader line in product HTML
+  unit_checks: 30 passed; thresholds, wall/core/ramp conflicts, nonstandard module, keep space, gaps, angled wall, translation/rotation
+  paired_cases: rectangle130_130;l-shape67_67;diagonal120_120;nowon105_105;narrow122_122;all-oblique107_107;sghs-auto9_9
+  product: general126_126;sghs9_9;input-identical;automatic;reload-stable;page-errors0;actual-wall-and-face-SVG-asserted
+  physical: existing stalls, columns, cores, ramp, aisle graph and status identical; DA and wall conflict zero
+  da_example: rectangle520.307216_to85.5m2;wall5.7m2;wall200mm_assumption;function-unverified
+  counterexample: rectangle E0.1L d45m;intervening aisle crosses rows;far-front lane not reached
+  recommendation: retain face classification with additional geometric/access constraints; no capacity improvement proved
+  npm_test: 133/133
+  harness_common: 110/110
+  independent_review: PENDING;no delegation authorized;no self-approval
+  user_review: PENDING;product output is experiment only;stage remains ACTIVE
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19d26-097b-7e02-9981-0add2515568c/depth-hypothesis/comparison.html
