@@ -1,0 +1,52 @@
+id: UG-COMPARISON-CONDITIONS-001
+status: ACCEPTED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex-setup-not-independent-plan-review
+verify_profile: vehicle-circulation
+question: 제품 자동 경로와 동일한 입력·계산·검사 조건을 고정하고 다른 조건의 비교를 차단할 수 있는가?
+allowed_files:
+  - tools/parking-comparison-basis.cjs
+  - tools/parking-comparison-basis.test.cjs
+  - tools/harness/comparison-basis.json
+  - tools/harness/work-items/UG-COMPARISON-CONDITIONS-001.yaml
+acceptance:
+  - 기존 제품 생성기·사용자 입력·골든·과거 실험·승인 기준 보존
+  - 초기 개선 대상은 정상 구조축과 직선 램프의 정형 한 사례; 코어 꺾임 사선 차단 홀형은 회귀 감시
+  - 구조 모듈 위상은 선언 축에서 수식으로 계산해 고정; 모든 교점 존재 또는 외곽 제외 기록
+  - 제품 generate와 legacy·box·loop·occupied-bands 등 실제 유효 설정을 고정; network/euclidean/two-way 등 실험 조건 혼입 차단
+  - 입력·고정 구조·코어·램프·공유 판정 소스 지문·실행 경로·유효 정책이 다른 결과는 개선 비교 금지
+  - 기존 안 재실행과 자기 비교 차이0; 조작된 입력·정책·기둥·코어·램프·중복칸·미검증 승격 반례 검사
+  - 실제 제품 페이지의 자동 호출·저장 후 재열기 입력과 결과를 격리 브라우저에서 대조; 사용자 저장자료 덮어쓰기 없음
+not_doing:
+  - 새 차로 후보나 제품 로직 구현; 실험 대수를 기존 제품 개선으로 재사용; 안전 기준 변경
+  - 다른 모델·서브에이전트 호출; 기존 실패를 성공으로 바꿈; push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 0
+start_gate:
+  stage_contribution: ○ 같은 조건과 다른 조건을 구별하는 비교 준비
+  reference_change: ○ 제품 결과와 골든을 변경하지 않음
+  excluded_scope: ○ 차량판정·구조·법규 코드는 수정하지 않음
+completion_contract: |
+  {"kind":"support","goal":"제품 자동 생성의 동일 조건 비교 기준과 실행 점검을 고정한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"tools/harness/comparison-basis.json","depends_on":[],"checks":[{"id":"comparison-basis-guards","script":"tools/parking-comparison-basis.test.cjs","args":["--check"]}],"review_required":false,"user_required":false}
+
+completion_run: 20261103-030047-UG-COMPARISON-CONDITIONS-001-b41ee640
+results:
+  type: support preparation only; no generator or approval-criterion changes
+  scope: four new files; all221pre-existingfiles byte-identical
+  frozen_policy: generate;legacy;box;loop;occupied-bands;sequential;independent;report;autoZonesTrue
+  phase: 3600_7600mm;derived from fixed8100x8000 axes;not optimized by capacity
+  primary: regular50bays36columns;FEASIBLE generator;blocked entry outside lane;clear exit;raw status not whole-plan approval
+  regression: core46;notch22;slope42;landing-block0_INFEASIBLE;hallRangeError retained as error
+  baseline_receipt: frozen-baseline-v1.json external;refuses overwrite when changed;compare-current reads existing baseline
+  browser: actual automatic page and backend input/output hashes identical;save/reload identical;isolated context;pageErrors0
+  guard_tests: 20;input policy source runtime fixedgeometry entrypoint duplicatebay falsecount and unsupported-journey promotion denied
+  self_comparison: sameConditionsTrue;capacityDelta0;NO_IMPROVEMENT;known blocked entry preserved;productApprovalFalse
+  tests: npm133of133;harness110of110;task1of1;TASK_VERIFIED
+  report_browser: two tables;mobile760px overflow0;pageErrors0
+  improvement_contract: no physical/safety regression and clear display routes;one bay gain or known route issue resolved without capacity loss;new candidate budget2;whole-journey remains not evaluated
+  next_scope: add up to two automatically generated proposals inside same generate path;shared verifiers and fixed inputs remain unchanged
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19d26-097b-7e02-9981-0add2515568c/comparison-conditions/conditions.html

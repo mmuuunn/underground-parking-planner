@@ -1,0 +1,1140 @@
+{
+  "schema": "parking-comparison-basis/1",
+  "date": "2026-11-03",
+  "status": "FROZEN_FOR_FIRST_CANDIDATE",
+  "scope": "Fixed regular structural axes and straight ramp; generator improvement not implemented",
+  "primaryScene": {
+    "v": 2,
+    "ucs": 0,
+    "mass": [
+      [
+        0,
+        0
+      ],
+      [
+        49400,
+        0
+      ],
+      [
+        49400,
+        50000
+      ],
+      [
+        0,
+        50000
+      ]
+    ],
+    "cores": [],
+    "ramp": {
+      "p": [
+        400,
+        8400
+      ],
+      "k": 0,
+      "alignedAngleDeg": 0,
+      "len": 24000,
+      "w": 6000
+    },
+    "snap": 100,
+    "module": "normal",
+    "columnAxes": {
+      "x": [
+        4000,
+        12100,
+        20200,
+        28300,
+        36400,
+        44500
+      ],
+      "y": [
+        4000,
+        12000,
+        20000,
+        28000,
+        36000,
+        44000
+      ]
+    },
+    "referenceColumnMm": 600,
+    "layoutMode": "auto",
+    "allowExternalRamp": true,
+    "autoZones": true,
+    "floorMm": 3800,
+    "phase": [
+      3600,
+      7600
+    ]
+  },
+  "phaseDerivation": {
+    "formula": "X=(firstX-innerMinX) mod gx; Y=(firstY-gy/2-innerMinY) mod gy",
+    "phase": [
+      3600,
+      7600
+    ],
+    "notParkingRepeatAsStructuralSpan": true
+  },
+  "policy": {
+    "entryPoint": "generate",
+    "aisleSurfaceMode": "legacy",
+    "obstacleClearance": "box",
+    "trafficMode": "loop",
+    "stallStripProjection": "occupied-bands",
+    "stallRowSelection": "sequential",
+    "stallRowAlignment": "independent",
+    "occupantPolicy": "report",
+    "autoZones": true
+  },
+  "candidateBudget": {
+    "maximumProposedCandidates": 2,
+    "oldBaselineAlwaysIncluded": true,
+    "maximumEvaluations": 3,
+    "searchBudgetIsNotMeasuredYet": true
+  },
+  "allowedGenerationSourceChanges": [
+    "04_parking/01_src/plan/CLAUDE_ugp_network.js",
+    "04_parking/01_src/plan/CLAUDE_ugp_plan.js"
+  ],
+  "criteria": {
+    "neverRelaxOriginalVerdicts": true,
+    "noNewViolationIds": true,
+    "noStatusDowngrade": true,
+    "noLostLoop": true,
+    "noIncreasedUnreachable": true,
+    "noIncreasedDeadSide": true,
+    "noIncreasedDeadEnds": true,
+    "requiredCapacityGain": 1,
+    "continuityTieBreakOnly": true,
+    "DAProposalAreaNotSuccessMetric": true,
+    "fullJourneyDefault": "NOT_EVALUATED",
+    "positiveDAIsNotFunctionApproval": true,
+    "noCapacityLoss": true,
+    "improvementAlternatives": [
+      "capacity-gain-at-least-one-with-clear-route-checks",
+      "known-route-problem-resolved-without-capacity-loss"
+    ],
+    "newCandidateRequiresClearDisplayRoutes": true
+  },
+  "requiredProductCheck": {
+    "url": "http://127.0.0.1:8874/04_parking/underground-compare.html?plan=comparison-basis-v1",
+    "generator": "automatic",
+    "savedInputsUnchanged": true,
+    "reloadStable": true,
+    "browserVsBackendGeometryIdentical": true
+  },
+  "cases": [
+    {
+      "id": "hall",
+      "title": "작은 홀 · 양쪽 외곽측",
+      "role": "regression-guard",
+      "source": "synthetic controlled fixture; not an approved structural design",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            49400,
+            0
+          ],
+          [
+            49400,
+            20800
+          ],
+          [
+            0,
+            20800
+          ]
+        ],
+        "cores": [],
+        "ucs": 0,
+        "phase": [
+          3600,
+          7600
+        ],
+        "allowExternalRamp": true,
+        "autoZones": true,
+        "occupantPolicy": "report",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "columnMm": 600,
+          "wallMm": 400,
+          "columnAxes": {
+            "x": [
+              4000,
+              12100,
+              20200,
+              28300,
+              36400,
+              44500
+            ],
+            "y": [
+              4000,
+              12000,
+              20000
+            ]
+          }
+        },
+        "ramp": {
+          "kind": "straight",
+          "body": [
+            [
+              -23600,
+              5400
+            ],
+            [
+              400,
+              5400
+            ],
+            [
+              400,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ]
+          ],
+          "landing": [
+            400,
+            8400
+          ],
+          "tangent": [
+            1,
+            0
+          ],
+          "widthMm": 6000,
+          "lengthMm": 24000,
+          "start": [
+            -23600,
+            8400
+          ]
+        },
+        "floorMm": 3800
+      },
+      "premise": {
+        "inside": 18,
+        "outside": 0,
+        "partial": [],
+        "spacings": {
+          "x": [
+            8100,
+            8100,
+            8100,
+            8100,
+            8100
+          ],
+          "y": [
+            8000,
+            8000
+          ]
+        },
+        "omitted": [],
+        "allIntersections": 18,
+        "regularModule": true,
+        "status": "CONTROLLED_ASSUMPTION"
+      },
+      "expected": {
+        "kind": "error",
+        "name": "RangeError",
+        "message": "매스 폭이 너무 좁아 외곽 순환 차로를 둘 수 없습니다(폭 22m 이상 필요)"
+      }
+    },
+    {
+      "id": "regular",
+      "title": "정형 · 다중 차로",
+      "role": "initial-improvement-target",
+      "source": "synthetic controlled fixture; not an approved structural design",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            49400,
+            0
+          ],
+          [
+            49400,
+            50000
+          ],
+          [
+            0,
+            50000
+          ]
+        ],
+        "allowExternalRamp": true,
+        "autoZones": true,
+        "planningBoundary": {
+          "mass": [
+            [
+              49400,
+              50000
+            ],
+            [
+              0,
+              50000
+            ],
+            [
+              0,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ],
+            [
+              -23600,
+              5400
+            ],
+            [
+              0,
+              5400
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              49400,
+              0
+            ]
+          ],
+          "parkingPaths": [
+            [
+              [
+                49400,
+                50000
+              ],
+              [
+                0,
+                50000
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                49400,
+                0
+              ]
+            ]
+          ],
+          "floorPaths": [
+            [
+              [
+                49400,
+                50000
+              ],
+              [
+                0,
+                50000
+              ],
+              [
+                0,
+                11400
+              ],
+              [
+                -23600,
+                11400
+              ],
+              [
+                -23600,
+                5400
+              ],
+              [
+                0,
+                5400
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                49400,
+                0
+              ]
+            ]
+          ],
+          "holes": [],
+          "joined": true,
+          "disconnected": false,
+          "outerCount": 1,
+          "bodyOutsideMm2": 0,
+          "siteOutsideMm2": 0,
+          "floorMass": [
+            [
+              49400,
+              50000
+            ],
+            [
+              0,
+              50000
+            ],
+            [
+              0,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ],
+            [
+              -23600,
+              5400
+            ],
+            [
+              0,
+              5400
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              49400,
+              0
+            ]
+          ],
+          "issue": null
+        },
+        "ucs": 0,
+        "cores": [],
+        "occupants": [],
+        "occupantPolicy": "report",
+        "ramp": {
+          "kind": "straight",
+          "body": [
+            [
+              -23600,
+              5400
+            ],
+            [
+              400,
+              5400
+            ],
+            [
+              400,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ]
+          ],
+          "landing": [
+            400,
+            8400
+          ],
+          "tangent": [
+            1,
+            0
+          ],
+          "widthMm": 6000,
+          "lengthMm": 24000,
+          "start": [
+            -23600,
+            8400
+          ]
+        },
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "wallMm": 400,
+          "columnMm": 600,
+          "columnAxes": {
+            "x": [
+              4000,
+              12100,
+              20200,
+              28300,
+              36400,
+              44500
+            ],
+            "y": [
+              4000,
+              12000,
+              20000,
+              28000,
+              36000,
+              44000
+            ]
+          }
+        },
+        "floorMm": 3800,
+        "phase": [
+          3600,
+          7600
+        ]
+      },
+      "premise": {
+        "inside": 36,
+        "outside": 0,
+        "partial": [],
+        "spacings": {
+          "x": [
+            8100,
+            8100,
+            8100,
+            8100,
+            8100
+          ],
+          "y": [
+            8000,
+            8000,
+            8000,
+            8000,
+            8000
+          ]
+        },
+        "omitted": [],
+        "allIntersections": 36,
+        "regularModule": true,
+        "status": "CONTROLLED_ASSUMPTION"
+      },
+      "expected": {
+        "kind": "plan",
+        "bays": 50,
+        "status": "FEASIBLE",
+        "columns": 36,
+        "hasLoop": true,
+        "violations": [],
+        "planHash": "d11d12c8c940041ee1ef084cd276133754b133c5fc04af9d5ba03ac1c1a70c7b",
+        "routes": {
+          "entry": "blocked",
+          "exit": "clear",
+          "entryIssue": "VEHICLE_OUTSIDE_LANE",
+          "exitIssue": null
+        }
+      }
+    },
+    {
+      "id": "core",
+      "title": "정형 · 고정 코어",
+      "role": "regression-guard",
+      "source": "synthetic controlled fixture; not an approved structural design",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            49400,
+            0
+          ],
+          [
+            49400,
+            50000
+          ],
+          [
+            0,
+            50000
+          ]
+        ],
+        "cores": [
+          {
+            "id": "fixed-core",
+            "c": [
+              28300,
+              24400
+            ],
+            "w": 6500,
+            "d": 7000,
+            "keep": {
+              "x": true,
+              "y": true
+            }
+          }
+        ],
+        "ucs": 0,
+        "phase": [
+          3600,
+          7600
+        ],
+        "allowExternalRamp": true,
+        "autoZones": true,
+        "occupantPolicy": "report",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "columnMm": 600,
+          "wallMm": 400,
+          "columnAxes": {
+            "x": [
+              4000,
+              12100,
+              20200,
+              28300,
+              36400,
+              44500
+            ],
+            "y": [
+              4000,
+              12000,
+              20000,
+              28000,
+              36000,
+              44000
+            ]
+          }
+        },
+        "ramp": {
+          "kind": "straight",
+          "body": [
+            [
+              -23600,
+              5400
+            ],
+            [
+              400,
+              5400
+            ],
+            [
+              400,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ]
+          ],
+          "landing": [
+            400,
+            8400
+          ],
+          "tangent": [
+            1,
+            0
+          ],
+          "widthMm": 6000,
+          "lengthMm": 24000,
+          "start": [
+            -23600,
+            8400
+          ]
+        },
+        "floorMm": 3800
+      },
+      "premise": {
+        "inside": 36,
+        "outside": 0,
+        "partial": [],
+        "spacings": {
+          "x": [
+            8100,
+            8100,
+            8100,
+            8100,
+            8100
+          ],
+          "y": [
+            8000,
+            8000,
+            8000,
+            8000,
+            8000
+          ]
+        },
+        "omitted": [],
+        "allIntersections": 36,
+        "regularModule": true,
+        "status": "CONTROLLED_ASSUMPTION"
+      },
+      "expected": {
+        "kind": "plan",
+        "bays": 46,
+        "status": "FEASIBLE",
+        "columns": 36,
+        "hasLoop": true,
+        "violations": [],
+        "planHash": "cd62095fac3931b019cae0deaf529644e983f40e849432d617b1c8dddd905a1e",
+        "routes": {
+          "entry": "blocked",
+          "exit": "clear",
+          "entryIssue": "VEHICLE_OUTSIDE_LANE",
+          "exitIssue": null
+        }
+      }
+    },
+    {
+      "id": "notch",
+      "title": "ㄱ자 · 꺾인 외곽",
+      "role": "regression-guard",
+      "source": "synthetic controlled fixture; not an approved structural design",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            49400,
+            0
+          ],
+          [
+            49400,
+            32000
+          ],
+          [
+            33000,
+            32000
+          ],
+          [
+            33000,
+            50000
+          ],
+          [
+            0,
+            50000
+          ]
+        ],
+        "cores": [],
+        "ucs": 0,
+        "phase": [
+          3600,
+          7600
+        ],
+        "allowExternalRamp": true,
+        "autoZones": true,
+        "occupantPolicy": "report",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "columnMm": 600,
+          "wallMm": 400,
+          "columnAxes": {
+            "x": [
+              4000,
+              12100,
+              20200,
+              28300,
+              36400,
+              44500
+            ],
+            "y": [
+              4000,
+              12000,
+              20000,
+              28000,
+              36000,
+              44000
+            ]
+          }
+        },
+        "ramp": {
+          "kind": "straight",
+          "body": [
+            [
+              -23600,
+              5400
+            ],
+            [
+              400,
+              5400
+            ],
+            [
+              400,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ]
+          ],
+          "landing": [
+            400,
+            8400
+          ],
+          "tangent": [
+            1,
+            0
+          ],
+          "widthMm": 6000,
+          "lengthMm": 24000,
+          "start": [
+            -23600,
+            8400
+          ]
+        },
+        "floorMm": 3800
+      },
+      "premise": {
+        "inside": 32,
+        "outside": 4,
+        "partial": [],
+        "spacings": {
+          "x": [
+            8100,
+            8100,
+            8100,
+            8100,
+            8100
+          ],
+          "y": [
+            8000,
+            8000,
+            8000,
+            8000,
+            8000
+          ]
+        },
+        "omitted": [],
+        "allIntersections": 36,
+        "regularModule": true,
+        "status": "CONTROLLED_ASSUMPTION"
+      },
+      "expected": {
+        "kind": "plan",
+        "bays": 22,
+        "status": "CONDITIONAL",
+        "columns": 32,
+        "hasLoop": true,
+        "violations": [
+          "EMPTY_ISLAND"
+        ],
+        "planHash": "2465ad9382298eb23a1ed6b3c9ebca606924a3bbdd4b9fef65ee5b82179cfc72",
+        "routes": {
+          "entry": "blocked",
+          "exit": "blocked",
+          "entryIssue": "VEHICLE_OUTSIDE_LANE",
+          "exitIssue": "VEHICLE_OUTSIDE_LANE"
+        }
+      }
+    },
+    {
+      "id": "slope",
+      "title": "사선 외벽 · 가변 깊이",
+      "role": "regression-guard",
+      "source": "synthetic controlled fixture; not an approved structural design",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            49400,
+            0
+          ],
+          [
+            49400,
+            46000
+          ],
+          [
+            0,
+            50000
+          ]
+        ],
+        "cores": [],
+        "ucs": 0,
+        "phase": [
+          3600,
+          7600
+        ],
+        "allowExternalRamp": true,
+        "autoZones": true,
+        "occupantPolicy": "report",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "columnMm": 600,
+          "wallMm": 400,
+          "columnAxes": {
+            "x": [
+              4000,
+              12100,
+              20200,
+              28300,
+              36400,
+              44500
+            ],
+            "y": [
+              4000,
+              12000,
+              20000,
+              28000,
+              36000,
+              44000
+            ]
+          }
+        },
+        "ramp": {
+          "kind": "straight",
+          "body": [
+            [
+              -23600,
+              5400
+            ],
+            [
+              400,
+              5400
+            ],
+            [
+              400,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ]
+          ],
+          "landing": [
+            400,
+            8400
+          ],
+          "tangent": [
+            1,
+            0
+          ],
+          "widthMm": 6000,
+          "lengthMm": 24000,
+          "start": [
+            -23600,
+            8400
+          ]
+        },
+        "floorMm": 3800
+      },
+      "premise": {
+        "inside": 36,
+        "outside": 0,
+        "partial": [],
+        "spacings": {
+          "x": [
+            8100,
+            8100,
+            8100,
+            8100,
+            8100
+          ],
+          "y": [
+            8000,
+            8000,
+            8000,
+            8000,
+            8000
+          ]
+        },
+        "omitted": [],
+        "allIntersections": 36,
+        "regularModule": true,
+        "status": "CONTROLLED_ASSUMPTION"
+      },
+      "expected": {
+        "kind": "plan",
+        "bays": 42,
+        "status": "CONDITIONAL",
+        "columns": 36,
+        "hasLoop": true,
+        "violations": [
+          "STALL_NO_FRONT"
+        ],
+        "planHash": "8d209b1ac918ad086f3087ea100f6e40df170d5396cb507a99fb0c4dad1ae67e",
+        "routes": {
+          "entry": "blocked",
+          "exit": "clear",
+          "entryIssue": "VEHICLE_OUTSIDE_LANE",
+          "exitIssue": null
+        }
+      }
+    },
+    {
+      "id": "landing-block",
+      "title": "고정 코어 · 램프 앞 차단",
+      "role": "regression-guard",
+      "source": "synthetic controlled fixture; not an approved structural design",
+      "input": {
+        "mass": [
+          [
+            0,
+            0
+          ],
+          [
+            49400,
+            0
+          ],
+          [
+            49400,
+            50000
+          ],
+          [
+            0,
+            50000
+          ]
+        ],
+        "cores": [
+          {
+            "id": "landing-core",
+            "c": [
+              3900,
+              8400
+            ],
+            "w": 6500,
+            "d": 6500,
+            "keep": {
+              "x": true,
+              "y": true
+            }
+          }
+        ],
+        "ucs": 0,
+        "phase": [
+          3600,
+          7600
+        ],
+        "allowExternalRamp": true,
+        "autoZones": true,
+        "occupantPolicy": "report",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000,
+          "columnMm": 600,
+          "wallMm": 400,
+          "columnAxes": {
+            "x": [
+              4000,
+              12100,
+              20200,
+              28300,
+              36400,
+              44500
+            ],
+            "y": [
+              4000,
+              12000,
+              20000,
+              28000,
+              36000,
+              44000
+            ]
+          }
+        },
+        "ramp": {
+          "kind": "straight",
+          "body": [
+            [
+              -23600,
+              5400
+            ],
+            [
+              400,
+              5400
+            ],
+            [
+              400,
+              11400
+            ],
+            [
+              -23600,
+              11400
+            ]
+          ],
+          "landing": [
+            400,
+            8400
+          ],
+          "tangent": [
+            1,
+            0
+          ],
+          "widthMm": 6000,
+          "lengthMm": 24000,
+          "start": [
+            -23600,
+            8400
+          ]
+        },
+        "floorMm": 3800
+      },
+      "premise": {
+        "inside": 36,
+        "outside": 0,
+        "partial": [],
+        "spacings": {
+          "x": [
+            8100,
+            8100,
+            8100,
+            8100,
+            8100
+          ],
+          "y": [
+            8000,
+            8000,
+            8000,
+            8000,
+            8000
+          ]
+        },
+        "omitted": [],
+        "allIntersections": 36,
+        "regularModule": true,
+        "status": "CONTROLLED_ASSUMPTION"
+      },
+      "expected": {
+        "kind": "plan",
+        "bays": 0,
+        "status": "INFEASIBLE",
+        "columns": 36,
+        "hasLoop": false,
+        "violations": [
+          "CORE_IN_AISLE",
+          "EMPTY_ISLAND",
+          "LANDING"
+        ],
+        "planHash": "b97b15d09a1526a32a08886d5367a7aae28573ca824deb4e9e6d9653ce8c6c3a",
+        "routes": {
+          "entry": "unconnected",
+          "exit": "unconnected",
+          "entryIssue": "ROUTE_DISCONNECTED",
+          "exitIssue": "ROUTE_DISCONNECTED"
+        }
+      }
+    }
+  ],
+  "measurements": {
+    "geometryTolerance": {
+      "areaMm2": 10000,
+      "widthMm": 100,
+      "probeMm": 300,
+      "nodeMm": 50,
+      "rampOutsideMm2": 1000000
+    },
+    "routeCheck": "existing inspectVehicleRoutes; planar body samples and turn window, not all bay journeys",
+    "localParkingVehicle": {
+      "lengthMm": 4600,
+      "widthMm": 1900,
+      "wheelbaseMm": 2700,
+      "rearOverhangMm": 900,
+      "minRadiusMm": 4500,
+      "clearanceMm": 100,
+      "sampleMm": 100,
+      "sweepGuardMm": 96,
+      "maxSteerDeg": 30.96375653207352
+    },
+    "localParkingSampling": "first-middle-last; evidence supplementary, not whole-journey proof",
+    "DA": {
+      "mode": "existing automatic proposals",
+      "depthMm": 3000,
+      "minAreaM2": 0.5,
+      "hypothesisWallEnabled": false
+    }
+  },
+  "knownBaselineIssue": "regular: generator FEASIBLE with 50 bays, but displayed vehicle entry blocked; never treat raw status as whole-plan approval",
+  "policyNote": "This is the current automatic product policy. Previous lab network/euclidean/two-way and phase[0,0] results are incompatible and cannot be counted as product improvement."
+}
