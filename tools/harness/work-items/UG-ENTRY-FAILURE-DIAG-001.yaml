@@ -1,0 +1,48 @@
+id: UG-ENTRY-FAILURE-DIAG-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: no-independent-review-or-model-call-authorized
+verify_profile: vehicle-circulation
+question: 정형50칸36기둥의첫진입차체이탈이실제접속형상과경로생성및표시검사중어디에서발생하는가?
+allowed_files:
+  - tools/harness/work-items/UG-ENTRY-FAILURE-DIAG-001.yaml
+acceptance:
+  - 현재실행본에서정형한사례만같은입력차량여유검사기준으로재현
+  - 첫실패표본좌표방향차체윤곽과실제램프차로경계를한도면에표시
+  - 원인하나와인과관계및최소수정파일후속확인기준또는미확정으로종료
+  - HEAD만으로전체실행본재현주장금지;현재파일해시와과거영수증지문차단구별
+  - 기존파일입력시험골든기준v1영수증과거증거내용변경0개
+not_doing:
+  - 제품코드수리 검사완화 후보C A+B 추가위치탐색 전체사례반복 전체왕복검증
+  - 전체npm시험반복 기존영수증갱신 비교차단우회 다른모델 서브에이전트 병렬작업 채팅발신 push
+  - 화면클릭 입력 앱뷰제어;정적이미지생성과조회만사용
+max_implementation_rounds: 0
+max_reviewer_calls: 0
+max_changed_files: 1
+max_new_production_lines: 0
+start_gate:
+  stage_contribution: ○ 진입실패위치와원인의일치확인
+  reference_change: ○ 읽기전용진단으로기준배치와판정유지
+  excluded_scope: ○ 수리나정밀조향및전체계획승인없음
+completion_contract: |
+  {"kind":"support","goal":"정형50칸의첫진입실패원인을읽기전용으로진단한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/01_src/plan/vehicle-routes.js","depends_on":[],"checks":[{"id":"observe-old-receipt-source-block","script":"tools/parking-comparison-basis.cjs","args":["--compare-current"]}],"review_required":false,"user_required":false}
+execution_note: 사용자지시에따라preflightSkipBaseline;전체npm및기존하네스검증반복없음;위CLI는옛영수증차단관측용이며진단성공이나제품합격검사가아님
+evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19d26-097b-7e02-9981-0add2515568c/entry-failure-diag
+preflight_run: 20261103-154811-UG-ENTRY-FAILURE-DIAG-001-4eb12b54
+results:
+  diagnosis: REPORTED_NO_REPAIR;notTASK_VERIFIEDorProductApproval
+  execution: currentWorkingTreeIncludingDirtyAndUntrackedDependencies;HEADa144458;notHEADOnlyReproduction
+  primary: inputUnchanged;planHashd11d12c8;50bays36columns;generatorFEASIBLE;entryBlockedExitClear
+  first_sample: centre14200_6900mm;east0deg;body4600x1900mm;step500mm;outside0.665m2;objectOverlap0
+  boundary: x16150mm_at_y5400to8400;bodyFront16500;excess350x1900mm;previousCentre13700_6900clear
+  cause: offsetToCentreTransitionLeaves6100mmNextLeg;filletCap3050mm;allFirstArcAttemptsFail;fallbackKeepsFailingArc;turnStarts750mmPastStraightBodyContactLimit
+  attribution: representativePathFailsActualAllowedGeometry;checkerCorrectAtFirstSample;globalGeometricImpossibilityNotProven;notDisplayCoordinateCause
+  evidence_integrity: originalSourceBodiesUnchanged;privateExportsOnlyInMemory;productionRoutesAndRebuiltEntryDeepEqual;exactOutsideRectangleAreaAndPreviousSampleAssertions
+  historical_AB: savedFirstFailureOnly;noNewPositionsOrCandidateC;normalGenerateInternalExistingABBranchNotAltered
+  old_receipt: COMPARISON_BLOCKED_sharedCalculationOrVerifierSourceChangedRetained;noReceiptRefreshNoBypass
+  proposed_minimum: vehicle-routes.js_and_parking-turns.test.cjs;proposalOnly;repairNeedsSeparateDecision
+  verification: targetedReproductionOnly;noNpmOrFullHarnessRepeat;noWholeJourneyVerificationNoScreenControl
+  product_changes: 0
+  implementation_rounds: 0
