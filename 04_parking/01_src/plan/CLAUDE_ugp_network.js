@@ -90,6 +90,15 @@
     const R = boolOp((cellsO.length ? cellsO.concat(keepBack) : cellsU).concat(Rd), [], CL.ClipType.ctUnion);
     // 폭이 차로 하나(a)보다 좁은 부분은 지운다
     const Vt = offsP(V, 100), ringCL = offsP(offsP(R, -a / 2), a / 2).filter((Pg) => Math.abs(signedArea(Pg)) > 4 * a * a).map((Pg) => straighten(G, tidy(G, Pg), Vt)), segs = [];
+    // shortcut: one rectangular loop, one side only; broader shapes need a separate candidate grammar.
+    if (G.automaticWallSide && ringCL.length === 1) {
+      const P = ringCL[0], rb = bbox(P), side = G.automaticWallSide === 'left' ? 0 : 2;
+      const target = b[side] + (side === 0 ? 1 : -1) * (d + a / 2);
+      if (P.length === 4 && P.every(p => [rb[0], rb[2]].includes(p[0]) && [rb[1], rb[3]].includes(p[1])) &&
+          (side === 0 ? target < rb[0] - 1 : target > rb[2] + 1)) {
+        for (const p of P) if (p[0] === rb[side]) p[0] = target;
+      }
+    }
     ringCL.forEach((Pg, ri) => Pg.forEach((p, k) => { const q = Pg[(k + 1) % Pg.length]; segs.push({a: p, b: q, kind: 'ring', ri, h: isH(p, q) ? (p[1] + q[1]) / 2 : null, v: isV(p, q) ? (p[0] + q[0]) / 2 : null}); }));
     // 가지 차로: 순환이 들어가지 못한 좁은 날개(V에는 있고 순환 영역 밖)에 격자선 하나로 가운데 차로를 낸다(막다른 가지)
     // 격자선이 V 경계 위에 딱 놓이는 경우가 흔하다(위상을 벽에 맞추므로) — 50mm 넓힌 V로 구간을 찾아 1mm 흔들림에 결과가 바뀌지 않게

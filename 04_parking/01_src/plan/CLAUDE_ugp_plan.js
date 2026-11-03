@@ -54,9 +54,10 @@
   }
 
   // 위상 하나로 계획 전체. phase = 실내 면 상자(UCS 좌표) 기준 [x, y] mm
-  function build(input, phase, alternative = null, connected = null) {
+  function build(input, phase, alternative = null, connected = null, wallSide = null) {
     input={...input,mass:Boundary.outer(input.parkingMass||input.mass)};
     const G = Grid.frame(input), {cfg, a, d, W, L, inner, b} = G, warnings = [], violations = [];
+    G.automaticWallSide=wallSide;
     G.aisleSurfaceMode=input.aisleSurfaceMode||'legacy';
     if(!['legacy','network'].includes(G.aisleSurfaceMode)||G.aisleSurfaceMode==='network'&&!connected)throw new RangeError('차로 면 모드를 확인하세요; network는 명시 연결망 전용입니다');
     G.obstacleClearance=input.obstacleClearance||'box';
@@ -326,12 +327,50 @@
   }
   // 입력 위상(input.phase, 화면 문서에 저장한 것)이 있으면 그대로 쓴다 — 코어·램프를 고치는 동안 구조열이 움직이지 않는다
   const okPhase = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
-  function generate(input) {
+  function automaticCandidateFailures(base, plan, input) {
+    const failures = [], fixed = p => JSON.stringify([p.innerOutline,p.parkingInnerPaths,p.columns,p.cores,p.occupants,p.parkingReservations,
+      p.ramp && [p.ramp.body,p.ramp.landing,p.ramp.tangent,p.ramp.widthMm,p.ramp.lengthMm,p.ramp.start],p.planningBoundary.floorPaths]);
+    if (fixed(base) !== fixed(plan)) failures.push('fixed-geometry-changed');
+    const report = Ver.check(plan,input), rank = {FEASIBLE:0,CONDITIONAL:1,INFEASIBLE:2};
+    if (['clash','noFront','unreachable'].some(k => report.counts[k] > 0)) failures.push('stall-geometry-or-access');
+    if (!(plan.status in rank) || rank[plan.status] > rank[base.status] ||
+        plan.status === 'FEASIBLE' && (report.status !== 'FEASIBLE' || plan.violations.length)) failures.push('status');
+    const oldIds = new Set(base.violations.map(v => v.id));
+    if (plan.violations.some(v => !oldIds.has(v.id))) failures.push('new-violation');
+    if (base.graph.hasLoop && !plan.graph.hasLoop || plan.deadSideCount > base.deadSideCount ||
+        plan.graph.deadEnds.length > base.graph.deadEnds.length) failures.push('circulation');
+    if (plan.stallCount !== plan.stalls.length || plan.stallCount < base.stallCount) failures.push('capacity');
+    const route = VehicleRoutes.routes(plan), oldRoute = VehicleRoutes.routes(base);
+    if (['entry','exit'].some(k => route[k].state !== 'clear')) failures.push('displayed-route-not-clear');
+    if (plan.stallCount <= base.stallCount && ['entry','exit'].every(k => oldRoute[k].state === 'clear')) failures.push('no-improvement');
+    return failures;
+  }
+  // The optional observer exposes all evaluated plans without changing the product input or rejected baseline.
+  function generate(input, observeCandidate) {
     Zones.explicit(input);Allocation.rules(input,false);
     if (input.ramp && input.ramp.kind === 'curve' && !Array.isArray(input.ramp.body)) throw new RangeError('곡선 램프에 몸체가 없습니다(생성기 입력 오류: ' + (input.ramp.violations || []).map((v) => v.field || v.id).join(', ') + ')');
     const given = okPhase(input.phase), r = build(input, given ? input.phase : autoPhase(input));
     r.grid.phaseFrom = given ? 'input' : 'auto';
-    return r;
+    const events = [{id:'baseline',plan:r}], G = Grid.frame({...input,mass:Boundary.outer(input.parkingMass||input.mass)});
+    const rectangle = G.inner.length === 4 && G.inner.every(p => [G.b[0],G.b[2]].includes(p[0]) && [G.b[1],G.b[3]].includes(p[1]));
+    const eligible = given && G.columnAxes && rectangle && r.circulation.rings.length === 1 &&
+      input.ramp?.body && input.ramp.kind !== 'curve' && !(input.cores||[]).length && !(input.occupants||[]).length &&
+      !(input.massHoles||[]).length && !(input.nonParkingZones||[]).length &&
+      (input.aisleSurfaceMode||'legacy') === 'legacy' && (input.obstacleClearance||'box') === 'box' &&
+      (input.trafficMode||'loop') === 'loop' && (input.stallStripProjection||'occupied-bands') === 'occupied-bands' &&
+      (input.stallRowSelection||'sequential') === 'sequential' && (input.stallRowAlignment||'independent') === 'independent' &&
+      (input.occupantPolicy||'report') === 'report';
+    let selected = r, selectedId = 'baseline';
+    if (eligible) for (const [id,side] of [['A','left'],['B','right']]) {
+      try {
+        const plan = build(input,r.grid.phase,null,null,side); plan.grid.phaseFrom = r.grid.phaseFrom;
+        const failures = automaticCandidateFailures(r,plan,input); events.push({id,side,plan,failures});
+        if (!failures.length && (selected === r || plan.stallCount > selected.stallCount)) { selected = plan; selectedId = id; }
+      } catch (e) { events.push({id,side,error:{name:e.name,message:e.message}}); }
+    }
+    if (selected !== r) selected.automaticCandidateComparison = {proposedCandidates:2,evaluations:3,baselineIncluded:true,selected:selectedId};
+    if (typeof observeCandidate === 'function') for (const event of events) observeCandidate(event);
+    return selected;
   }
   // Explicit candidate experiment: preserve fixed structure and straight ramp; S7 still decides every result.
   function suppliedNetwork(G, input, routes, violations) {

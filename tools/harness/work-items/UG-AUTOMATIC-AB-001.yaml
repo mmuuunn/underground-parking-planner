@@ -1,0 +1,56 @@
+id: UG-AUTOMATIC-AB-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-no-other-model-authorized
+verify_profile: vehicle-circulation
+question: 고정 비교조건 v1의 실제 generate에서 좌측 A와 우측 B 단독 이동 후보가 기존50칸과 진입 문제를 개선하는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_network.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/automatic-ab.test.cjs
+  - tools/harness/work-items/UG-AUTOMATIC-AB-001.yaml
+acceptance:
+  - 비교조건v1과 기준50칸36기둥 및 기존 진입실패 재현; 입력 구조 램프 위상 정책 공유검사 골든 보존
+  - A는좌측 B는우측 단독 외벽방향 이동; 각기 기존안에서 재생성; A+B 및 제3후보 및 위치탐색 금지
+  - generate 내부 기존안1과 후보최대2 평가; 실제 차로 램프연결 주차열 생성과 기존 검사 재사용
+  - 입력과 고정형상 동일 및 안전 접근 순환 악화없음과 진입진출clear 선행; 이후1칸증가 또는50칸유지와진입문제해결만 개선
+  - 둘다효과없으면 기존안유지 및 이번A/B방식개선효과없음으로종료; 10m가설전체기각과구별
+  - 같은축척도면 대수 연속열 충돌 전면 미도달 순환 진입진출 변경칸 d값 DA후보 기타잔여 보고
+  - 실제제품화면과재열기는 사용자화면제어준비응답후확인; 전에는 CLI검증과화면미확인명시
+not_doing:
+  - generateConnected E2 과거75칸 성과혼입; 구조추가생략 위상최적화 continuous전환 검사완화 DA벽확정
+  - A+B결합 제3후보 추가위치탐색 세번째수정 다른모델 서브에이전트 병렬작업 push
+  - 별도가설실험3차수정 또는08-8독립검토패키지변경 또는전체왕복주행승인대행
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 400
+start_gate:
+  stage_contribution: ○ 고정구조에서 차로와 차량진입의 개선가능성측정
+  reference_change: △ 후보도면과대수는달라질수있으나 기존안보존 및사용자확인필수
+  excluded_scope: ○ 정밀조향 법규 구조설계변경없음
+completion_contract: |
+  {"kind":"experiment","goal":"실제 제품 generate의 독립 A/B 차로 후보 두 개를 고정조건으로 비교하고 효과없음도 결과로 종료한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"04_parking/01_src/plan/CLAUDE_ugp_plan.js","depends_on":["tools/harness/work-items/UG-COMPARISON-CONDITIONS-001.yaml"],"checks":[{"id":"automatic-ab-controls","script":"04_parking/02_tests/automatic-ab.test.cjs","args":["--check"]},{"id":"frozen-basis-guards","script":"tools/parking-comparison-basis.test.cjs","args":["--check"]}],"review_required":true,"user_required":true}
+
+scope_note: 제품코드안의제한후보비교실험; 무효과도정상실험결과이나제품개선진척으로집계하지않음; 이전가설실험의추가수정아님
+completion_run: 20261103-143126-UG-AUTOMATIC-AB-001-a3c91cf2
+results:
+  implementation_rounds: 1
+  actual_path: UGPlan.generate;baseline1plusAleft1plusBright1;noCombinedNoThirdNoPositionSearch
+  primary: baseline50columns36;A62columns36;B50columns36;allGeneratorFEASIBLE
+  entry_exit: allEntryBlocked_VEHICLE_OUTSIDE_LANE;allExitClear;noWholeJourneyApproval
+  selection: bothRejectedByUnchangedClearRouteCriterion;returnedBaselineByteEquivalentJSON;noCandidateApplied
+  geometry: allKeptBayClashNoFrontUnreachable0;physicalLaneStaticOverlap0;SATBayStaticAndBayBayClear;loopPreservedDeadEnds0
+  continuity: baselineLongest3runs23;ALongest3runs27;BLongest3runs23
+  changed_bays: Aadded22removed10net12;Badded10removed10net0
+  DA: existingAutoProposalsOnly;newWallNotDesigned;functionNotVerified
+  regression: exactHallError;regular50core46notch22slope42landing0andStatusesPreserved
+  tests: scoped14IncludingProductParity;frozenBasis20;npm133of133;harness110of110;task2of2;REVIEW_PENDING
+  change_scope: fourFiles;productionAdd51Remove3;implementationRound1;preExisting226FilesOnlyTwoAllowedChanged;remaining224ByteIdentical
+  interpretation: NO_IMPROVEMENT_FOR_A_B_underFrozenAcceptance;AHasGeometricGainButFailedEntry;notRejectionOfWhole10mHypothesis
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19d26-097b-7e02-9981-0add2515568c/automatic-ab/report.html
+  product_screen: VERIFIED_AFTER_DIRECT_READINESS;isolatedStorage;actualAutomaticBaselineAandB;inputAndAllThreePlanHashesMatchBackend;saveReloadIdentical;pageErrors0
+  independent_review: PENDING;08-8reviewNotReused;noOtherModelCalled
+  user_review: PENDING;stageACTIVE;noProductProgressClaim
