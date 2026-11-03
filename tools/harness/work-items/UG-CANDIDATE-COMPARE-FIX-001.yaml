@@ -1,0 +1,51 @@
+id: UG-CANDIDATE-COMPARE-FIX-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-08-8-independent-review-by-coordinator
+verify_profile: vehicle-circulation
+question: 기존 정상 비교와 검사 기준을 보존하면서 경로 재사용·중복 도형·차로 면적·음수 감사값을 거부 또는 바로잡는가?
+allowed_files:
+  - 04_parking/01_src/plan/candidate-comparison.js
+  - 04_parking/02_tests/candidate-comparison.test.cjs
+  - tools/parking-comparison-basis.cjs
+  - tools/harness/work-items/UG-CANDIDATE-COMPARE-FIX-001.yaml
+acceptance:
+  - 칸 index와 주차 완료 기준점의 위치 관계를 확인하고 다른 칸 경로 재사용을 전체 확인으로 집계하지 않음
+  - 시작 꼭짓점·진행 방향이 다른 동일 칸 도형을 입력 거부하며 index를 재배열하지 않음
+  - 차로 합집합 면적 계산에서 겹침·분리 역방향·구멍 표현을 보존
+  - 두 감사 면적의 음수를 거부하고 0 및 기존 양의 허용 범위를 보존
+  - 실제 E2 50/50 D3 45/45 F45 12/24 FM 34/36 및 미검증 수 보존
+  - 기존 생성기·검사·기준v1·영수증·작업표·검토 사본과 무관 변경 보존
+  - 비교 호출 경계의 입력 오류를 명확한 failures로 반환하고 기존 보호 시험 20개 통과
+not_doing:
+  - 차량 외곽 충돌 재검사·영수증 생산 형식·소스 지문 기준 완화
+  - 다른 채팅 발신·추가 모델·서브에이전트·병렬 작업·화면 제어·승인 대행·커밋·push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"support",
+    "goal":"후보 비교 도구의 네 결함을 최소 수정하고 정상 비교와 기존 검사 기준을 보존한다",
+    "stage_goal":"통과, 실패, 미검증을 구분한다",
+    "target":"04_parking/01_src/plan/candidate-comparison.js",
+    "depends_on":[],
+    "checks":[{"id":"comparison-fix-counterexamples","script":"04_parking/02_tests/candidate-comparison.test.cjs","args":[]},{"id":"comparison-caller-guards","script":"tools/parking-comparison-basis.test.cjs","args":["--check"]}],
+    "review_required":true,
+    "user_required":true
+  }
+completion_run: 20261103-150325-UG-CANDIDATE-COMPARE-FIX-001-2594f3ff
+results:
+  implementation_rounds: 2
+  scope_change: 지휘자의 추가 범위 결정에 따라 2차수에 비교 호출부를 포함하고 새 preflight 통과
+  prior_run: 20261103-145708-UG-CANDIDATE-COMPARE-FIX-001-0ad8482b
+  tests: 최종npm138개 통과;비교15개 통과;기존 호출부 보호20개 통과;하네스 공통110개 및 작업검사2개 통과
+  actual_comparison: E2 50/50;D3 45/45;F45 12/24 미검증12;FM 34/36 미검증2;수정 전 JSON과 완전히 동일
+  counterexamples: 복사경로49건 거부;중복칸400건 거부;겹침90m2 및 분리120m2 각400건;음수감사8건 거부
+  caller: 중복 및 예상 밖 fromPlan 또는 compare 입력 오류를 failures로 기록하고 CANDIDATE_REJECTED 반환;정상6사례 출력 동일
+  fingerprint_limit: 기준v1 COMPARISON_BLOCKED 유지;A/B 기존 화면영수증 소스지문 검사 불일치 유지;기존 영수증 갱신 없음
+  remaining_gates: 독립검토 및 사용자 승인 PENDING;지휘자가 새 고정 사본과 재검토 전달 담당
+  external_evidence: C:/Users/seok2/.codex/reviews/candidate-comparison-fix-20261103_1

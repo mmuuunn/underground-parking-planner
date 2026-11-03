@@ -88,16 +88,18 @@ function compare(before,after,basis=read()){
   if(!t||!Number.isInteger(t.proposedCandidates)||t.proposedCandidates<0||t.proposedCandidates>basis.candidateBudget.maximumProposedCandidates||
    !Number.isInteger(t.evaluations)||t.evaluations!==1+t.proposedCandidates||!t.baselineIncluded)failures.push('candidate-evaluation-budget-unverified');
  }
- const geometry=C.compare([C.fromPlan('baseline',before.input,before.plan),C.fromPlan('candidate',after.input,after.plan)]);
- if(!geometry.rows[1].comparison.fixedInputMatches)failures.push('existing-comparison-fixed-input-mismatch');
+ let geometry;try{
+  geometry=C.compare([C.fromPlan('baseline',before.input,before.plan),C.fromPlan('candidate',after.input,after.plan)]);
+ }catch(e){failures.push('comparison-input-error: '+e.message);}
+ if(geometry&&!geometry.rows[1].comparison.fixedInputMatches)failures.push('existing-comparison-fixed-input-mismatch');
  const capacityDelta=after.plan.stallCount-before.plan.stallCount;
  const routeResolved=routes&&['entry','exit'].some(k=>before.routes[k]!=='clear')&&['entry','exit'].every(k=>routes[k]==='clear');
  const improved=failures.length===0&&(capacityDelta>=basis.criteria.requiredCapacityGain||routeResolved);
- return {sameConditions:true,decision:improved?'CANDIDATE_FOR_REVIEW':capacityDelta===0&&after.planHash===before.planHash?'NO_IMPROVEMENT':'CANDIDATE_REJECTED',
+ return {sameConditions:true,decision:improved?'CANDIDATE_FOR_REVIEW':geometry&&capacityDelta===0&&after.planHash===before.planHash?'NO_IMPROVEMENT':'CANDIDATE_REJECTED',
   blocked,failures,capacityDelta,routeResolved,independentCounts:report?.counts,routes,
   continuity:{before:L.continuity(before.plan),after:L.continuity(after.plan)},
   wholeJourney:'NOT_EVALUATED',DAIsProposalOnly:true,productApproval:false,
-  geometryEvidence:{fixedInputMatches:geometry.rows[1].comparison.fixedInputMatches,layoutDeltaStalls:geometry.rows[1].comparison.layoutDeltaStalls}};
+  geometryEvidence:geometry?{fixedInputMatches:geometry.rows[1].comparison.fixedInputMatches,layoutDeltaStalls:geometry.rows[1].comparison.layoutDeltaStalls}:null};
 }
 function run(basis=read()){
  const receipts=basis.cases.map(spec=>{const a=observe(spec,basis);assertBaseline(a,spec,basis);const b=observe(spec,basis);
