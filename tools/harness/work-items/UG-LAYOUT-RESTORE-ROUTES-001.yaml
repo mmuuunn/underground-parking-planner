@@ -1,0 +1,34 @@
+id: UG-LAYOUT-RESTORE-ROUTES-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 박스형 기본 재생을 제거하고 기존 빨간·파란 자동차와 전체 진입·진출 경로 표시를 복원하는가?
+allowed_files:
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/restored-routes.cjs
+  - tools/harness/work-items/UG-LAYOUT-RESTORE-ROUTES-001.yaml
+acceptance:
+  - 기본 박스형 직선 교행 재생 제거·기존 빨간 파란 자동차 도형과 진입 진출 전체 도면 경로 및 애니메이션 복원
+  - 도면 경로 재생과 실제 차량 검사 상태 구분·기존 검사 결과와 주차 배치 및 저장 자료 보존
+  - 주차칸 선택 기본 해제와 별도 입출차 보기 유지·일반 새 작업 및 코어·기둥 편집 보존
+  - 실제 화면에서 두 자동차 색과 도형·전체 경로 길이·시간에 따른 이동·줄인 모션 확인
+not_doing:
+  - 차량 판정 엔진 변경·기존 시험 완화·기존 작업 증거 승인 완료 기록 변경·Git 롤백·커밋·push·다른 모델 호출
+max_changed_files: 5
+max_new_production_lines: 80
+completion_contract: |
+  {"kind":"experiment","goal":"기존 빨간 파란 자동차와 전체 진출입 도면 동선 재생을 기본 표시로 복원한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"restored-routes","script":"04_parking/02_tests/restored-routes.cjs","args":[]},{"id":"manoeuvres","script":"04_parking/02_tests/vehicle-manoeuvres.cjs","args":[]},{"id":"full-workflow","script":"04_parking/02_tests/full-workflow.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-RESTORE-ROUTES-20261031/comparison.json
+remaining:
+  - 사용자 복원 화면 확인과 독립 검토
+results:
+  display: 기본 박스 재생 제거·기존 파란 진입 빨간 진출 자동차와 전체 경로·방향 화살표 복원
+  replay: 전체 경로 재생·실제 시간 이동·켜기 끄기·줄인 모션 확인
+  preservation: 66칸·입력 저장·미검증 판정·일반 새 도면·기존 편집 기능 보존
+  verification: 공통109통과·복원 화면 및 기존 차량 검사·전체 입력 저장 시험 통과
+  evidence: C:/Users/seok2/.codex/research/SGHS-RESTORE-ROUTES-20261031/completion.json

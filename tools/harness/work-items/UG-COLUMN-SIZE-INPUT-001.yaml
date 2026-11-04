@@ -1,0 +1,36 @@
+id: UG-COLUMN-SIZE-INPUT-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: harness-required-independent-review-pending
+verify_profile: vehicle-circulation
+question: 기존 체험안을 보존하고 별도 작업에서 기둥 한 변을 바꿔 500mm66칸과600mm62칸을 확인할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/planning-controls.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/column-size-input.test.cjs
+  - tools/harness/work-items/UG-COLUMN-SIZE-INPUT-001.yaml
+acceptance:
+  - 기존 scalar columnMm와 referenceColumnMm 전달 및 저장 경로 재사용; 계산기 변경 없음
+  - 양의 정수mm 검증과 구조축 간격 검증 후에만 적용; 실패시문서불변
+  - 치수만 변경하면 고정축과 현재 주차 위상을 보존
+  - 독립 작업에서600mm62칸500mm66칸600mm62칸 및 저장재읽기실행취소 재현
+  - 기존 체험 진입파일과 저장키 보존; 별도 작업 링크 제공
+  - PIT와DA는 현행 코드와 결과만 조사하고 계산이나 분류 기준은 변경하지 않음
+not_doing:
+  - 직사각형기둥확장,구조안전승인,PITDA수리,경로수리,골든갱신,화면대리조작,다른모델호출
+max_changed_files: 4
+max_new_production_lines: 80
+completion_contract: |
+  {"kind":"experiment","goal":"기존 정사각형 기둥 치수의 사용자 입력과 별도 관찰 체험을 연결하고 PIT와DA 분류 한계를 설명한다","stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"column-size-input","script":"04_parking/02_tests/column-size-input.test.cjs","args":[]}],"review_required":false,"user_required":true}
+completion_run: 20261103-173043-UG-COLUMN-SIZE-INPUT-001-1631911d
+results:
+  ui: 정사각형기둥한변mm입력;구조적용과입력되돌리기;기존계산저장실행취소재사용
+  behavior: 동일고정축36개와위상에서600mm62칸500mm66칸600mm62칸;상단2칸유지
+  checks: npm139of139;newNodeVMUI3of3;harnessCommon111of111;workCheck1of1;HTTP200
+  preservation: 기존start.html_trial-input.json_prepared.json3파일해시동일;기존브라우저저장키접근없음;새비교저장키사용
+  gate: 하네스가01_src변경전체에독립검토를자동요구하여REVIEW_PENDING;사용자화면확인대기;다른모델호출없음
+  limits: 실제브라우저조작시험없음;정사각형만지원;구조적합성미검증;100mm진출이탈유지
+  zones: 분류계산보존;600mmDA371.365216m2_PIT469.0268m2;자동분류해제시62칸과차로동일
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/03/01a1a055-83fd-7271-bbb4-435631da95c2/generator-trial

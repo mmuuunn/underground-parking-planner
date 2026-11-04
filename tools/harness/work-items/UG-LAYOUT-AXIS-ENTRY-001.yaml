@@ -1,0 +1,47 @@
+id: UG-LAYOUT-AXIS-ENTRY-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review
+verify_profile: vehicle-circulation
+question: 기존 기둥열 드래그·간격 편집을 쉽게 찾고 차로 편집과 충돌 없이 사용할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/axis-workflow.cjs
+  - tools/harness/work-items/UG-LAYOUT-AXIS-ENTRY-001.yaml
+acceptance:
+  - 기존 X·Y축 드래그 이동을 먼저 재현하고 초기값·이동값 기록
+  - 입력 메뉴에 기둥열 이동을 명시하고 기존 드래그·치수 입력을 재사용
+  - 기둥열 편집과 차로 편집은 동시에 켜지지 않으며 미적용 차로 변경 보호
+  - X·Y축 이동·단일 간격 변경·잘못된 이동·취소·실행 취소·재열기 확인
+  - 코어·램프·외곽·다른 축 보존과 기존 전체 작업 흐름 회귀 검사
+  - 표시한 실행 이미지와 간단한 사용법을 현황판에 전달
+not_doing:
+  - 구조 계산·골든·기존 시험이나 완료 기록 변경·다른 모델·서브에이전트·커밋·push
+max_changed_files: 5
+max_new_production_lines: 80
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"기둥열 이동 진입을 명확히 하고 차로 편집과의 모드 충돌을 제거한다",
+    "stage_goal":"기준 매스별 주차대수와 램프 위치가 재현된다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"axis-workflow","script":"04_parking/02_tests/axis-workflow.cjs","args":[]},{"id":"full-workflow","script":"04_parking/02_tests/full-workflow.cjs","args":[]}],
+    "review_required":true,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-AXIS-CONTROLS-20261031/comparison.json
+remaining:
+  - 독립 검토와 사용자 화면 확인·다른 모델 호출 금지 유지
+results:
+  outcome: 기둥열 이동 명시·기둥열과 차로 편집의 동시 활성화 방지·화면 조작 검사 통과
+  actual: X4 29000→29400mm; Y2 13800→14200mm; 다른 축·코어·램프·외곽 보존
+  checks: 드래그 미리보기·간격 입력·취소·잘못된 이동 차단·실행취소·재열기·전체 작업 흐름·공통109/109
+  compatibility: 기존 구조 편집 시험은 외부 복사본의 초기 도면에 기존 layoutMode 메타데이터만 명시해 재현·원본 시험 보존
+  evidence: C:/Users/seok2/.codex/research/SGHS-AXIS-CONTROLS-20261031/completion.json

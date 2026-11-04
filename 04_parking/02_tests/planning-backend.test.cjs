@@ -211,12 +211,14 @@ test('core island is retained, column-only island is identified',()=>{
   assert.equal(E._emptyIslands(plain,[]).length,1);
   assert.equal(E._emptyIslands({...plain,cores:[{pts:R(6500,6500,9000,9000)}]},[]).length,0);
 });
-test('DA and PIT split a deep wall strip and preserve access space',()=>{
+test('automatic wall residuals keep candidate geometry without claiming designated DA/PIT area',()=>{
   const walk=R(1000,7000,1500,1500),out={innerOutline:R(0,0,40000,30000),cores:[{plan:{walk}}]},free=[R(0,0,5000,30000)];
   const r=Z.calculate(out,{},free);assert(r.zones.some(x=>x.kind==='da'));assert(r.zones.some(x=>x.kind==='pit'));
   assert(inter(r.zones.flatMap(z=>z.paths),[walk])<1e4);
   assert(Math.abs(area(r.parkingSurface)+r.areas.nonParkingM2*1e6-1200e6)<1e4);
-  assert(r.areas.unassignedFreeM2<r.areas.nonParkingM2);
+  // S1: automatic candidate geometry belongs to the unassigned residual, not designated occupancy.
+  assert.equal(r.areas.nonParkingM2,0);assert.equal(r.areas.daM2,0);assert.equal(r.areas.pitM2,0);
+  assert(Math.abs(r.areas.unassignedFreeM2-147.75)<.01);
 });
 test('explicit PIT is a placement blocker, and conflicting zones are reported',()=>{
   const before=E.generate(base),s=before.stalls[0],nonParkingZones=[{id:'pit',kind:'pit',paths:[s.pts]}];
@@ -284,12 +286,65 @@ test('reclassifying a computed free zone preserves the allocated stalls and resp
   const input={...coreInput,phase:before.grid.phase,zoneAssignments:[{id:z.id,kind:'pit',paths:z.paths}]},after=E.generate(input);
   assert.deepEqual(after.stalls,before.stalls);assert.equal(after.nonParkingZones.find(x=>x.id===z.id).kind,'pit');assert.equal(after.unmatchedZoneAssignments.length,0);
   const kept=E.generate({...input,zoneAssignments:[{id:z.id,kind:'keep',paths:z.paths}]});
-  assert.deepEqual(kept.stalls,before.stalls);assert(kept.keptZones.some(x=>x.id===z.id));assert(kept.areas.keptFreeM2>0);assert(kept.areas.nonParkingM2<before.areas.nonParkingM2);
-  assert(Math.abs(kept.areas.unassignedFreeM2-before.areas.unassignedFreeM2)<.02);
+  assert.deepEqual(kept.stalls,before.stalls);assert(kept.keptZones.some(x=>x.id===z.id));assert(kept.areas.keptFreeM2>0);assert.equal(kept.areas.nonParkingM2,before.areas.nonParkingM2);
+  assert(Math.abs(kept.areas.unassignedFreeM2+kept.areas.keptFreeM2-before.areas.unassignedFreeM2-before.areas.keptFreeM2)<.02);
   const moved=z.paths.map(P=>P.map(p=>[p[0]+5000,p[1]])),stale=E.generate({...input,zoneAssignments:[{id:z.id,kind:'pit',paths:moved}]});
   assert(stale.unmatchedZoneAssignments.includes(z.id));assert.equal(stale.nonParkingZones.find(x=>x.id===z.id).kind,'da');
 });
 
+test('S1 set ledger counts designation, occupancy and keep once without consuming automatic residuals',()=>{
+  const domain=R(0,0,40000,25000),free=[R(0,15000,20000,10000)],out={innerOutline:domain,cores:[],occupants:[{id:'unknown-room',kind:'unknown',pts:R(20000,0,8000,10000)}]};
+  const input={nonParkingZones:[{id:'da',kind:'da',paths:[R(0,0,4000,10000)]},{id:'pit',kind:'pit',paths:[R(10000,0,6000,10000)]},{id:'keep',kind:'keep',paths:[R(0,15000,3000,10000)]}]},saved=JSON.stringify(input),r=Z.calculate(out,input,free);
+  for(const [key,value]of Object.entries({innerM2:1000,parkingSurfaceM2:820,nonParkingM2:180,daM2:40,pitM2:60,otherOccupiedM2:80,keptFreeM2:30,unassignedFreeM2:170}))assert(Math.abs(r.areas[key]-value)<.01,key);
+  assert.equal(r.areas.accountingBasis,'user-designated-and-physical/v1');assert.equal(JSON.stringify(input),saved);
+  assert(Math.abs(area(r.parkingSurface)/1e6-r.areas.parkingSurfaceM2)<.01);assert(Math.abs(area(r.remaining)/1e6-170)<.01);
+  assert(inter(r.remaining,[R(0,15000,3000,10000)])<1);assert(inter(r.parkingSurface,out.occupants.map(o=>o.pts))<1);
+});
+test('S1 independent union/difference ledger preserves holes, clipping and overlap priorities',()=>{
+  const outer=R(0,0,40000,25000),hole=R(22000,18000,4000,5000).reverse(),domain=[outer,hole],walk=R(0,15000,2000,5000),occupied=[R(2000,0,7000,10000)],keep=[R(0,0,10000,25000)];
+  const input={autoZones:false,nonParkingZones:[{id:'da',kind:'da',paths:[R(-1000,0,5000,10000)]},{id:'pit',kind:'pit',paths:[R(4000,0,3000,10000)]},{id:'keep',kind:'keep',paths:keep}]};
+  const out={innerOutline:outer,parkingInnerPaths:domain,cores:[{plan:{walk}}],occupants:occupied.map(pts=>({pts}))},saved=JSON.stringify(input),r=Z.calculate(out,input,domain),T=G.CL.ClipType;
+  const designated=G.boolOp(input.nonParkingZones.filter(z=>z.kind!=='keep').flatMap(z=>z.paths),domain,T.ctIntersection),o=G.boolOp(occupied,domain,T.ctIntersection),n=G.boolOp(designated.concat(o),[],T.ctUnion),w=G.boolOp(domain,n.concat([walk]),T.ctDifference),k=G.boolOp(keep,w,T.ctIntersection),u=G.boolOp(w,k,T.ctDifference);
+  assert(Math.abs(r.areas.innerM2-r.areas.parkingSurfaceM2-r.areas.nonParkingM2)<.01);assert(Math.abs(area(w)/1e6-r.areas.keptFreeM2-r.areas.unassignedFreeM2)<.01);
+  assert(Math.abs(r.areas.nonParkingM2-area(n)/1e6)<.01);assert(Math.abs(r.areas.otherOccupiedM2-area(G.boolOp(o,designated,T.ctDifference))/1e6)<.01);
+  assert(area(G.boolOp(r.remaining,u,T.ctXor))<1);assert(inter(r.parkingSurface,[hole.slice().reverse()])<1);assert.equal(JSON.stringify(input),saved);
+  const tinyOverlap=Z.calculate({innerOutline:outer,cores:[]},{autoZones:false,nonParkingZones:[{kind:'da',paths:[R(0,0,2000,2000)]},{kind:'da',paths:[R(1999,0,2000,2000)]}]},[outer]);assert(Math.abs(tinyOverlap.areas.daM2-7.998)<.000001);
+});
+test('S1 explicit zones, matched assignments and keep survive OFF/ON, JSON reopen and stale IDs',()=>{
+  const out={innerOutline:R(0,0,40000,30000),cores:[]},free=[R(0,0,5000,30000)],manual=[{id:'explicit-pit',kind:'pit',paths:[R(35000,0,2000,2000)]}],seed=Z.calculate(out,{nonParkingZones:manual},free),da=seed.zones.find(z=>z.source==='auto'&&z.kind==='da'),pit=seed.zones.find(z=>z.source==='auto'&&z.kind==='pit');assert(da&&pit);
+  const input={nonParkingZones:manual,zoneAssignments:[{id:da.id,kind:'da',paths:da.paths},{id:pit.id,kind:'keep',paths:pit.paths}]},stored=JSON.stringify(input),on=Z.calculate(out,input,free);
+  for(const autoZones of [false,true]){const reopened=JSON.parse(stored),r=Z.calculate(out,{...reopened,autoZones},free);assert.equal(JSON.stringify(reopened),stored);assert(r.zones.some(z=>z.id==='explicit-pit'&&z.source==='input'));assert(r.zones.some(z=>z.id===da.id&&z.assigned));assert(r.keptZones.some(z=>z.id===pit.id));assert.deepEqual(r.unmatchedAssignments,[]);assert.deepEqual(r.areas,on.areas);}
+  const shifted=da.paths.map(P=>P.map(([x,y])=>[x+5000,y])),staleInput={...input,autoZones:false,zoneAssignments:[{id:da.id,kind:'da',paths:shifted}]},saved=JSON.stringify(staleInput),stale=Z.calculate(out,staleInput,free);assert(stale.unmatchedAssignments.includes(da.id));assert.equal(stale.areas.daM2,0);assert(!stale.zones.some(z=>z.source==='auto'));assert.equal(JSON.stringify(staleInput),saved);
+  const off=Z.calculate(out,{autoZones:false},free);assert.equal(off.zones.length,0);assert.equal(off.areas.nonParkingM2,0);
+});
+test('S1 standard 600/500 scenes retain their stalls and count automatic area only as residual',()=>{
+  for(const [columnMm,stalls,unassigned]of [[600,62,863.96],[500,66,817.92]]){
+    const input={mass:R(0,0,49400,50000),ucs:0,cores:[],occupants:[],occupantPolicy:'report',allowExternalRamp:true,phase:[3600,7600],grid:{columnMm,columnAxes:{x:[4000,12100,20200,28300,36400,44500],y:[4000,12000,20000,28000,36000,44000]}},ramp:E.createStraightRamp({landing:[400,8400],angleDeg:0,widthMm:6000,lengthMm:24000}),floorMm:3800};
+    const r=E.generate(input),off=E.generate({...input,autoZones:false});assert.equal(r.stallCount,stalls);assert.equal(r.columns.length,36);assert.deepEqual(r.stalls,off.stalls);
+    for(const key of ['daM2','pitM2','nonParkingM2','otherOccupiedM2','keptFreeM2'])assert.equal(r.areas[key],0,key);
+    assert(Math.abs(r.areas.innerM2-2391.12)<.01);assert(Math.abs(r.areas.parkingSurfaceM2-2391.12)<.01);assert(Math.abs(r.areas.unassignedFreeM2-unassigned)<.01);assert.deepEqual(r.areas,off.areas);
+  }
+});
+test('S1 unknown occupied rooms keep physical boundaries and cannot be restored by keep',()=>{
+  const occupant={id:'unknown-room',c:[20000,25000],w:4000,d:6000,kind:'unknown'},input={...base,phase:[2000,2000],occupants:[occupant],nonParkingZones:[{id:'overlapping-keep',kind:'keep',paths:[R(18000,22000,4000,6000)]}]},saved=JSON.stringify(input),r=E.generate(input),renamed=E.generate({...input,occupants:[{...occupant,kind:'equipment'}]});
+  assert.equal(JSON.stringify(input),saved);assert.deepEqual(r.stalls,renamed.stalls);assert.deepEqual(r.occupants.map(o=>o.pts),renamed.occupants.map(o=>o.pts));assert.equal(r.areas.otherOccupiedM2,24);assert.equal(r.areas.nonParkingM2,24);assert.equal(r.areas.daM2,0);assert.equal(r.areas.pitM2,0);assert.equal(r.areas.keptFreeM2,0);assert(inter(r.parkingSurface,r.occupants.map(o=>o.pts))<1);
+});
+test('S1 invalid explicit zones remain rejected and the depth experiment keeps a separate legacy ledger',()=>{
+  for(const zones of [[{kind:'unknown',paths:[R(0,0,2000,2000)]}],[{id:'same',kind:'da',paths:[R(0,0,2000,2000)]},{id:'same',kind:'keep',paths:[R(4000,0,2000,2000)]}],[{kind:'da',paths:[[[0,0],[2000,2000],[0,2000],[2000,0]]]}],[{kind:'da',paths:[R(0,0,4000,4000)]},{kind:'pit',paths:[R(1000,1000,4000,4000)]}]])assert.throws(()=>Z.explicit({nonParkingZones:zones}),RangeError);
+  const H=require('../01_src/plan/aisle-depth-hypothesis.js'),plan=E.generate({...base,phase:[2000,2000]}),legacy=H.apply(plan,{...base,phase:[2000,2000]});assert.equal(legacy.areas.accountingBasis,'legacy-depth-hypothesis/v1');assert.deepEqual(legacy.stalls,plan.stalls);assert(legacy.nonParkingZones.filter(z=>z.hypothesis).every(z=>z.source==='auto'&&!z.assigned));
+  assert.equal(plan.areas.accountingBasis,'user-designated-and-physical/v1');
+});
+test('S1 actual drawing/summary handlers show neutral automatic provenance and unverified designations',()=>{
+  const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),source=fs.readFileSync(path.join(__dirname,'../01_src/planning-controls.js'),'utf8'),nodes=new Map(),drawn=[];
+  const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',checked:false,disabled:false,hidden:false,innerHTML:'',textContent:'',after(){},scrollIntoView(){},classList:{toggle(){},remove(){}}});return nodes.get(id);};
+  const c={UGP:{geom:G},G,doc:{ucs:0,nonParkingZones:[]},ui:{drag:null,res:null},options:node('options'),document:{createElement:()=>node('section'),addEventListener(){}},svg:{classList:{toggle(){},remove(){}},addEventListener(){}},$:node,commit(){},selectedZone:null,anchors:new WeakMap(),renderAll(){},flash(){},escapeText:x=>x,fmt:x=>String(x),NSS:'non-scaling-stroke',scale:()=>.01,toD:p=>[p[0],-p[1]],rot:G.rot,add:G.add,mul:G.mul,sub:G.sub,el:(tag,attrs,parent)=>{const n={tag,attrs,textContent:'',parent};drawn.push(n);return n;},pathsD:()=>''};
+  vm.createContext(c);vm.runInContext(source.slice(source.indexOf('  const areaSection='),source.indexOf('  function highlightRamp'))+"\nglobalThis.api={drawZones,drawZoneLabels,chooseZone};\nglobalThis.summary=(r)=>{"+source.slice(source.indexOf("    $('autoZonesToggle').checked"),source.indexOf('    const tr=routes(r);'))+'};',c);
+  const automatic={id:'auto-da-0',kind:'da',source:'auto',areaM2:600,paths:[R(0,0,30000,20000)]},r={nonParkingZones:[automatic],keptZones:[],areas:{floorEnvelopeM2:1000,innerM2:1000,parkingSurfaceM2:1000,nonParkingM2:0,daM2:0,pitM2:0,otherOccupiedM2:0,keptFreeM2:0,unassignedFreeM2:600,accountingBasis:'user-designated-and-physical/v1'}};
+  c.api.drawZones({},r);assert(!drawn.find(n=>n.tag==='path').attrs.fill.includes('daHatch'));assert.match(drawn.find(n=>n.tag==='title').textContent,/잔여공간.*자동 추정.*용도 미확인/);c.api.drawZoneLabels({},r);assert(drawn.some(n=>n.tag==='text'));assert(drawn.filter(n=>n.tag==='text').every(n=>!n.textContent.includes('DA')));
+  c.api.chooseZone(automatic);c.summary(r);assert.match(node('zoneInfo').textContent,/용도 미확인/);assert.match(node('planningAreaSummary').innerHTML,/성능 미검증/);assert.match(node('planningAreaSummary').innerHTML,/포함/);assert.match(node('section').innerHTML,/자동 잔여공간 표시/);
+  const assigned={...automatic,assigned:true};c.api.chooseZone(assigned);c.summary({...r,nonParkingZones:[assigned]});assert.match(node('zoneInfo').textContent,/직접 분류.*성능 미검증/);
+  c.summary({...r,areas:{...r.areas,accountingBasis:'legacy-depth-hypothesis/v1'}});assert.match(node('planningAreaSummary').innerHTML,/구 실험/);
+});
 test('attached external straight ramp keeps its floor envelope and reachable parking after moving upward',()=>{
   const mass=[[0,18000],[15000,0],[101481,0],[101481,51840],[0,51840]],input={mass,ucs:0,cores:[],phase:[7400,3600],floorMm:3800,allowExternalRamp:true};
   const ramp=y=>({x:11850,y,angleDeg:270,widthMm:6000,lengthMm:24000}),before=E.generate({...input,ramp:ramp(26000)}),after=E.generate({...input,ramp:ramp(43440)});

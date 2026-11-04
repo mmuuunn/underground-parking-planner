@@ -1,0 +1,52 @@
+id: UG-E2-MODULE-LAYOUT-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-user-restricted-independent-review
+verify_profile: vehicle-circulation
+question: 고정 기둥·램프를 보존하며 E2를 기둥 사이 3칸 중심의 정돈된 배열로 재구성할 수 있는가?
+allowed_files:
+  - tools/rebuild-e2-modules.cjs
+  - 04_parking/02_tests/e2-module-layout.test.cjs
+  - tools/harness/work-items/UG-E2-MODULE-LAYOUT-001.yaml
+acceptance:
+  - E2 원본·현재 생성기·기존 변경·골든 보존; 별도 후보와 비교 도면 작성
+  - P24·P28 구역은 동일 전면선·깊이의 3칸 묶음으로 구성
+  - 기둥 구간별 3칸 모듈을 기본; 7.4m 외벽 구간의 2칸 예외는 위치·이유 명시
+  - 고립·직교 끼워넣기 없이 완전한 묶음만 채택; 칸·고정물·차로 중첩과 전면 접속 확인
+  - 차로 조정은 고정물과 겹치지 않는 두 직선 구간의 750mm 확장으로 한정
+  - 새 형상에 기존 50칸의 경로 근거를 전용하지 않음; 미검증 입출차는 명시
+not_doing:
+  - 주 생성기·기존 E2 데이터·체험 UI·골든·기둥·램프·안전 기준 수정
+  - 다른 모델·서브에이전트·병렬 작업·자동 승인·커밋·push
+  - 정식 FEASIBLE 판정·교행·법규·전역 대수 최적화
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 3
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"고정 E2의 기둥 사이 3칸 중심 재배치 후보를 원본과 구분해 검토 가능하게 만든다",
+    "stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target":"tools/rebuild-e2-modules.cjs",
+    "depends_on":[],
+    "checks":[{"id":"e2-module-layout","script":"04_parking/02_tests/e2-module-layout.test.cjs","args":[]}],
+    "review_required":true,
+    "user_required":true
+  }
+completion_run: 20261102-220659-UG-E2-MODULE-LAYOUT-001-270e7112
+implementation_results:
+  proposal: E2-M1;47bays;11 complete triple modules and7 documented wall-pair exceptions;no isolated bays
+  user_marked_area: old P24/P28 replaced by N10-N12;frontY21400;clear span28950-36450;depth5000
+  fixed_geometry: all38 columns,cores,ramp,mass and inner outline preserved
+  aisles: two750mm extensions only;net surface addition7.95m2;unallocated1028.2855765m2
+  npm_test: 133/133 passed
+  module_tests: 6/6 passed
+  harness_common: 110/110 passed;contract1/1 passed
+  separate_calculation: Shapely47bays and18modules;zero collisions,outside or frontage failures
+  circulation: independent kinematics5818poses at25mm;200mm margin plus26mm guard;zero outside/collision area
+  limitations: individual47-bay parking and full journeys not evaluated;north/sloped wall rows unresolved;no formal feasibility or optimum claim
+  evidence_directory: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19c45-577f-7672-823f-da810977b649/e2-module-layout
+  formal_gates: independent review and user confirmation remain pending;no other models or agents called

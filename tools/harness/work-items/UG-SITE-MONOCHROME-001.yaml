@@ -1,0 +1,23 @@
+id: UG-SITE-MONOCHROME-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 화면 밝기를 유지하면서 도면·지도·차량·범례를 무채색으로 표시하는가?
+allowed_files:
+  - 04_parking/01_src/site-workflow.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/site-visibility.cjs
+  - tools/harness/work-items/UG-SITE-MONOCHROME-001.yaml
+acceptance:
+  - 화면과 인쇄의 도면·지도·차량·범례는 무채색으로 표시한다
+  - 현재 밝기·기존 건물 가림·배치 계산·저장 도면을 유지한다
+not_doing:
+  - 배치 엔진·기존 증거·승인 기록 변경·커밋 push
+completion_contract: |
+  {"kind":"support","goal":"도면과 지도를 모노크롬으로 표시한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"site-visibility","script":"04_parking/02_tests/site-visibility.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SITE-MONOCHROME-20261031/comparison.json
+remaining:
+  - 무채색 화면의 사용자 확인

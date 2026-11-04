@@ -1,0 +1,37 @@
+id: UG-UX-A-FUNCTION-LINK-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review-no-model-calls
+verify_profile: vehicle-circulation
+question: 확정 A안에서 기존 입력과 차로 미리보기·취소·적용·저장·재열기를 같은 문서로 수행할 수 있는가?
+allowed_files:
+  - 04_parking/underground-compare.html
+  - 04_parking/01_src/task-workspace.js
+  - 04_parking/01_src/task-workspace.css
+  - 04_parking/02_tests/task-workspace.cjs
+  - tools/harness/work-items/UG-UX-A-FUNCTION-LINK-001.yaml
+acceptance:
+  - A안의 왼쪽 작업 메뉴·중앙 편집 도면·오른쪽 속성·아래 대안 선반과 화이트·다크를 연결
+  - 기존 문서·계산·차로·저장 키·저장 형식·실행 취소를 재사용하고 별도 시제품 상태를 계산에 쓰지 않음
+  - 기존 B1과 일반 저장 입력의 전체 입력·결과·저장값이 새 화면 적용 전후 동일
+  - 차로 한 개를 수정해 기존 엔진 미리보기·취소·적용·실행 취소·다시 실행·저장·재열기 확인
+  - 잘못된 이동·저장 실패·미적용 변경 보호 및 검사 무효화 유지
+  - 외곽·기둥열·코어·램프의 기존 편집 진입점과 키보드 접근 보존
+not_doing:
+  - 계산·저장 형식·골든·기존 미커밋 변경 정리·단계 종료·B안 구현
+  - 도면 화살표·램프 절단·랜딩 표현 이식은 후속 단위이며 이번 계산 도면은 기존 표현 유지
+  - 정밀 조향·교행·다층·보행·피난·법규 판정 확장·다른 모델·서브에이전트·병렬 작업·커밋·push
+max_changed_files: 5
+max_new_production_lines: 400
+completion_contract: |
+  {"kind":"experiment","goal":"확정 A안의 실제 제품 화면에 기존 편집·계산·저장을 연결한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"a-workspace-flow","script":"04_parking/02_tests/task-workspace.cjs","args":[]}],"review_required":true,"user_required":true}
+results:
+  run: 20261102-012906-UG-UX-A-FUNCTION-LINK-001-5289abe1
+  checks: 공통 계산 109/109 및 A안 연결 흐름 1/1 통과; B1·일반 입력 전체 결과 보존
+  actual: 차로 0.1m 수정·취소·적용·실행취소·다시실행·저장재열기·저장실패·검사무효화·테마·인쇄 확인
+  limits: 도면 세부 표현 이식·전체 차량 통행 합격·대안별 영구 검토 기록은 미포함
+remaining:
+  - 독립 검토와 사용자 화면 확인; 다른 모델·서브에이전트 호출 금지 유지
+  - 확정 시안의 화살표·램프·랜딩 세부 표현은 후속 작업 단위

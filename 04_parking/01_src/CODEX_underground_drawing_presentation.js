@@ -6,11 +6,17 @@
  */
 (() => {
   'use strict';
+  const finalized = referenceQuery.get('workflow') !== 'legacy';
   const view = {inspection:false,fill:false,stoppers:true,names:true,dimensions:true,axes:true,site:false,motion:!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches};
   const original = {defs,renderEdit,drawLabels,renderPanel,setView,renderHint};
   const line = (g,a,b,attrs={}) => el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#a0a0a0','stroke-width':.55,'vector-effect':NSS,...attrs},g);
   const pathOf = polygons => polygons.map(P=>'M'+P.map(p=>p.join(',')).join('L')+'Z').join('');
   const unit = p => {const l=Math.hypot(...p)||1;return p.map(v=>v/l);};
+  function rampDrawingFrame(spec){
+    const body=rampBody(spec),u=unit(sub(spec.landing||[spec.x,spec.y],body.start));
+    return {...body,u,n:[-u[1],u[0]],project:p=>add(body.start,mul(u,dot(sub(p,body.start),u)))};
+  }
+  window.UGRampDrawing={frame:rampDrawingFrame};
   const average = P => P.reduce((a,p)=>add(a,mul(p,1/P.length)),[0,0]);
   const safe = value => String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number = value => Number.isFinite(value)?Math.round(value).toLocaleString('ko-KR'):'—';
@@ -82,40 +88,66 @@
   // Vehicle path: ring centreline filleted with the turning radius, thin chevrons in
   // the proposed one-way direction (right turn from the ramp); the ramp's two lanes
   // as entering (into this floor) and leaving; two-way inner lanes plain dashed.
+  function drawRoadMarkings(host,r){
+    const g=el('g',{'class':'road-markings','clip-path':'url(#aisleSurfaceClip)'},host),seen=new Set();
+    el('title',{},g).textContent='왕복 계획 노면표시 · 차량 통행 확인과 별개';
+    for(const [index,e] of (r.graph?.edges||[]).entries()){
+      const a=r.graph.nodes[e.a]?.p,b=r.graph.nodes[e.b]?.p;if(!a||!b)continue;
+      const length=Math.hypot(...sub(b,a)),mid=mul(add(a,b),.5),key=[a.join(','),b.join(',')].sort().join(';');
+      if(length<7500||seen.has(key)||(r.ramp?.body&&insidePoly(r.ramp.body,mid))||(r.parkingReservations||[]).some(z=>z.kind==='ramp-access'&&insidePoly(z.pts,mid)))continue;
+      seen.add(key);const u=unit(sub(b,a)),n=[-u[1],u[0]];
+      for(const direction of [1,-1]){
+        const centre=add(mid,mul(n,direction*1100)),shape=[[-900,-105],[200,-105],[200,-340],[900,0],[200,340],[200,105],[-900,105]];
+        const P=shape.map(([x,y])=>add(centre,add(mul(u,x*direction),mul(n,y*direction))));
+        if(P.some(p=>!r.aisles.some(A=>insidePoly(A,p))))continue;
+        el('polygon',{points:pts(P),fill:'none',stroke:'#a0a0a0','stroke-width':.65,'stroke-linejoin':'round','vector-effect':NSS,'class':'road-arrow-outline','data-edge':index,'data-direction':direction},g);
+      }
+    }
+  }
   function drawCirculation(route,r){
     const C=r&&!r.fail&&r.circulation;if(!C)return;
-    const BLUE='#2f7bd8',RED='#c0563a',checked=UGPlanningUI.routes(r),moving=view.motion&&checked?.entry.state==='clear'&&checked?.exit.state==='clear';
-    const chevron=(c,u,color)=>{const n=[-u[1],u[0]];el('polyline',{points:pts([add(add(c,mul(u,-550)),mul(n,420)),add(c,mul(u,250)),add(add(c,mul(u,-550)),mul(n,-420))]),fill:'none',stroke:color,'stroke-width':1.1,'vector-effect':NSS},route);};
+    const BLUE='#2f7bd8',RED='#c0563a',checked=UGPlanningUI.routes(r),overview=ui.routePlayback===true&&!view.inspection,moving=view.motion&&(overview||checked?.entry.state==='clear'&&checked?.exit.state==='clear');
+    route.setAttribute('data-route-tone',overview?'quiet':'inspection');
+    const chevron=(c,u,color)=>{const n=[-u[1],u[0]];el('polyline',{points:pts([add(add(c,mul(u,-550)),mul(n,420)),add(c,mul(u,250)),add(add(c,mul(u,-550)),mul(n,-420))]),fill:'none',stroke:color,opacity:overview?.35:1,'stroke-width':overview?.75:1.1,'vector-effect':NSS,'data-route-chevron':'true'},route);};
     // A chevron every `step` mm of path length, the first at `first`.
     const along=(P,closed,color,step,first)=>{const Q=closed?P.concat([P[0]]):P;let next=first;
       for(let i=1;i<Q.length;i++){const a=Q[i-1],b=Q[i],L=Math.hypot(...sub(b,a));if(L<1)continue;const u=mul(sub(b,a),1/L);for(;next<=L;next+=step)chevron(add(a,mul(u,next)),u,color);next-=L;}};
     // Use the supplied rounded path without drawing a solid line beneath it.
     const poly=(P,closed,color,extra={})=>el('path',{d:'M'+P.map(p=>p.join(',')).join('L')+(closed?'Z':''),fill:'none',stroke:color,'stroke-width':1.1,'stroke-linejoin':'round','vector-effect':NSS,...extra},route);
-    const dashed=(P,closed,color)=>poly(P,closed,color,{'class':moving?'ug-flow':'ug-route-static','stroke-dasharray':'4 12','stroke-linecap':'round','data-flow-path':'true'});
-    C.loops.forEach(P=>{dashed(P,true,BLUE);along(P,true,BLUE,12000,6000);});
-    for(const [P,name,color] of [[C.entry,referenceScene?('진입 ↓ '+referenceScene.floor):'진입 ↓ B1',BLUE],[C.exit,'진출 ↑',RED]]){
+    const dashed=(P,closed,color)=>poly(P,closed,color,{'class':moving&&!overview?'ug-flow':'ug-route-static','stroke-dasharray':'4 12','stroke-linecap':'round',opacity:overview?.3:1,'stroke-width':overview?.8:1.1,'data-flow-path':'true'});
+    const trips=overview&&r.report?.trafficMode==='two-way'?[checked?.entry.points,checked?.exit.points]:[C.entry,C.exit];
+    if(finalized&&overview&&r.report?.trafficMode==='two-way'){
+      drawRoadMarkings(route,r);
+      C.loops.forEach(P=>dashed(P,true,BLUE));
+      for(const [P,direction,color] of [[trips[0],'entry',BLUE],[trips[1],'exit',RED]])if(P?.length>1)dashed(P,false,color).setAttribute('data-trip-direction',direction);
+      for(const [a,b] of C.lanes)poly([a,b],false,BLUE,{'stroke-dasharray':'2 3',opacity:.16,'data-overview-lane':'true'});
+    }
+    else {
+    C.loops.forEach(P=>{dashed(P,true,BLUE);along(P,true,BLUE,overview?24000:12000,overview?12000:6000);});
+    for(const [P,name,color] of [[trips[0],referenceScene?('진입 ↓ '+referenceScene.floor):'진입 ↓ B1',BLUE],[trips[1],'진출 ↑',RED]]){
       if(!P||P.length<2)continue;
-      dashed(P,false,color);along(P,false,color,6000,2500);
+      dashed(P,false,color).setAttribute('data-trip-direction',name.startsWith('진입')?'entry':'exit');along(P,false,color,overview?24000:6000,overview?8000:2500);
       // Label at the ramp's upper end: the start of 진입, the end of 진출.
       const e=name.startsWith('진입')?[P[0],P[1]]:[P[P.length-1],P[P.length-2]],tag=add(e[0],mul(unit(sub(e[1],e[0])),-2200));
       const t=el('text',{x:0,y:0,transform:`translate(${tag[0]} ${tag[1]}) rotate(${doc.ucs}) scale(1,-1)`,fill:color,'font-size':9/Math.max(scale(),.0001),'font-weight':600,'text-anchor':'middle','dominant-baseline':'middle'},route);t.textContent=name;
     }
-    for(const [a,b] of C.lanes)poly([a,b],false,BLUE,{'stroke-dasharray':'2 3',opacity:.8});
-    for(const t of C.tight){const c=el('circle',{cx:t.at[0],cy:t.at[1],r:1800,fill:'none',stroke:'#d23c3c','stroke-width':1.4,'vector-effect':NSS},route);el('title',{},c).textContent=`회전 여유 부족 — 이 꺾임에 들어가는 회전 반경 ${(t.radiusMm/1000).toFixed(1)}m (기준 ${(C.turnRadiusMm/1000).toFixed(0)}m)`;}
+    for(const [a,b] of C.lanes)poly([a,b],false,BLUE,{'stroke-dasharray':'2 3',opacity:overview?.16:.8});
+    for(const t of overview?[]:C.tight){const c=el('circle',{cx:t.at[0],cy:t.at[1],r:1800,fill:'none',stroke:'#d23c3c','stroke-width':1.4,'vector-effect':NSS},route);el('title',{},c).textContent=`회전 여유 부족 — 이 꺾임에 들어가는 회전 반경 ${(t.radiusMm/1000).toFixed(1)}m (기준 ${(C.turnRadiusMm/1000).toFixed(0)}m)`;}
+    }
     if(!checked||!view.motion)return;
     const slice=(P,start,end)=>{const Q=[];let passed=0;for(let i=1;i<P.length;i++){const a=P[i-1],d=sub(P[i],a),L=Math.hypot(...d);if(!L)continue;const lo=Math.max(start,passed),hi=Math.min(end,passed+L);if(hi>=lo){for(const s of [lo,hi]){const p=add(a,mul(d,(s-passed)/L));if(!Q.length||Math.hypot(...sub(p,Q.at(-1)))>1)Q.push(p);}}passed+=L;}return Q;};
     for(const [key,color] of [['entry',BLUE],['exit',RED]]){
-      const v=checked[key],half=v.vehicle.lengthMm/2,P=slice(v.points,half,Math.min(v.lengthMm-half,v.stopDistanceMm));
+      const v=checked[key],half=v.vehicle.lengthMm/2,end=overview?v.lengthMm-half:Math.min(v.lengthMm-half,v.stopDistanceMm),P=slice(v.points,half,end);
       // This exact polyline is sampled by the calculation; do not round its corners again.
       const id='ugVehiclePath-'+key;if(P.length>1)el('path',{id,d:'M'+P.map(p=>p.join(',')).join('L'),fill:'none',stroke:'none'},route);
-      const car=el('g',{'class':'ug-car','data-vehicle':key,'data-route-state':v.state,stroke:color,'stroke-width':1.1},route);
+      const car=el('g',{'class':'ug-car','data-vehicle':key,'data-route-state':v.state,'data-route-presentation':overview?'drawing':'inspection',stroke:color,opacity:overview?.85:1,'stroke-width':1.1},route);
       el('path',{d:'M-1700,-900 Q-2300,-860 -2300,-400 L-2300,400 Q-2300,860 -1700,900 L1700,900 Q2300,850 2300,400 L2300,-400 Q2300,-850 1700,-900Z',fill:'#fafbf9','fill-opacity':.9},car);
       el('path',{d:'M-900,-720 L-1350,-540 L-1350,540 L-900,720 M-750,-720 H850 L1250,-560 V560 L850,720 H-750Z M850,-720 L550,-570 V570 L850,720 M-750,-720 L-550,-570 V570 L-750,720 M-500,-570 H500 M-500,570 H500 M-1800,-780 V780 M1780,-780 V780',fill:'none'},car);
       for(const x of [-1400,1400])for(const y of [-940,940])el('line',{x1:x-260,y1:y,x2:x+260,y2:y,'stroke-width':2},car);
-      el('title',{},car).textContent=`${key==='entry'?'진입':'진출'} 차량 · ${v.state==='clear'?'제안 경로 재생':v.state==='blocked'?'첫 문제 앞에서 정지':'연결 확인 필요 · 정지'} · 평면 차체 확인`;
+      el('title',{},car).textContent=overview?`${key==='entry'?'파란 진입':'빨간 진출'} 차량 · 전체 도면 동선 재생 · 실제 통행 검사는 별도`:`${key==='entry'?'진입':'진출'} 차량 · ${v.state==='clear'?'제안 경로 재생':v.state==='blocked'?'첫 문제 앞에서 정지':'연결 확인 필요 · 정지'} · 평면 차체 확인`;
       if(P.length<2){const p=v.points[0]||r.ramp?.landing;if(p){const u=unit(sub(v.points[1]||add(p,[1,0]),p)),at=add(p,mul(u,half));car.setAttribute('transform',`translate(${at[0]} ${at[1]}) rotate(${Math.atan2(u[1],u[0])*180/Math.PI})`);}continue;}
-      const duration=Math.max(4,(Math.min(v.lengthMm-half,v.stopDistanceMm)-half)/3500);
-      const am=el('animateMotion',{dur:duration.toFixed(2)+'s',repeatCount:v.state==='blocked'?'1':'indefinite',fill:'freeze',rotate:'auto'},car);el('mpath',{href:'#'+id},am);
+      const duration=Math.max(4,(end-half)/(overview?2200:3500));
+      const am=el('animateMotion',{dur:duration.toFixed(2)+'s',repeatCount:overview?'indefinite':v.state==='blocked'?'1':'indefinite',fill:'freeze',rotate:'auto'},car);el('mpath',{href:'#'+id},am);
     }
   }
 
@@ -146,6 +178,11 @@
   function stallFront(P,r) {
     const lengths=P.map((p,i)=>Math.hypot(...sub(P[(i+1)%P.length],p)));
     const shortest=Math.min(...lengths);let best=0,dist=Infinity;
+    if(finalized){
+      const centre=average(P),fronts=[];
+      P.forEach((p,i)=>{if(lengths[i]>shortest+30)return;const middle=mul(add(p,P[(i+1)%P.length]),.5),probe=add(middle,mul(unit(sub(middle,centre)),350));if((r.aisles||[]).some(A=>insidePoly(A,probe)))fronts.push(i);});
+      if(fronts.length===1)return fronts[0];
+    }
     P.forEach((p,i)=>{if(lengths[i]>shortest+30)return;const m=mul(add(p,P[(i+1)%P.length]),.5);
       for(const e of r.graph?.edges||[]){const a=r.graph.nodes[e.a]?.p,b=r.graph.nodes[e.b]?.p;if(!a||!b)continue;const d=distance(m,a,b);if(d<dist){dist=d;best=i;}}
     });return best;
@@ -177,9 +214,10 @@
     // Route hierarchy is derived from the supplied edge kinds, never from an
     // invented traffic direction. Clip all emphasis to the actual aisle surface.
     el('path',{d:pathOf(r.aisles||[]),fill:'#f1f1f1','fill-rule':'nonzero'},floor);
+    if(finalized)for(const reservation of r.parkingReservations||[])if(reservation.kind==='ramp-access')el('polygon',{points:pts(reservation.pts),fill:'#f1f1f1',stroke:'none','class':'ramp-access-surface'},floor);
     const routes=el('g',{'clip-path':'url(#aisleSurfaceClip)','data-route-hierarchy':'true'},floor);
     const clip=$('aisleSurfaceClip');if(clip){clip.innerHTML='';el('path',{d:pathOf(r.aisles||[]),'clip-rule':'nonzero'},clip);}
-    for(const e of r.graph?.edges||[]){
+    for(const e of finalized?[]:r.graph?.edges||[]){
       const a=r.graph.nodes[e.a]?.p,b=r.graph.nodes[e.b]?.p;if(!a||!b||!e.reached)continue;
       const primary=e.kind==='ramp',ring=e.kind==='ring';
       if(primary||ring)line(routes,a,b,{stroke:primary?'#cacaca':'#e3e3e3','stroke-width':r.grid.aisleMm*1.06,'vector-effect':'none','stroke-linecap':'square'});
@@ -191,16 +229,19 @@
     // Leftover space by use (engine leftover): DA hatched, leftover-room candidates dashed with area.
     UGPlanningUI.drawZones(rooms,r);
     const dead=new Set((r.deadSide||[]).map(P=>JSON.stringify(P)));
-    for(const st of r.stalls||[]){
+    for(const [stallIndex,st] of (r.stalls||[]).entries()){
       const P=st.pts;if(P.length!==4)continue;const front=stallFront(P,r);
       const warn=view.inspection&&dead.has(JSON.stringify(P));
       const acc=st.stallType==='accessible';
       el('polygon',{points:pts(P),fill:acc?'#e3eefb':warn?'#e8e8e8':view.fill?'#f2f2f2':'#ffffff'},stalls);
       drawStallMark(stalls,st,r,front);
-      P.forEach((p,i)=>line(stalls,p,P[(i+1)%4],{stroke:warn?'#939393':i===front?'#e2e2e2':'#919191','stroke-width':i===front?.35:.6}));
+      P.forEach((p,i)=>{if(finalized&&i===front)return;line(stalls,p,P[(i+1)%4],{stroke:warn?'#939393':i===front?'#e2e2e2':'#919191','stroke-width':i===front?.35:.6,'class':'parking-marking','data-stall':stallIndex,'data-front':front});});
       if(view.stoppers){
         const back=(front+2)%4,p=P[back],q=P[(back+1)%4],u=unit(sub(q,p)),towards=unit(sub(average(P),mul(add(p,q),.5)));
-        for(const t of [.27,.73]){const c=add(add(p,mul(sub(q,p),t)),mul(towards,400));line(stalls,add(c,mul(u,-180)),add(c,mul(u,180)),{stroke:'#a1a1a1','stroke-width':1.6});}
+        if(finalized){
+          const middle=mul(add(p,q),.5),offset=Math.min(650,Math.hypot(...sub(q,p))*.26);
+          for(const x of [-offset,offset]){const stop=[[-250,-65],[250,-65],[250,65],[-250,65]].map(([a,b])=>add(add(middle,mul(u,x+a)),mul(towards,650+b)));el('polygon',{points:pts(stop),fill:'#e5e5e5',stroke:'#939393','stroke-width':.5,'vector-effect':NSS,'class':'wheel-stop','data-stall':stallIndex},stalls);}
+        }else for(const t of [.27,.73]){const c=add(add(p,mul(sub(q,p),t)),mul(towards,400));line(stalls,add(c,mul(u,-180)),add(c,mul(u,180)),{stroke:'#a1a1a1','stroke-width':1.6});}
       }
     }
     if(view.inspection){
@@ -219,6 +260,28 @@
     for(const P of r.columns||[])el('polygon',{points:pts(P),fill:'#353535',stroke:'none'},walls);
   };
 
+  function drawRampMarkings(g,spec,pick){
+    const rs=rampDrawingFrame(spec),{u,n}=rs,h=spec.widthMm/2,L=spec.lengthMm,k=Math.max(scale(),.0001),at=(t,offset=0)=>add(add(rs.start,mul(u,L*t)),mul(n,offset));
+    const body=el('polygon',{points:pts(rs.body),fill:'#f7f7f7',stroke:'none','class':'ramp-body'},g);
+    if(pick){body.dataset.ramp='1';body.style.cursor='move';}
+    const lines=layer('drawingRampLines',g);lines.setAttribute('data-example','unconnected-levels');
+    el('title',{},body).textContent='UP/DN·끊김선은 높이·아래층 평면 미연결 표현 예시입니다.';
+    const dots=[];for(let d=600;d<L;d+=600)for(let offset=-h+300;offset<h;offset+=600){const p=at(d/L,offset);dots.push('M'+p.join(',')+'h5');}
+    el('path',{d:dots.join(''),fill:'none',stroke:'#b8b8b8','stroke-width':.5,'stroke-linecap':'round','vector-effect':NSS,'class':'ramp-surface'},lines);
+    line(lines,at(0),at(1),{stroke:'#8a8a8a','stroke-width':.65,'stroke-dasharray':'5 3','class':'ramp-centreline'});
+    for(const offset of [-h,h]){line(lines,at(0,offset),at(.30,offset),{stroke:'#777','stroke-width':.8,'stroke-dasharray':'4 3','class':'overhead-projection-example'});line(lines,at(.30,offset),at(1,offset),{stroke:'#555','stroke-width':1,'class':'ramp-edge'});}
+    line(lines,at(0,-h),at(0,h),{stroke:'#777','stroke-width':.7,'stroke-dasharray':'4 3'});
+    // shortcut: 층간 높이와 아래층 평면 연결 전까지 끊김선은 고정 비율의 표현 예시다.
+    const profile=[[-h,-850],[-250,-150],[0,-450],[250,450],[500,150],[h,850]],cut=profile.map(([v,j])=>add(at(.30,v),mul(u,j)));
+    el('polyline',{points:pts(cut),fill:'none',stroke:'#f7f7f7','stroke-width':4,'vector-effect':NSS},lines);
+    el('polyline',{points:pts(cut),fill:'none',stroke:'#333','stroke-width':1.2,'vector-effect':NSS,'class':'ramp-cut-example'},lines);
+    for(const [name,offset] of [['DN',Math.min(1400,h*.47)],['UP',-Math.min(1400,h*.47)]]){
+      const index=profile.findIndex(([v],i)=>i<profile.length-1&&v<=offset&&offset<=profile[i+1][0]),[v0,j0]=profile[index],[v1,j1]=profile[index+1],j=j0+(j1-j0)*(offset-v0)/(v1-v0),crossing=add(at(.30,offset),mul(u,j)),floor=at(1,offset),a=name==='DN'?crossing:floor,b=name==='DN'?floor:crossing,dir=unit(sub(b,a)),normal=[-dir[1],dir[0]],neck=add(b,mul(dir,-600));
+      const arrow=el('g',{'class':'ramp-direction-arrow','data-direction':name},lines);
+      line(arrow,a,b,{stroke:'#777','stroke-width':1.1});el('polyline',{points:pts([add(neck,mul(normal,280)),b,add(neck,mul(normal,-280))]),fill:'none',stroke:'#777','stroke-width':1.1,'vector-effect':NSS},arrow);
+      const label=add(floor,rot([-12/k,0],doc.ucs));el('text',{transform:`translate(${label[0]} ${label[1]}) rotate(${doc.ucs}) scale(1,-1)`,fill:'#444','font-size':9/k,'font-weight':600,'text-anchor':'end','dominant-baseline':'middle','class':'ramp-direction-label'},lines).textContent=name;
+    }
+  }
   drawRamp = function(g,spec,pick){
     if(spec.kind==='curve'){
       const details=layer('curveRampDetails',g);
@@ -252,9 +315,10 @@
       UGPlanningUI.highlightRamp(details,spec);
       return;
     }
-    const rs=rampBody(spec),p=el('polygon',{points:pts(rs.body),fill:'#f8f8f8',stroke:ui.sel?.kind==='ramp'?'#6e6e6e':'#959595','stroke-width':ui.sel?.kind==='ramp'?1.5:.7,'vector-effect':NSS},g);
+    if(finalized)return drawRampMarkings(g,spec,pick);
+    const rs=rampDrawingFrame(spec),p=el('polygon',{points:pts(rs.body),fill:'#f8f8f8',stroke:ui.sel?.kind==='ramp'?'#6e6e6e':'#959595','stroke-width':ui.sel?.kind==='ramp'?1.5:.7,'vector-effect':NSS},g);
     if(pick){p.dataset.ramp='1';p.style.cursor='move';}
-    const landing=spec.landing||[spec.x,spec.y],u=unit(sub(landing,rs.start)),n=[-u[1],u[0]],h=spec.widthMm/2;
+    const {u,n}=rs,h=spec.widthMm/2;
     const hatch=layer('drawingRampLines',g);
     for(let t=650;t<spec.lengthMm-650;t+=650){const c=add(rs.start,mul(u,t));line(hatch,add(c,mul(n,-h+160)),add(c,mul(n,h-160)),{stroke:'#d8d8d8','stroke-width':.45});}
     const a=add(rs.start,mul(u,spec.lengthMm*.23)),b=add(rs.start,mul(u,spec.lengthMm*.77));
@@ -283,7 +347,7 @@
     drawCoreHandles(el('g',{id:'coreHandles'},edit));
     // Above the ramp and cores so the ramp lanes stay readable.
     drawCirculation(layer('drawingCirculation',edit),current());
-    { const ig=layer('drawingIssues',edit);ig.removeAttribute('pointer-events');drawIssues(ig,current());ig.querySelectorAll('polygon,text').forEach(e=>e.setAttribute('pointer-events','none'));renderIssuePop(); }
+    { const ig=layer('drawingIssues',edit);ig.removeAttribute('pointer-events');drawIssues(ig,current());ig.setAttribute('display',view.inspection?'':'none');ig.querySelectorAll('polygon,text').forEach(e=>e.setAttribute('pointer-events','none'));renderIssuePop(); }
     const selected=ui.sel&&['mass','edge','vtx'].includes(ui.sel.kind);
     const outline=edit.querySelector('polygon:not([data-mass])');
     if(outline){outline.setAttribute('stroke',selected?'#6e6e6e':'#393939');outline.setAttribute('stroke-width',selected?1.5:.8);}
@@ -295,7 +359,7 @@
   };
 
   const axisEdit={active:false,drag:null,entry:null};
-  const axisButton=document.createElement('button');axisButton.id='editStructureCanvas';axisButton.className='mini-btn';axisButton.textContent='구조 편집';axisButton.setAttribute('aria-pressed','false');$('tools').after(axisButton);
+  const axisButton=document.createElement('button');axisButton.id='editStructureCanvas';axisButton.className='mini-btn';axisButton.textContent='기둥열 이동';axisButton.setAttribute('aria-pressed','false');$('tools').after(axisButton);
   const sheet=svg.closest('.sheet-area'),axisGuide=document.createElement('div');axisGuide.id='axisCanvasGuide';axisGuide.className='axis-canvas-guide';axisGuide.hidden=true;axisGuide.setAttribute('role','status');sheet.append(axisGuide);
   const axisForm=document.createElement('form');axisForm.id='axisDimensionEditor';axisForm.className='axis-dimension-editor';axisForm.hidden=true;
   axisForm.innerHTML='<label for="axisDimensionValue" id="axisDimensionLabel"></label><div class="row"><input id="axisDimensionValue" type="number" step="0.001" min="0.6" required><span>m</span><button type="submit">적용</button><button type="button" id="cancelAxisDimension">취소</button></div><p id="axisDimensionRule"></p><p id="axisDimensionError" role="alert"></p>';sheet.append(axisForm);
@@ -304,7 +368,7 @@
   function cancelAxisDrag(){const d=axisEdit.drag;axisEdit.drag=null;if(d&&svg.hasPointerCapture(d.pointerId))svg.releasePointerCapture(d.pointerId);drawLabels();axisHelp();}
   axisButton.onclick=()=>{
     if(ui.busy||ui.drag)return;
-    cancelAxisDrag();closeAxisEntry();axisEdit.active=!axisEdit.active;axisButton.setAttribute('aria-pressed',String(axisEdit.active));axisButton.textContent=axisEdit.active?'구조 편집 완료':'구조 편집';axisGuide.hidden=!axisEdit.active;
+    cancelAxisDrag();closeAxisEntry();axisEdit.active=!axisEdit.active;axisButton.setAttribute('aria-pressed',String(axisEdit.active));axisButton.textContent=axisEdit.active?'기둥열 이동 완료':'기둥열 이동';axisGuide.hidden=!axisEdit.active;
     if(axisEdit.active){setTool('select');ui.sel=null;view.axes=true;$('axesToggle').checked=true;axisHelp();}renderEdit();
   };
   function showAxisEntry(axis,index,target){
@@ -418,6 +482,12 @@
     if(!ui.drag&&!ui.draw&&!ui.ghosts)g.innerHTML='';
     const k=Math.max(scale(),.0001);
     const added=layer('drawingAnnotations',g);
+    const box=svg.viewBox.baseVal;
+    if(finalized&&!curveMode()&&box.width&&box.height){
+      const x=box.x+18/k,y=box.y+box.height-52/k;
+      el('rect',{x:x-5/k,y:y-13/k,width:390/k,height:19/k,fill:'#f7f7f7',opacity:.95},added);
+      el('text',{id:'drawingExampleNote',x,y,fill:'#555','font-size':9/k},added).textContent='노면표시: 계획 방향 · UP/DN·끊김선: 높이·연결층 미연결 예시';
+    }
     dimensions(added);
     UGPlanningUI.drawZoneLabels(added,current());
     const result=current(),bound=doc.ramp.edgeBinding;

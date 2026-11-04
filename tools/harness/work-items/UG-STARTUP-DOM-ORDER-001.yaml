@@ -1,0 +1,41 @@
+id: UG-STARTUP-DOM-ORDER-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review-no-model-calls
+verify_profile: vehicle-circulation
+question: 저장한 램프 실패 재현안을 다시 열 때 화면 제어가 준비된 뒤 편집기를 초기화하는가?
+allowed_files:
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/task-workspace.cjs
+  - tools/harness/work-items/UG-STARTUP-DOM-ORDER-001.yaml
+acceptance:
+  - 사용자 브라우저에서 재현된 제어 요소 없는 초기화 오류와 호출 순서를 기록
+  - 기본 문서의 파싱과 동기 화면 스크립트 실행을 마친 뒤 비동기 편집기 초기화
+  - 캐시된 편집기와 지연된 후속 화면 스크립트 조건에서 저장 일반 도면과 B1 모두 초기화
+  - 주차대수와 배치 및 검사 기준과 기존 저장 자료 보존
+not_doing:
+  - 다른 검사나 도면 표시 결함 수정 및 새 계산 기능
+  - 다른 모델과 서브에이전트 및 병렬 작업과 커밋 및 push
+max_changed_files: 4
+max_new_production_lines: 5
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+baseline_observation: 기존 실행20261102-113223-UG-STARTUP-DOM-ORDER-001-dc159a53에서110/110 통과 및 지연 스크립트 반례 수정 전 실패와 수정 후 통과; 사용자 브라우저가 이전 캐시 코드918행을 사용하여 HTML의 기존 자산 버전 키 갱신을 범위에 추가하고 새 preflight 수행
+completion_contract: |
+  {"kind":"experiment","goal":"저장한 실패 재현안을 기존 생성기에서 안정적으로 연다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"startup-and-workspace","script":"04_parking/02_tests/task-workspace.cjs","args":[]}],"review_required":true,"user_required":true}
+results:
+  run: 20261102-113514-UG-STARTUP-DOM-ORDER-001-3a065c6b
+  scope_supersedes: 20261102-113223-UG-STARTUP-DOM-ORDER-001-dc159a53
+  changes: 시작 함수의 DOMContentLoaded 대기 한 줄 및 시작 스크립트와 직전 램프 좌표 수정의 자산 버전 키 갱신
+  reproduction: 빠른 편집기와250ms 지연 화면 제어 조건에서 수정 전 초기화 실패 및 수정 후 B1과 일반 도면 초기화 통과
+  checks: 공통110/110 및 작업 검사1/1 통과; 기존 편집과 저장 및 재열기 보존
+  user_plan_name: 램프 합류 실패 재현 · ㄱ자형 49칸
+  user_plan_url: http://127.0.0.1:8874/04_parking/underground-compare.html?plan=5e86df56-815e-4468-b194-e5da6c161b24&shape=l-shape&workflow=all
+  visible_result: 실제 사용자 내장 브라우저에 별도 저장 및 재열기 후49칸과 이름 유지; 동선 검토1번 좌표24000,41000 및 착지 뒤3.170m와90도 두 번 합류 실패 설명을 펼쳐둠
+  preservation: 기존 B1을 덮어쓰지 않고66칸 유지; 다른 모델과 서브에이전트 및 병렬 작업 없이 단독 수행
+  evidence: C:/Users/seok2/Documents/Codex/2026-11-02/outputs/08-3_실패재현안_열기/사용자브라우저_실패1번.jpg
+remaining:
+  - 독립 검토와 사용자 화면 확인 대기; 기계 검사를 승인으로 기록하지 않음

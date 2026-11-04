@@ -1,0 +1,39 @@
+id: UG-INPUT-BASIS-REPLAY-001
+status: ACCEPTED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: self-audit-not-independent-review
+verify_profile: vehicle-circulation
+question: 구조 전제를 검증하지 않고 입력 기둥 보존과 기하 검사로 개선을 판단한 반복 실패를 어떻게 재현하고 구별할 것인가?
+allowed_files:
+  - docs/FAILURE_REPLAY_INPUT_BASIS_20261103_1.md
+  - docs/evidence/20261103-input-basis/replay.cjs
+  - docs/evidence/20261103-input-basis/measurements.json
+  - tools/harness/work-items/UG-INPUT-BASIS-REPLAY-001.yaml
+acceptance:
+  - 대표2사례의 기대·실제·입력·화면·실행 근거를 구별
+  - 현재 경로와 회수 코드의 재현을 분리; 기존 자료와 시험·합격 기준 보존
+  - 최대3원인가설에 관찰·반증·최소실험을 연결하고 다음 실험1개 추천
+  - 한 보고서에 사실·가설·미확인·재현·제안 채점·인계5항목 수록
+not_doing:
+  - 제품·입력·기존시험·기존합격기준 수정, 원도 전수 재수집, 다른세션 대량대화 열람
+  - 다른 모델·서브에이전트 호출, 독립검증·제품합격 주장, 커밋·push·정리
+max_implementation_rounds: 0
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 0
+completion_run: 20261103-015912-UG-INPUT-BASIS-REPLAY-001-0c99e23a
+results:
+  meaning: 자기점검보고서와재현자료작성완료;독립검증・제품합격아님
+  representatives: E2_A53의미확인교점2곳;정형시험의근거없는X10m_Y16m구조
+  replay: E2입력기둥38보존과두교점부재확인;한가정기둥이차로와0.207104㎡겹침;같은입력지문으로현재53/회수54칸과실제화면・재열기재현
+  verifier_probe: R2출력사본기둥12→11에도형상검사누락지적없음;전체생성의램프조건부와구별
+  limitations: E2원래검사기전체성공미재현;HTML과거지문차이로파일보존assertion중단;기하구간은해당검사까지도달
+  hypotheses: 전제정보의필수조건누락;경로우회;후단검사와성공측정의범위부족;관찰・반증・최소실험을보고서에분리
+  next_experiment: 동일입력과생성결과를유지한전제심사표분리실험1개;이번에는실행하지않음
+  checks: 재현사실대조1/1;기존npm133/133・하네스110/110은환경확인일뿐제품진척아님
+  preservation: 제품・사용자입력・기존시험・기존기준에쓰기없음;재현핵심지문변경0;범위밖3파일변경관측은별도기록하고미개입
+  evidence: docs/FAILURE_REPLAY_INPUT_BASIS_20261103_1.md;docs/evidence/20261103-input-basis/measurements.json
+completion_contract: |
+  {"kind":"support","goal":"구조 전제 누락의 반복 실패를 재현하고 다음 최소 실험의 근거를 준비한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"docs/FAILURE_REPLAY_INPUT_BASIS_20261103_1.md","depends_on":[],"checks":[{"id":"self-replay","script":"docs/evidence/20261103-input-basis/replay.cjs","args":["--check"]}],"review_required":false,"user_required":false}

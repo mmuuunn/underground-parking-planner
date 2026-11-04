@@ -1,0 +1,46 @@
+id: UG-LAYOUT-B1-READY-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review-source-policy
+question: 실제 사용 환경의 UGRampDrawing 초기화 오류를 없애고 B1 열기·배치 선택·차로 편집·적용·저장·재열기를 끝까지 수행할 수 있는가?
+allowed_files:
+  - 04_parking/underground-compare.html
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/02_tests/b1-ready.cjs
+  - tools/harness/work-items/UG-LAYOUT-B1-READY-001.yaml
+acceptance:
+  - 새 외부 폴더에 필요한 이전 파일을 복사한 뒤 예전 표시 모듈과 새 편집 모듈의 초기화 실패 재현
+  - 편집기가 표시 모듈의 선택적 전역 변수에 의존하지 않고 기존 램프 데이터로 표기 계산
+  - 페이지의 스크립트와 동적 참조·편집 모듈을 같은 릴리스 버전으로 로드해 이전 캐시 혼용 방지
+  - 새 환경과 보조 전역 변수가 없는 환경·기존 저장 자료에서 열기부터 재열기까지 실제 브라우저 흐름 통과
+  - 컨트롤 초기화·66칸 표시·ALT65/66·직교 편집·충돌 취소·초기 복원·저장 재열기와 일반 입력 보존
+  - 작동 상태와 사용 목적 중심의 화면을 현황판에 갱신하고 이전 증거·작업표·승인 상태 보존
+not_doing:
+  - 엔진·골든·기존 판정 기준 변경·기존 기록 덮어쓰기·pstack 설치·다른 모델·서브에이전트·커밋·push
+max_changed_files: 5
+max_new_production_lines: 120
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"구민회관 B1 반자동 화면을 기존 캐시와 저장 자료에서도 열고 편집·적용·저장·재열기까지 사용할 수 있게 복구한다",
+    "stage_goal":"기준 매스별 주차대수와 램프 위치가 재현된다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"b1-ready","script":"04_parking/02_tests/b1-ready.cjs","args":[]},{"id":"ramp-alignment","script":"04_parking/02_tests/ramp-drawing-alignment.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-READY-20261030/comparison.json
+remaining:
+  - 소스 변경에 대한 하네스 독립 검토 관문 대기·다른 모델 호출 금지 유지
+  - 수정 후 B1 사용 화면의 사용자 확인
+results:
+  outcome: 초기화 오류 수정·66칸 표시·직교 편집과 저장 재열기 실행 검사 통과
+  checks: 공통109/109·이전 캐시 및 저장 자료 흐름·램프 축 정렬 검사 통과
+  preservation: 기존 파일 중 의도한 UI3개만 변경·엔진과 기존 기록 보존
+  evidence: C:/Users/seok2/.codex/research/SGHS-B1-READY-20261030/completion.json

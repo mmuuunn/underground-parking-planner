@@ -1,0 +1,28 @@
+id: UG-UX-WORKSPACE-001
+status: SCOPED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-no-calculation-change
+verify_profile: vehicle-circulation
+question: 계산과 저장을 유지하면서 배치·비교의 작업 순서와 미적용 변경을 구분할 수 있는가?
+allowed_files:
+  - 04_parking/underground-compare.html
+  - 04_parking/01_src/task-workspace.js
+  - 04_parking/01_src/task-workspace.css
+  - 04_parking/02_tests/task-workspace.cjs
+  - tools/harness/work-items/UG-UX-WORKSPACE-001.yaml
+acceptance:
+  - 기존 배치 버튼을 재사용하고 배치 방식·주차열 대안·미리보기 적용·저장 그룹을 구분
+  - 작업 바로가기와 키보드 초점·설명 연결·미적용 상태를 제공
+  - B1 66칸과 일반 도면의 입력·결과·저장 값 및 엔진 파일 해시 보존
+  - 미리보기 취소와 적용·실행취소·재열기 및 표현 탭에서의 접근 확인
+  - 화면 확인용 이미지 제공; 사용자 조작과 시간 절감은 확인 대기
+not_doing:
+  - 계산·법규·골든·저장 형식·기존 작업표 상태 변경
+  - React 전환·외부 서비스 도입·모델 호출·서브에이전트·push
+max_changed_files: 5
+max_new_production_lines: 240
+baseline_observation: 기존 full-workflow.cjs의 rampKind 상시 노출 검사는 이번 UX를 끈 상태에서도 실패함. 기존 시험은 보존하고 현재 선택형 패널을 검증하는 site-workflow.cjs로 범위를 재설정함. 이전 실패 실행은 삭제하지 않음.
+completion_contract: |
+  {"kind":"experiment","goal":"현재 계산을 유지하며 배치·비교 패널의 작업 구분과 미적용 상태를 개선한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"task-workspace","script":"04_parking/02_tests/task-workspace.cjs","args":[]},{"id":"site-workflow","script":"04_parking/02_tests/site-workflow.cjs","args":[]}],"review_required":false,"user_required":true}

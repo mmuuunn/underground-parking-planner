@@ -1,0 +1,53 @@
+id: UG-VEHICLE-PARKING-PLAYBACK-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review
+verify_profile: vehicle-circulation
+question: 기존 차량 재생과 코어 상세를 사용하고, 클릭한 주차칸의 입차·출차 경로를 애니메이션으로 볼 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/vehicle-manoeuvres.js
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/parking-playback.cjs
+  - tools/harness/work-items/UG-VEHICLE-PARKING-PLAYBACK-001.yaml
+acceptance:
+  - 일반 모션 설정에서 기존 차량과 검사 차량의 중복 표시 재현·선택한 재생 차량만 표시
+  - 주차칸 클릭으로 선택·주변 차로에서 후진 입차와 전진 출차 경로 검사·재생 정지 처음 및 위치 조절
+  - 주차 검토 차량4600x1900mm·뒷축 회전반경4500mm·주차 여유100mm 가정 명시·기존 차로 검사200mm 여유 유지
+  - 선택한 칸만 비우고 다른 주차칸과 코어·기둥·벽 및 램프 접속부를 침범하지 않는 경로만 재생
+  - 기존 저속 차량 모형과 중간 구간 충돌 확인 재사용·장애물과 좁은 칸은 미확인 또는 겹침 표시
+  - 기존 코어 생성기로 상세안을 표시하고 크기가 달라지는 안은 미리보기·적용·취소·실행취소 제공
+  - 기존 도면 입력과 저장 자료 보존·배치 변경 시 재생 중단 및 이전 경로 무효화·줄인 모션 설정과 일반 설정 모두 시험
+  - 실제 화면과 표시한 이미지를 현황판에 전달하고 주행 검증 범위 및 미확인 상태 유지
+not_doing:
+  - 원도 코어 내부를 복원했다고 주장·주차칸별 램프부터 전체 여정 합격·도로 우선권·정밀 동역학·층간 주행·기존 골든이나 안전 기준 변경
+  - 기존 시험·완료·승인 기록 변경·다른 모델·서브에이전트·커밋·push
+max_changed_files: 6
+max_new_production_lines: 400
+scope_reason: 코어 선택안이 계산 입력까지 전달되도록 기존 입력 호출부1곳을 포함해6파일로 제한
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"차량 애니메이션·선택 주차칸 입출차 재생·코어 상세 계획을 같은 작업 화면에서 제공한다",
+    "stage_goal":"실패 위치와 사용자 안내 원인이 일치한다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"parking-playback","script":"04_parking/02_tests/parking-playback.cjs","args":[]},{"id":"manoeuvres","script":"04_parking/02_tests/vehicle-manoeuvres.cjs","args":[]},{"id":"full-workflow","script":"04_parking/02_tests/full-workflow.cjs","args":[]}],
+    "review_required":true,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-PARKING-PLAYBACK-20261031/comparison.json
+remaining:
+  - 사용자 실제 화면 확인
+  - 독립 검토·램프부터 선택 칸까지 전체 여정 및 층간 통행 별도 검토
+results:
+  b1: 66칸 보존·64칸 입출차 경로 확인·2칸 미확인
+  playback: 차로 주행·선택 칸 입출차 애니메이션·재생 정지 처음 위치 조절
+  core: 기존 상세 생성기 연결·정확한 안 선택·미리보기 적용 취소 실행 취소 재열기
+  verification: 공통109통과·입출차 위치64136개 별도 겹침 측정0·기존 입력과 저장 및 기둥열 시험 통과
+  evidence: C:/Users/seok2/.codex/research/SGHS-PARKING-PLAYBACK-20261031/completion.json

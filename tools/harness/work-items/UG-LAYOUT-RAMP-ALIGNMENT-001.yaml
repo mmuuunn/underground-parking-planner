@@ -1,0 +1,45 @@
+id: UG-LAYOUT-RAMP-ALIGNMENT-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-first-arrow-alignment-cause-fix
+question: 램프 본체와 B2 하행 입구의 화살표·문자가 같은 램프 기준으로 정렬되고 실제 도면에서 일관되게 보이는가?
+allowed_files:
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/02_tests/ramp-drawing-alignment.cjs
+  - tools/harness/work-items/UG-LAYOUT-RAMP-ALIGNMENT-001.yaml
+acceptance:
+  - 수정 전 실제 SVG의1200mm 축 차이와 새 정렬 검사의 실패를 재현
+  - 램프 본체·입구 표시는 공통 램프 좌표계와 투영으로 계산하고 독립된 세로 상수 제거
+  - 축 오차0.01mm 미만·방향 동일·문자 종방향 중앙 오차0.1px 미만·문자 간격10px를 실행 화면에서 확인
+  - 화면 크기 변경·동선 검토·도면만 보기·인쇄·재열기에서 정렬과 전체 입력·계산 결과·저장 보존
+  - 기본 자동 화면은 표시 변경 없이 유지하고 수정 전후 확대 이미지를 현황판에 공유
+not_doing:
+  - pstack 전체 설치·설정 변경·다른 모델 호출·서브에이전트·엔진 판정·램프 형상·기존 골든·이전 기록 변경·커밋·push
+max_changed_files: 4
+max_new_production_lines: 80
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"pstack의 화면 완성도·실물 검증·구조적 오류 방지 원칙을 램프 화살표 정렬 수정에 부분 적용한다",
+    "stage_goal":"실패 위치와 사용자 안내 원인이 일치한다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"ramp-drawing-alignment","script":"04_parking/02_tests/ramp-drawing-alignment.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-RAMP-ALIGNMENT-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-RAMP-ALIGNMENT-20261030/review-checks.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-RAMP-ALIGNMENT-20261030/REVIEW.md
+remaining:
+  - 수정 후 이미지의 사용자 확인
+results:
+  outcome: 램프 공통 기준선과 문자 정렬 수정·실행 검사 통과·사용자 확인 전
+  actual: 축 차이1200mm에서0mm; 문자 종방향 오차 약13px에서0px; 화면 간격10px 유지
+  preservation: B1 전체 입력·계산 결과·저장 동일; 일반 자동 기본 입력 전체 결과와 화면 픽셀 동일
+  pstack: 화면 완성도·실물 검증·구조적 오류 방지 원칙만 부분 적용; 전체 설치·설정 변경·모델 호출 없음

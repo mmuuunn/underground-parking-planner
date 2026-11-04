@@ -1,0 +1,24 @@
+id: UG-SITE-VISIBILITY-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 실제 부지 계획에서 대상지 안의 기존 건물과 주변 지도가 계획 도면을 가리지 않는가?
+allowed_files:
+  - 04_parking/01_src/site-workflow.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/site-visibility.cjs
+  - tools/harness/work-items/UG-SITE-VISIBILITY-001.yaml
+acceptance:
+  - 대상지 안의 기존 지도와 건물은 불투명한 부지 바탕 아래에 가리고 외부 주변 정보는 유지한다
+  - 실제 부지 작업은 밝은 지도 바탕으로 표시하고 기존 구민회관 도면 표현은 유지한다
+  - 화면 맞춤은 주변 지도 범위와 무관하게 대상지와 주차계획 중심이며 도면 입력과 계산 결과는 같다
+not_doing:
+  - 배치 엔진·저장 도면·기존 증거·작업표·승인·골든 변경 또는 레거시 저장소 수정
+completion_contract: |
+  {"kind":"support","goal":"대상지와 주차계획이 주변 지도에 가리지 않도록 도면 표시를 정리한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"site-visibility","script":"04_parking/02_tests/site-visibility.cjs","args":[]},{"id":"site-workflow","script":"04_parking/02_tests/site-workflow.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SITE-VISIBILITY-20261031/comparison.json
+remaining:
+  - 실제 사용 중인 부지 화면의 가시성 및 독립 검토·사용자 확인

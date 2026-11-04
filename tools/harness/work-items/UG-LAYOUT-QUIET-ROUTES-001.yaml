@@ -1,0 +1,33 @@
+id: UG-LAYOUT-QUIET-ROUTES-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 기존 자동차·전체 동선을 유지하면서 기본 도면의 시각적 간섭을 줄이는가?
+allowed_files:
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/quiet-routes.cjs
+  - tools/harness/work-items/UG-LAYOUT-QUIET-ROUTES-001.yaml
+acceptance:
+  - 기존 파란 진입·빨간 진출 자동차 모양과 전체 경로·자동재생 유지
+  - 기본 경로 점선의 흐름 효과 해제·선과 화살표 대비 감소·화살표 간격 확대·차량 이동 속도 완화
+  - 기본 경고 원과 번호는 동선 검토 모드에서 표시·기존 검사 결과와 패널 유지
+  - 기본과 검토 모드 실제 화면 및 배치·저장 자료 동일성·기존 입력 사용 흐름 확인
+not_doing:
+  - 새로운 기능·동선 및 차량 판정 변경·골든 및 기존 증거 시험 작업 승인 기록 변경·커밋·push·다른 모델 호출
+max_changed_files: 4
+max_new_production_lines: 50
+completion_contract: |
+  {"kind":"experiment","goal":"자동차와 전체 동선을 보존하고 기본 화면의 표시 간섭을 줄인다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"quiet-routes","script":"04_parking/02_tests/quiet-routes.cjs","args":[]},{"id":"restored-routes","script":"04_parking/02_tests/restored-routes.cjs","args":[]},{"id":"full-workflow","script":"04_parking/02_tests/full-workflow.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-QUIET-ROUTES-20261031/comparison.json
+remaining:
+  - 사용자 기본 화면 확인과 독립 검토
+results:
+  display: 기존 자동차·전체 동선 유지·선 대비 감소·화살표12개·기본 점선 흐름 효과 해제·이동 속도 완화
+  inspection: 경고 원·번호는 동선 검토에서 표시·검사 결과 유지
+  preservation: 66칸·입력·저장·전체 경로 및 기존 검사 결과 동일
+  verification: 공통109통과·차분한 기본 표시·기존 복원·전체 입력 저장 시험 통과
+  evidence: C:/Users/seok2/.codex/research/SGHS-QUIET-ROUTES-20261031/completion.json

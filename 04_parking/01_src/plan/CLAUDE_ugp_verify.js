@@ -47,6 +47,7 @@
 
   // out: generate 출력(세계 좌표). input: 원래 입력(mass·ramp.widthMm)
   function check(out, input) {
+    if(input.trafficMode!==undefined&&!['loop','two-way'].includes(input.trafficMode))throw new RangeError('통행 방식은 loop 또는 two-way로 지정하세요');
     const a = out.grid.aisleMm, aisles = out.aisles, ramp = out.ramp, cores = out.cores.map((c) => c.pts).concat((out.occupants||[]).map(c=>c.pts)), V = [];
     // Reconstruct the permitted floor from the user's mass, independently of
     // the declared output boundary. Keep the same mm coordinate convention.
@@ -110,7 +111,7 @@
       while (st.length) { const u = st.pop(); for (const [v, eid] of info.adj[u]) { if (eid === e.id) continue; ec++; if (!comp.has(v)) { comp.add(v); st.push(v); } } }
       if (ec / 2 === comp.size - 1) deadE.add(e.id);
     }
-    if (ramp && rootId !== null && !hasLoop) V.push({id: 'NO_LOOP', note: '램프에서 한 바퀴 돌아 나오는 순환이 없습니다', at: ramp.landing});
+    if (ramp && rootId !== null) {if(input.trafficMode==='two-way')V.push({id:'RETURN_MANEUVER_UNVERIFIED',note:'왕복형 차로입니다 — 끝에서 돌아 나오기·후진·교행은 검토 전입니다',at:deadNodes[0]?.p||ramp.landing});else if(!hasLoop)V.push({id:'NO_LOOP',note:'램프에서 한 바퀴 돌아 나오는 순환이 없습니다',at:ramp.landing});}
     if (deadNodes.length) V.push({id: 'DEAD_END', note: `막다른 차로 끝 ${deadNodes.length}곳`, at: deadNodes[0].p});
     // 칸: 허용 영역·겹침 → 앞면 → 동선
     const S = out.stalls.map((s) => s.pts), state = S.map(() => null);
@@ -150,6 +151,7 @@
     if (clash) V.push({id: 'STALL_CLASH', note: `실내 면 밖이거나 차로·기둥·코어·다른 칸과 겹치는 칸 ${clash}대를 뺐습니다`, at: at(S.filter((P, i) => ['outside', 'hit', 'overlap'].includes(state[i])))});
     if (cnt('noFront')) V.push({id: 'STALL_NO_FRONT', note: `앞면이 차로에 닿지 않는 칸 ${cnt('noFront')}대를 뺐습니다`, at: at(S.filter((P, i) => state[i] === 'noFront'))});
     return {
+      ...(input.trafficMode?{trafficMode:input.trafficMode}:{}),
       stallState: state, rootId, hasLoop, deadEnds: deadNodes.map((n) => n.p),
       edges: out.graph.edges.map((e) => ({id: e.id, ok: !offEdge.has(e.id) && !duplicateIds.has(e.id), reached: !offEdge.has(e.id) && !duplicateIds.has(e.id) && reachedE(e), onCycle: !offEdge.has(e.id) && !duplicateIds.has(e.id) && !deadE.has(e.id)})), // onCycle = 막다른 가지가 아님(화면의 빨간 점선 구분)
       counts: {ok: cnt('ok'), deadSide: cnt('deadSide'), unreachable: cnt('unreachable'), noFront: cnt('noFront'), clash},
