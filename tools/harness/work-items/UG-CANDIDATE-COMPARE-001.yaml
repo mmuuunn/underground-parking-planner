@@ -1,0 +1,45 @@
+id: UG-CANDIDATE-COMPARE-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-user-restricted-independent-review
+verify_profile: vehicle-circulation
+question: 기존 생성 결과와 배치에 결속된 외부 경로 증거를 원본 변경 없이 같은 형식으로 비교할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/candidate-comparison.js
+  - tools/compare-candidates.cjs
+  - 04_parking/02_tests/candidate-comparison.test.cjs
+  - package.json
+  - tools/harness/work-items/UG-CANDIDATE-COMPARE-001.yaml
+acceptance:
+  - 기존 generate와 generateConnected 결과를 변경하지 않는 비교 어댑터와 실행 가능한 CLI
+  - 같은 고정 입력과 측정 조건 여부·배치 사각형 수·전체 경로 증거·미검증·조작 부담을 분리
+  - 증거 없음·오래된 배치·잘못된 요약·중복 칸·국부 경로를 전체 확인으로 승격하지 않음
+  - 기존 생성기·골든·E2 및 이전 산출물 내용 보존
+not_doing:
+  - 생성기·경로 탐색·법규·골든·기존 UI·FEASIBLE 판정 변경
+  - 다른 모델·서브에이전트·병렬 작업·독립 검토 또는 사용자 승인 대행·커밋·push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"support",
+    "goal":"기존 생성 결과와 배치 지문에 맞는 전체 경로 보고를 공통 형식으로 비교하는 재사용 모듈과 CLI를 구현한다",
+    "stage_goal":"통과, 실패, 미검증을 구분한다",
+    "target":"tools/compare-candidates.cjs",
+    "depends_on":[],
+    "checks":[{"id":"comparison-counterexamples","script":"04_parking/02_tests/candidate-comparison.test.cjs","args":[]}],
+    "review_required":true,
+    "user_required":true
+  }
+results:
+  run_id: 20261102-175650-UG-CANDIDATE-COMPARE-001-6f776792
+  implementation: 독립 비교 모듈과 읽기 전용 CLI;기존 generate와 generateConnected 수정 없음
+  tests: 변경 전110/110;최종 npm120/120;새 비교 반례10/10;하네스 공통110/110 및 작업검사1/1
+  actual_comparison: E2 50/50;D3 45/45;F45 12/24 및 미검증12;FM 34/36 및 미검증2
+  integrity: 현재 배치·감사 영수증 지문 결속;전체 여정 연결 및 조작·거리 요약 대조;증거 누락과 거부를 물리적 불가능으로 승격하지 않음
+  remaining_gates: 독립검토와 사용자 승인 PENDING;요청한 단독 작업 조건에 따라 다른 모델 호출 또는 자기 승인 기록 없음
+  scope: 백엔드·CLI 구현 단위;차량 충돌 재검사·경로 탐색 개선·기존 제품 UI와 단계 종료는 범위 밖

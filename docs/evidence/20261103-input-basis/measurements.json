@@ -1,0 +1,351 @@
+{
+  "kind": "SELF_AUDIT_NOT_INDEPENDENT_REVIEW_NOT_PRODUCT_ACCEPTANCE",
+  "representativeFailures": 2,
+  "e2": {
+    "input": "C:\\Users\\seok2\\.codex\\visualizations\\2026\\11\\02\\01a19c45-577f-7672-823f-da810977b649\\e2-reference-layouts\\fixed-input.json",
+    "source": "C:\\Users\\seok2\\.codex\\visualizations\\2026\\11\\02\\01a19b07-a42d-7cc2-bf9e-2e7d37dcae9c\\low-manoeuvre-implementation\\E2-candidate.json",
+    "provenance": "Source experiment generated from default grid; not surveyed/confirmed structure. Held fixed only for same-input comparison.",
+    "sourceFixedPreserved": true,
+    "columnCount": 38,
+    "xAxesMm": [
+      4350,
+      12450,
+      20550,
+      28650,
+      36750,
+      44850,
+      52950,
+      61050
+    ],
+    "yAxesMm": [
+      4400,
+      12400,
+      20400,
+      28400,
+      36400,
+      44400
+    ],
+    "userFlaggedPoints": [
+      {
+        "point": [
+          36750,
+          36400
+        ],
+        "present": false
+      },
+      {
+        "point": [
+          44850,
+          36400
+        ],
+        "present": false
+      }
+    ],
+    "schemes": [
+      {
+        "id": "A",
+        "count": 53,
+        "columnCount": 38,
+        "fixedPreserved": true
+      },
+      {
+        "id": "B",
+        "count": 49,
+        "columnCount": 38,
+        "fixedPreserved": true
+      },
+      {
+        "id": "C",
+        "count": 51,
+        "columnCount": 38,
+        "fixedPreserved": true
+      }
+    ],
+    "savedHistoricalVerification": {
+      "passed": true,
+      "generatorImported": false
+    },
+    "spatial": [
+      {
+        "point": [
+          36750,
+          36400
+        ],
+        "footprintInsideFloor": true,
+        "rampOverlapMm2": 0,
+        "schemes": [
+          {
+            "id": "A",
+            "aisleOverlapMm2": 0,
+            "stallHits": []
+          },
+          {
+            "id": "B",
+            "aisleOverlapMm2": 0,
+            "stallHits": []
+          },
+          {
+            "id": "C",
+            "aisleOverlapMm2": 0,
+            "stallHits": []
+          }
+        ]
+      },
+      {
+        "point": [
+          44850,
+          36400
+        ],
+        "footprintInsideFloor": true,
+        "rampOverlapMm2": 0,
+        "schemes": [
+          {
+            "id": "A",
+            "aisleOverlapMm2": 207104.1605251858,
+            "stallHits": []
+          },
+          {
+            "id": "B",
+            "aisleOverlapMm2": 207104.1605251858,
+            "stallHits": []
+          },
+          {
+            "id": "C",
+            "aisleOverlapMm2": 207104.1605251858,
+            "stallHits": []
+          }
+        ]
+      }
+    ],
+    "originalVerifierReplay": {
+      "criteriaByteIdentical": true,
+      "exitCode": 1,
+      "repositoryDrift": [
+        "04_parking/underground-compare.html"
+      ],
+      "completeReplay": false,
+      "error": "AssertionError: ['04_parking/underground-compare.html']",
+      "geometryChecksReachedPreservationGuard": true
+    }
+  },
+  "wall": {
+    "sceneSource": "C:\\Users\\seok2\\OneDrive\\바탕 화면\\08 arch-automation\\01_현재개발_planner\\tools\\harness\\work-items\\UG-WALL-ROW-CANDIDATE-001.yaml",
+    "current": {
+      "variant": "current",
+      "inputHash": "607f4193c81a8ae0e5e757db15e81acc45500f6b851bdc8b76d70360e3e8ba4c",
+      "sceneHash": "a6b1afb8f603fca34340ab62ae58b08142f8542e63f886c8ddce0979499b74fa",
+      "normalModule": {
+        "name": "일반형 2.5×5.0 · 기둥 8.1×8.0",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000
+        }
+      },
+      "explicitAxes": {
+        "x": [
+          20000,
+          30000,
+          40000,
+          50000
+        ],
+        "y": [
+          4000,
+          20000,
+          36000
+        ]
+      },
+      "xSpansMm": [
+        10000,
+        10000,
+        10000
+      ],
+      "ySpansMm": [
+        16000,
+        16000
+      ],
+      "missingInteriorYForDeclared8m": [
+        12000,
+        28000
+      ],
+      "count": 53,
+      "status": "CONDITIONAL",
+      "columnCount": 12,
+      "columnsPreserved": true,
+      "inputPreserved": true,
+      "loop": true,
+      "deadSide": 0,
+      "counts": {
+        "ok": 53,
+        "deadSide": 0,
+        "unreachable": 0,
+        "noFront": 0,
+        "clash": 0
+      },
+      "issues": [
+        "RAMP_OFFGRID"
+      ],
+      "automaticWallRow": null,
+      "structureRepeatMm": 8000,
+      "laneRepeatMm": 16000,
+      "outputDeletionProbe": {
+        "originalColumns": 12,
+        "probeColumns": 11,
+        "originalIssues": [],
+        "probeIssues": [],
+        "probeStatus": "FEASIBLE",
+        "note": "Only an in-memory output copy loses one column; original input/output files are untouched"
+      },
+      "documentedNonuniformControl": {
+        "source": "sghs-reference.js calibrated; partially estimated, not structural approval",
+        "normalizeAccepts": true,
+        "xSpansMm": [
+          9000,
+          6000,
+          3000,
+          8400,
+          8400,
+          8400,
+          9850
+        ],
+        "ySpansMm": [
+          9000,
+          9000,
+          9000,
+          9000
+        ],
+        "omissions": [
+          {
+            "ix": 1,
+            "iy": 4,
+            "state": "omitted",
+            "reason": "C1 북서측 교점은 원도에서 독립 기둥 없이 빈 통로로 보임",
+            "source": "DG-80514_plan_06.jpg; crop(375,501), pixel(376,218.5)"
+          }
+        ]
+      }
+    },
+    "rejectedArchive": {
+      "variant": "rejected",
+      "inputHash": "607f4193c81a8ae0e5e757db15e81acc45500f6b851bdc8b76d70360e3e8ba4c",
+      "sceneHash": "a6b1afb8f603fca34340ab62ae58b08142f8542e63f886c8ddce0979499b74fa",
+      "normalModule": {
+        "name": "일반형 2.5×5.0 · 기둥 8.1×8.0",
+        "grid": {
+          "gx": 8100,
+          "gy": 8000,
+          "stallW": 2500,
+          "stallD": 5000
+        }
+      },
+      "explicitAxes": {
+        "x": [
+          20000,
+          30000,
+          40000,
+          50000
+        ],
+        "y": [
+          4000,
+          20000,
+          36000
+        ]
+      },
+      "xSpansMm": [
+        10000,
+        10000,
+        10000
+      ],
+      "ySpansMm": [
+        16000,
+        16000
+      ],
+      "missingInteriorYForDeclared8m": [
+        12000,
+        28000
+      ],
+      "count": 54,
+      "status": "CONDITIONAL",
+      "columnCount": 12,
+      "columnsPreserved": true,
+      "inputPreserved": true,
+      "loop": true,
+      "deadSide": 0,
+      "counts": {
+        "ok": 54,
+        "deadSide": 0,
+        "unreachable": 0,
+        "noFront": 0,
+        "clash": 0
+      },
+      "issues": [
+        "RAMP_OFFGRID"
+      ],
+      "automaticWallRow": {
+        "side": "left",
+        "frame": "ucs",
+        "wallMm": 400,
+        "previousLaneMm": 12550,
+        "laneMm": 8400,
+        "wallGapBeforeMm": 4150,
+        "wallGapMm": 0,
+        "span": [
+          8400,
+          32400
+        ]
+      },
+      "structureRepeatMm": 8000,
+      "laneRepeatMm": 16000,
+      "outputDeletionProbe": {
+        "originalColumns": 12,
+        "probeColumns": 11,
+        "originalIssues": [],
+        "probeIssues": [],
+        "probeStatus": "FEASIBLE",
+        "note": "Only an in-memory output copy loses one column; original input/output files are untouched"
+      },
+      "documentedNonuniformControl": {
+        "source": "sghs-reference.js calibrated; partially estimated, not structural approval",
+        "normalizeAccepts": true,
+        "xSpansMm": [
+          9000,
+          6000,
+          3000,
+          8400,
+          8400,
+          8400,
+          9850
+        ],
+        "ySpansMm": [
+          9000,
+          9000,
+          9000,
+          9000
+        ],
+        "omissions": [
+          {
+            "ix": 1,
+            "iy": 4,
+            "state": "omitted",
+            "reason": "C1 북서측 교점은 원도에서 독립 기둥 없이 빈 통로로 보임",
+            "source": "DG-80514_plan_06.jpg; crop(375,501), pixel(376,218.5)"
+          }
+        ]
+      }
+    },
+    "sameInputHash": true,
+    "historicalDependencyDrift": [
+      "04_parking/underground-compare.html"
+    ]
+  },
+  "preservation": {
+    "protectedFiles": 249,
+    "changed": [
+      "C:\\Users\\seok2\\OneDrive\\바탕 화면\\08 arch-automation\\01_현재개발_planner\\04_parking\\01_src\\plan\\aisle-depth-hypothesis.js",
+      "C:\\Users\\seok2\\OneDrive\\바탕 화면\\08 arch-automation\\01_현재개발_planner\\tools\\harness\\work-items\\UG-AISLE-DEPTH-HYPOTHESIS-001.yaml",
+      "C:\\Users\\seok2\\OneDrive\\바탕 화면\\08 arch-automation\\01_현재개발_planner\\tools\\test-aisle-depth.cjs"
+    ],
+    "replayCriticalChanges": []
+  }
+}

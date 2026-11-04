@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../06_core_layout/01_src/core_draw.css">
   <link rel="stylesheet" href="01_src/underground-core-integration.css">
   <link rel="stylesheet" href="01_src/planning-controls.css">
+  <link rel="stylesheet" href="01_src/task-workspace.css?v=20261102-a2">
 <style>.issue-list{list-style:none;padding:0;margin:6px 0}.issue-list li{margin:0 0 8px;line-height:1.45}.issue-no{display:inline-block;min-width:16px;height:16px;border-radius:8px;background:#d23c3c;color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:16px;margin-right:4px}.issue-actions,.issue-moves{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}</style>
 </head>
 <body>
@@ -17,7 +18,7 @@
   <header class="app-header">
     <a class="brand" href="underground-compare.html" aria-label="지하주차 계획 홈"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V4h18v16M8 20V9h8v11M3 15h5m8 0h5"/></svg><strong>주차계획</strong><span class="brand-divider"></span></a>
     <div class="project"><span class="eyebrow">노원로26가길 7</span><span class="project-name">지하주차 기본계획 <span class="draft-badge">검토 초안</span></span></div>
-    <div class="header-actions"><button class="icon-btn" id="undoBtn" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소">↶</button><button class="icon-btn" id="redoBtn" title="다시 실행 (Ctrl+Y)" aria-label="다시 실행">↷</button><span class="action-divider"></span><button class="hbtn" id="fitBtn">화면 맞춤 <kbd>F</kbd></button><button class="hbtn" id="copyScene" title="현재 배치 정보를 복사해 AI 대화창에 붙여 넣으세요">장면 복사</button><button class="hbtn" id="presentationBtn" aria-pressed="false">도면만 보기</button><button class="primary-btn" id="printBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7V2h10v5M5 14H2V7h16v7h-3M5 11h10v7H5z"/></svg>인쇄</button></div>
+    <div class="header-actions"><button class="icon-btn" id="undoBtn" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소">↶</button><button class="icon-btn" id="redoBtn" title="다시 실행 (Ctrl+Y)" aria-label="다시 실행">↷</button><span class="action-divider"></span><button type="button" class="hbtn" id="e2JourneyOpen">E2 경로 체험</button><button class="hbtn" id="fitBtn">화면 맞춤 <kbd>F</kbd></button><button class="hbtn" id="copyScene" title="현재 배치 정보를 복사해 AI 대화창에 붙여 넣으세요">장면 복사</button><button class="hbtn" id="presentationBtn" aria-pressed="false">도면만 보기</button><button class="primary-btn" id="printBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7V2h10v5M5 14H2V7h16v7h-3M5 11h10v7H5z"/></svg>인쇄</button></div>
   </header>
   <main class="drawing-workspace">
     <div class="workspace-bar"><span class="floor-tab"><b>B1</b> 지하 1층 평면도</span><div class="tools" id="tools" aria-label="편집 도구"></div><div class="view-switch" role="group" aria-label="도면 표현"><button id="drawingMode" class="active" aria-pressed="true">도면</button><button id="inspectionMode" aria-pressed="false">동선 검토</button></div><span class="workspace-unit">단위 mm</span></div>
@@ -95,25 +96,27 @@
   </aside>
 </div>
 
-<script src="../00_shared/lib/clipper.js"></script>
-<script src="../01_stair/01_src/stair.js"></script>
-<script src="../06_core_layout/01_src/core_layout.js"></script>
-<script src="../06_core_layout/01_src/core_gen2.js"></script>
+<script src="../00_shared/lib/clipper.js?v=20261031-site5"></script>
+<script src="../01_stair/01_src/stair.js?v=20261031-site5"></script>
+<script src="../06_core_layout/01_src/core_layout.js?v=20261031-site5"></script>
+<script src="../06_core_layout/01_src/core_gen2.js?v=20261031-site5"></script>
 <script>window.esc = window.CoreLayout.esc;</script>
-<script src="../06_core_layout/01_src/core_draw.js"></script>
-<script src="src/underground/candidates/rectangular-loop-v04.js"></script>
+<script src="../06_core_layout/01_src/core_draw.js?v=20261031-site5"></script>
+<script src="src/underground/candidates/rectangular-loop-v04.js?v=20261031-site5"></script>
 <script>window.UGLoop = window.UGEngine;</script>
-<script src="01_src/plan/CLAUDE_ugp_geom.js"></script>
-<script src="01_src/plan/planning-boundary.js"></script><script src="01_src/plan/planning-zones.js"></script>
-<script src="01_src/plan/CLAUDE_ugp_grid.js"></script>
-<script src="01_src/plan/CLAUDE_ugp_network.js"></script>
-<script src="01_src/plan/CLAUDE_ugp_curve_ramp.js"></script>
-<script src="01_src/plan/CLAUDE_ugp_ramp.js"></script>
-<script src="01_src/plan/stall-modules.js"></script><script src="01_src/plan/stall-allocation.js"></script><script src="01_src/plan/occupant-routing.js"></script><script src="01_src/plan/core-fit.js"></script><script src="01_src/plan/CLAUDE_ugp_layout.js"></script>
-<script src="01_src/plan/CLAUDE_ugp_verify.js"></script>
-<script src="01_src/plan/vehicle-routes.js"></script>
-<script src="01_src/plan/CLAUDE_ugp_plan.js"></script>
-<script src="src/underground/evaluators/evaluator-core.js"></script>
+<script src="01_src/site-provider.js?v=20261031-site5"></script>
+<script src="01_src/plan/CLAUDE_ugp_geom.js?v=20261031-site5"></script>
+<script src="01_src/plan/planning-boundary.js?v=20261031-site5"></script><script src="01_src/plan/planning-zones.js?v=20261103-residual1"></script>
+<script src="01_src/plan/CLAUDE_ugp_grid.js?v=20261031-site5"></script>
+<script src="01_src/plan/CLAUDE_ugp_network.js?v=20261031-site5"></script>
+<script src="01_src/plan/CLAUDE_ugp_curve_ramp.js?v=20261031-site5"></script>
+<script src="01_src/plan/CLAUDE_ugp_ramp.js?v=20261031-site5"></script>
+<script src="01_src/plan/stall-modules.js?v=20261031-site5"></script><script src="01_src/plan/stall-allocation.js?v=20261031-site5"></script><script src="01_src/plan/occupant-routing.js?v=20261031-site5"></script><script src="01_src/plan/core-fit.js?v=20261031-site5"></script><script src="01_src/plan/CLAUDE_ugp_layout.js?v=20261031-site5"></script>
+<script src="01_src/plan/CLAUDE_ugp_verify.js?v=20261031-site5"></script>
+<script src="01_src/plan/vehicle-routes.js?v=20261031-site5"></script>
+<script src="01_src/plan/vehicle-manoeuvres.js?v=20261031-site5"></script>
+<script src="01_src/plan/CLAUDE_ugp_plan.js?v=20261102-ramp-issue1"></script>
+<script src="src/underground/evaluators/evaluator-core.js?v=20261031-site5"></script>
 <!-- file:// cannot fetch JSON reliably. Keep this snapshot equal to data-source. -->
 <script type="application/json" id="parkingRules" data-source="src/underground/rules/kr-parking-rules-2026-07-27.json">
 {
@@ -923,8 +926,11 @@
 }
 </script>
 <script src="01_src/plan/aisle-depth-hypothesis.js?v=20261103-depth1"></script>
-<script src="01_src/CODEX_ug_compare_page.js"></script>
-<script src="01_src/planning-controls.js"></script>
-<script src="01_src/CODEX_underground_drawing_presentation.js"></script>
+<script src="01_src/CODEX_ug_compare_page.js?v=20261102-startup1"></script>
+<script src="01_src/planning-controls.js?v=20261103-residual1"></script>
+<script src="01_src/CODEX_underground_drawing_presentation.js?v=20261102-markings2"></script>
+<script src="01_src/task-workspace.js?v=20261103-column-access1"></script>
+<script src="01_src/e2-journey-data.js?v=20261102-e2-1"></script>
+<script src="01_src/e2-journey-viewer.js?v=20261102-e2-1"></script>
 </body>
 </html>

@@ -1,0 +1,43 @@
+id: UG-ENTRY-ROUTE-FIX-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-coordinator-independent-review
+verify_profile: vehicle-circulation
+question: 동일50칸36기둥의형상을보존하고국부대표경로접속수리한차수로진입전체와기존진출이동일검사에서clear가되는가?
+allowed_files:
+  - 04_parking/01_src/plan/vehicle-routes.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+  - tools/harness/work-items/UG-ENTRY-ROUTE-FIX-001.yaml
+acceptance:
+  - 변경전입력및배치지문일치와진입0.665m2이탈및진출clear재현
+  - 원안50칸36기둥과램프차로구조형상보존;baselineObserver로원안분리
+  - 차량4600x1900mm표본500mm이탈0.01m2및회전창4712mm각도90.5도와기존안전조건유지
+  - 생성한대표진입전체와기존진출을동일차체검사로평가;실패시실패유지
+  - 실제generate반환후보대수변화를별도보고하고사용자확인대기
+  - 기존사용자변경검사기생성기기준v1골든과거영수증비교도구보존
+not_doing:
+  - 판정조건허용공간장애물정의변경;fallback제거실패숨김검사완화
+  - 반복위치반경탐색2차수리새AB후보C다른파일수정자동승인
+  - 다른모델서브에이전트병렬작업다른채팅발신화면제어push일괄커밋
+max_implementation_rounds: 1
+max_reviewer_calls: 0
+max_changed_files: 3
+max_new_production_lines: 400
+completion_contract: |
+  {"kind":"support","goal":"고정50칸의대표진입경로접속을한차수로수리하고전체경로검사결과와실제반환영향을보고한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/01_src/plan/vehicle-routes.js","depends_on":[],"checks":[{"id":"entry-route-regression","script":"04_parking/02_tests/parking-turns.test.cjs","args":[]}],"review_required":true,"user_required":true}
+completion_run: 20261103-160505-UG-ENTRY-ROUTE-FIX-001-7f2f2a23
+results:
+  implementation_rounds: 1
+  repair: 같은방향으로이어지는마지막진입직선을순환중심선에미리접속;경로생성만변경;check_bodiesFit_space_turnIssue_fillet판정유지
+  reproduction: fixed50bays36columns;entry0.665m2at14200_6900mm;exitClear;inputAndPlanHashesMatchDiagnosis
+  fixed_plan: planHashd11d12c8c940041ee1ef084cd276133754b133c5fc04af9d5ba03ac1c1a70c7b;geometryUnchanged
+  fixed_routes: entryClear262samplesMaxOutside0;exitClear256samplesExactlyUnchangedMaxOutside0.0081675m2;allObstacleOverlap0
+  checker: vehicle4600x1900mm;sample500mm;outsideLimit0.01m2;turnWindow4712mm;angle90.5deg;oldLateRouteStillBlocked0.665m2
+  generate_impact: ExistingABLogicNowSelectsA62InsteadOfBaseline50;NoGeneratorOrSelectionLogicChanges;USER_CONFIRMATION_PENDING
+  tests: npm139of139;parkingTurns16of16;twoWay5of5;harness111of111AndWorkCheck1of1;oldSourceNewRegressionFailsOnlyNewCase
+  reference_limits: basisAndAutomaticABTestsFailExpectedPlanBecauseActualReturnChanges;oldReceiptCompareRemainsCOMPARISON_BLOCKED_sharedCalculationOrVerifierSourceChanged;NoReferenceRefresh
+  stopped: OneImplementationRoundComplete;NoRepeatedPositionOrRadiusSearchNoSecondRepairNoExtraFileChanges
+  gates: IndependentReviewAndUserDrawingConfirmationPENDING;ScreenNotChecked;NoStageOrProductApproval
+  evidence: C:/Users/seok2/.codex/reviews/entry-route-fix-20261103_1

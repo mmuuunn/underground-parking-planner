@@ -1,0 +1,29 @@
+id: UG-UX-DASHED-OVERVIEW-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review-no-model-calls
+verify_profile: vehicle-circulation
+question: 새 노면표시와 함께 기존 전체 점선 동선을 계속 표시하는가?
+allowed_files:
+  - 04_parking/01_src/CODEX_underground_drawing_presentation.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/ramp-drawing-alignment.cjs
+  - tools/harness/work-items/UG-UX-DASHED-OVERVIEW-001.yaml
+acceptance:
+  - 기존 순환·진입·진출 경로와 전체 가지 차로를 같은 좌표의 점선으로 표시
+  - 새 노면 화살표·바퀴멈춤·램프·랜딩 표현 및 입력·계산·저장 유지
+not_doing:
+  - 나머지 기능 개발·차량 판정·골든·저장 형식·기존 변경 정리·다른 모델·서브에이전트·병렬 작업·커밋·push
+baseline_observation: 직전 109/109 통과 기록의 코드 지문과 현재 파일 일치 확인 후 preflight SkipBaseline 사용
+max_changed_files: 4
+max_new_production_lines: 40
+completion_contract: |
+  {"kind":"experiment","goal":"새 노면표시 위에 기존 전체 점선 동선을 보존한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"dashed-drawing","script":"04_parking/02_tests/ramp-drawing-alignment.cjs","args":["C:/Users/seok2/Documents/Codex/2026-11-02/outputs/08-2_확정도면표현_3/baseline-scenes.json"]},{"id":"workspace-flow","script":"04_parking/02_tests/task-workspace.cjs","args":[]}],"review_required":true,"user_required":true}
+results:
+  run: 20261102-020543-UG-UX-DASHED-OVERVIEW-001-4fcdba03
+  checks: 공통 계산109/109 및 작업 검사2/2 통과; 전체 점선 경로·가지 좌표와 입력·결과·저장 보존
+remaining:
+  - 독립 검토·사용자 화면 확인 대기
+  - 사용자가 나머지 작업은 나중에 이어가겠다고 요청하여 이 수정 뒤 후속 개발 중지

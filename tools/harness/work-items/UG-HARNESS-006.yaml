@@ -1,0 +1,52 @@
+id: UG-HARNESS-006
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-dashboard-only
+verify_profile: vehicle-circulation
+question: 제품 전체 흐름과 현재 이슈 및 최신 검증 근거를 브라우저에서 함께 확인할 수 있는가?
+allowed_files:
+  - tools/harness/dashboard.html
+  - tools/harness/scripts/dashboard.cjs
+  - tools/harness/scripts/dashboard.test.cjs
+  - tools/harness/work-items/UG-HARNESS-006.yaml
+acceptance:
+  - 입력·자동배치·램프순환·결과검토·저장출력의 관련 작업과 미완료를 표시하며 임의 완성률을 사용하지 않음
+  - 명시적 현재 작업과 최근 기록을 구분하고 누락·알 수 없는 상태·연결 실패를 표시
+  - 작업표·manifest·completion 및 연결된 검토 자료를 읽고 코드 일치 여부와 조회/증거 갱신 시각을 구분
+  - 일반 기준·일반 입력 회귀·SGHS 일반 생성·참고 연결망을 분리하고 공통시험을 제품 전체 합격으로 표시하지 않음
+  - 루프백 HTTP 및 브라우저에서 자동갱신·수동새로고침·빈기록·상태표시·근거링크를 확인
+not_doing:
+  - 엔진·골든·제품점수·기존작업표·기존승인 변경·의존성설치·커밋·push·외부공개
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 400
+dashboard_review_for: UG-STALL-STRIP-REGRESSION-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/STALL-STRIP-CROSS-VERIFY-20261030/report.md
+  - C:/Users/seok2/.codex/research/STALL-STRIP-CROSS-VERIFY-20261030/browser-summary.json
+  - C:/Users/seok2/.codex/research/STALL-STRIP-CROSS-VERIFY-20261030/cache-counterexample.json
+completion_contract: |
+  {
+    "kind": "support",
+    "goal": "기록에 근거한 제품 전체 흐름과 현재 이슈를 같은 화면에서 확인한다",
+    "stage_goal": "통과, 실패, 미검증을 구분한다",
+    "target": "tools/harness/dashboard.html",
+    "depends_on": [],
+    "checks": [{"id":"dashboard-records","script":"tools/harness/scripts/dashboard.test.cjs","args":[]}],
+    "review_required": false,
+    "user_required": true
+  }
+remaining:
+  - 사용자 대시보드 화면 확인 대기;제품 엔진과 차량 순환 미완료는 별도
+results:
+  verification_run: 20261030-153959-UG-HARNESS-006-e463dff2
+  outcome: USER_GATE;공통109/109·작업검사1/1;사용자승인미작성;productProgress=false
+  dashboard_tests: 7/7;빈기록·현재작업명시·완료영수증불일치·코드변경·외부근거·GET전용·허용근거링크
+  browser: 격리Edge11항목통과;실제표시·3초자동갱신·수동새로고침·근거링크·단계이동·모바일390px;격리응답으로빈기록·미등록상태·오래된증거;오프라인안내;스크립트오류0
+  url: http://127.0.0.1:8765/
+  preservation: HEAD43da426유지;엔진01_src25파일SHA256동일;기존사용자문서및기존작업표·승인미수정;커밋·push없음
+  evidence: C:/Users/seok2/Documents/Codex/2026-10-30/task/dashboard-update/browser-verification.json;dashboard-desktop.png;dashboard-mobile.png;engine-preservation.json
+  limits: 저장된기록만자동조회;현재작업지정없음은그대로표시;새외부검토는dashboard_sources에원문경로연결필요;작업허용파일지문일치는전체제품합격아님

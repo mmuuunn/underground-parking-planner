@@ -1,0 +1,60 @@
+id: UG-WALL-ROW-CANDIDATE-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending-no-delegation-authorized
+verify_profile: vehicle-circulation
+question: 고정 구조와 기존 램프를 보존하며 외벽열·직선 차로·맞은편열의 공동 후보를 일반 자동 생성에 연결할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_network.js
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/02_tests/wall-row-candidate.test.cjs
+  - tools/harness/work-items/UG-WALL-ROW-CANDIDATE-001.yaml
+acceptance:
+  - 고정 구조·직선 램프·연속열 입력에서 외벽에 붙는 세로 차로 후보 한 종류를 자동 비교; 원도 좌표 특례 없음
+  - 기둥·코어·램프 보존; 차로 순폭과 양측 주차 깊이 확보; 기존 연속열·양면열과 최종 검사 재사용
+  - 후보를 일반 generate와 실제 제품 호출에 연결; 기존 안보다 대수·접근·순환·빈 섬·실패 이유가 악화되면 채택 금지
+  - 기둥·코어·폭 부족·단절 반례 및 평행이동/회전 검사; 기존 골든 기대값 보존
+  - 단위 시험·npm test·하네스·실제 화면 전후/재열기 확인; 독립 검토와 사용자 승인 대기
+not_doing:
+  - 새 E2 좌표안, 모든 모서리·가로열·홀형·곡선 내부·다층의 일반화
+  - 골든값·안전 판정·사용자 입력 삭제, 커밋, push, 다른 모델·서브에이전트 호출
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+completion_run: 20261103-011202-UG-WALL-ROW-CANDIDATE-001-b82b70e0
+results:
+  implementation_rounds: 2
+  change_scope: 프로덕션3파일 추가62줄; 시험1파일과 작업표1파일; 기존 미커밋 변경 보존
+  mechanism: 고정 축·직선 몸체 램프·continuous에서 좌/우 세로 외벽 후보를 일반 generate가 자동 비교; 외벽 내측선+주차깊이+차로반폭으로 위치 계산; 추적 차로·사례 좌표 하드코딩 없음
+  selection: 기둥·코어·램프 동일; 대수·도달·앞면·순환·막다른끝·빈섬·기존 실패 이유 악화 금지; 실제 양측 연속열을 최종 채택한 경우만 선택
+  second_round: 주차 금지 예약으로 외벽열을 비워도 차로 이동을 고를 수 있는 반례 발견; 양측 실제 연속칸과 외벽 접면을 확인하도록 보완
+  regular_case: 53→54칸; 외벽틈4150→0mm; 기둥12·코어0·램프 보존; 순환유지; 충돌/앞면없음/미도달0; RAMP_OFFGRID와CONDITIONAL 유지
+  right_case: 구조와 모듈 원점을 함께 반사한 입력에서 우측 후보54칸·외벽틈0; 모듈 불일치 입력은 실패 상태 유지
+  sghs: 기존paired66칸·275→0mm·INFEASIBLE 재현; calibrated 일반자동9칸 유지; 사선 모서리 및 전체 램프 접속 미해결
+  scoped_tests: 8/8; 기둥/코어 차단·폭 부족·예약으로 열 소멸·정책분리·우측·이동/회전·입력 전달
+  npm_test: 최종133/133
+  harness: 공통110/110; 작업2/2; 제품비교passed・재열기동일; REVIEW_PENDING; review/user PENDING
+  preservation: 기존208파일 중 허용3개만변경; 나머지205개 바이트 동일; 골든·기존시험·기존자료 보존
+  browser: 실제54칸·현재코드 로드 확인; 과거캐시3개를재검증후정상로드; 실제화면PNG와하네스전후PNG보관
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19ced-e76b-7a61-89cf-c9cc7fc092ef/wall-row-build/review.md
+  independent_review: 미실시; 권장GPT-6 Astra/High로고정구조·차로폭·회귀검토; 다른모델호출허가없음
+  user_visual_review: REJECTED;2026-11-03;근거없는16m구조경간과기존모듈누락지적;이전개선판정철회
+user_rejection:
+  date: 2026-11-03
+  recommendation: WITHDRAWN
+  implementation: WITHDRAWN_TO_PRETASK_BYTES;추가3파일원복;기존208파일동일보존;잘못된신규시험은외부증거로보존
+  reason: 일반형8.1x8.0m표시와달리시험에X10m・Y16m간격축을직접넣음;기둥수보존은모듈정당성검사가아님
+  missing_gate: 기존공모기반모듈타입・구조축반복・중간축존재와배열위상정합을후보생성전에검사하지않음
+  repeat_depth_vs_span: 주차5m+차로6m+주차5m의16m배열깊이와기둥간격을구분해야함
+  evidence: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19ced-e76b-7a61-89cf-c9cc7fc092ef/wall-row-build/review_2.md
+  completion_run_meaning: 과거코드의기계검사기록만보존;현재코드의완료・계획합격증거아님
+start_gate:
+  stage_contribution: ○ 고정 기둥 차단으로 끊기는 자동 차로와 실제 주차열 관계 개선
+  reference_change: △ 채택된 도면·대수는 달라질 수 있어 전후 측정과 사용자 확인 필요; 골든값 보존
+  excluded_scope: ○ 직선 후보 한 종류; 법규·차량 합격 기준 변경 없음
+completion_contract: |
+  {"kind":"product","goal":"고정 구조 아래 외벽열·직선 차로·맞은편열 후보를 일반 자동 생성에 연결한다","stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"wall-row-controls","script":"04_parking/02_tests/wall-row-candidate.test.cjs","args":[]},{"id":"source-regressions","script":"04_parking/01_src/sghs-reference.js","args":["--paired"]}],"review_required":true,"user_required":true,"product":{"url":"http://127.0.0.1:8874/04_parking/underground-compare.html","scene":{"v":2,"ucs":0,"mass":[[0,0],[60000,0],[60000,50000],[0,50000]],"cores":[],"ramp":{"p":[30000,42000],"k":0,"alignedAngleDeg":0,"len":24000,"w":6000},"snap":100,"module":"normal","columnAxes":{"x":[20000,30000,40000,50000],"y":[4000,20000,36000]},"automaticRowSelection":"continuous","layoutMode":"auto","autoZones":false,"phase":[0,0],"floorMm":3800},"expect":{"result.automaticWallRow.wallGapMm":{"eq":0},"result.stallCount":{"gte":53},"result.graph.hasLoop":{"eq":true}}}}

@@ -31,7 +31,7 @@
     const P=clean(points),length=options.lengthMm??4600,width=options.widthMm??1900,step=options.sampleMm??500;
     if(!(Number.isFinite(length)&&length>0&&Number.isFinite(width)&&width>0&&Number.isFinite(step)&&step>=100))throw new RangeError('차량 크기와 동선 확인 간격을 확인하세요');
     const total=P.reduce((s,p,i)=>s+(i?len(sub(p,P[i-1])):0),0),base={points:P,lengthMm:Math.round(total),vehicle:{lengthMm:length,widthMm:width},sampleMm:step,turnWindowMm:TURN_WINDOW,turnLimitDeg:TURN_LIMIT,scope:'planar-body-samples-and-turn-window'};
-    if(P.length<2||total<length||!plan.graph?.hasLoop||plan.graph.rootId==null)return {...base,state:'unconnected',stopDistanceMm:0,firstIssue:{id:'ROUTE_DISCONNECTED',at:P[0]||plan.ramp?.landing||null,note:'램프에서 순환 차로까지의 연결과 경로 길이를 확인하세요'}};
+    if(P.length<2||total<length||plan.graph?.rootId==null)return {...base,state:'unconnected',stopDistanceMm:0,firstIssue:{id:'ROUTE_DISCONNECTED',at:P[0]||plan.ramp?.landing||null,note:'램프와 차로의 연결 및 경로 길이를 확인하세요'}};
     const {allowed,blockers}=space(plan);
     const reached=(plan.graph.edges||[]).filter(e=>e.ok&&e.reached),onRamp=p=>plan.ramp&&CL.Clipper.PointInPolygon({X:Math.round(p[0]),Y:Math.round(p[1])},G.toC(plan.ramp.body))!==0;
     const sharp=turnIssue(P),stopTurn=()=>({...base,state:'blocked',samples,stopDistanceMm:Math.max(0,Math.round(sharp.distanceMm-length/2-100)),firstIssue:sharp});
@@ -95,13 +95,31 @@
       if(d<=tol)return s;if(!best||d<best.d)best={d,s};passed+=L;}
     return best?best.s:0;
   }
+  function twoWayRoutes(plan,options){
+    if(plan.ramp?.kind==='curve')throw new RangeError('왕복형 대표 경로는 현재 직선 램프 입력만 지원합니다');
+    const graph=plan.graph||{},nodes=graph.nodes||[],rootId=graph.rootId,dist=new Map(),prev=new Map(),pending=new Set();
+    if(rootId!=null){dist.set(rootId,0);pending.add(rootId);}
+    while(pending.size){const id=[...pending].sort((a,b)=>dist.get(a)-dist.get(b)||a-b)[0];pending.delete(id);for(const e of graph.edges||[]){if(!e.ok||!e.reached||e.a!==id&&e.b!==id)continue;const next=e.a===id?e.b:e.a,d=dist.get(id)+len(sub(nodes[id].p,nodes[next].p));if(d<(dist.get(next)??Infinity)){dist.set(next,d);prev.set(next,id);pending.add(next);}}}
+    let target=options.targetNodeId??[...dist.keys()].filter(i=>i!==rootId).sort((a,b)=>dist.get(b)-dist.get(a)||a-b)[0];
+    if(options.targetNodeId!==undefined&&(!Number.isInteger(target)||!dist.has(target)||target===rootId))throw new RangeError('램프에서 연결된 목적 차로 점을 선택하세요');
+    const ids=[];if(target!==undefined){for(let id=target;id!==undefined;id=prev.get(id))ids.unshift(id);}
+    const centre=ids.length>1?clean([...(plan.ramp?.start?[plan.ramp.start]:[]),...(plan.ramp?.landing?[plan.ramp.landing]:[]),...ids.map(i=>nodes[i].p)]):[],offset=(plan.grid?.aisleMm||TURN_R)/4,S=space(plan),fits=P=>bodiesFit(S,P,options.lengthMm,options.widthMm);
+    const path=P=>P.length>1?fillet(offsetLegs(P,()=>offset),fits):[],entry=path(centre),exit=path(centre.slice().reverse());
+    const assess=(P,colorKey)=>{let v=check(plan,P,options);if(plan.ramp?.approach?.accepted===false&&v.state!=='unconnected')v={...v,state:'blocked',stopDistanceMm:0,firstIssue:{id:'RAMP_APPROACH',at:plan.ramp.landing,note:plan.ramp.approach.summary||'램프 합류 조건을 확인하세요'}};
+      // A clear planar trip does not demonstrate the manoeuvre needed to start the return trip.
+      if(v.state==='clear')v={...v,planarState:'clear',verifiedDistanceMm:v.stopDistanceMm,state:'unverified',stopDistanceMm:0,firstIssue:{id:'RETURN_MANEUVER_UNVERIFIED',at:nodes[target]?.p,note:'대표 경로의 평면 차체 검사는 확인했으나 끝에서 돌아 나오기·후진·교행은 검토 전입니다'}};return {colorKey,...v};};
+    return {entry:assess(entry,'entry'),exit:assess(exit,'exit'),targetNodeId:target,trafficBasis:'two-way-network',roundTrip:'unverified',verification:'representative-planar-trips-only'};
+  }
   function routes(plan,options={}){
+    if(plan.report?.trafficMode==='two-way')return twoWayRoutes(plan,options);
     const C=plan.circulation||{},ramp=plan.ramp,source=ramp?.sourceRamp,o=(plan.grid?.aisleMm||TURN_R)/4;
     const spine=C.spine?.length>1?C.spine:[],ring=spine.length?lap(C.rings,spine.at(-1)):[];
     // The two-way ramp link keeps right by a/4; the proposed one-way ring is driven on its centre line,
     // as drawn. Offsets are applied before rounding so the junction turn is rounded as driven.
     const n=clean(spine).length-1,S=spine.length?space(plan):null,fits=A=>bodiesFit(S,A,options.lengthMm,options.widthMm);
-    let entry=spine.length?fillet(offsetLegs(clean(spine.concat(ring.slice(1))),i=>i<n?o:0),fits):[],exit=spine.length?fillet(offsetLegs(clean(ring.concat(spine.slice().reverse().slice(1))),i=>i>=ring.length-1?o:0),fits):[];
+    // Join a continuing ring leg on its centre line before rounding, so a lane-return jog cannot shorten the approach turn.
+    const entryLaneEnd=n>1&&ring.length>1&&G.dot(G.norm(sub(spine.at(-1),spine.at(-2))),G.norm(sub(ring[1],ring[0])))>Math.cos(.02)?n-1:n;
+    let entry=spine.length?fillet(offsetLegs(clean(spine.concat(ring.slice(1))),i=>i<entryLaneEnd?o:0),fits):[],exit=spine.length?fillet(offsetLegs(clean(ring.concat(spine.slice().reverse().slice(1))),i=>i>=ring.length-1?o:0),fits):[];
     if(source?.gradeLine?.length&&source.laneBandCenter?.length===source.gradeLine.length){
       const inner=source.gradeLine,outer=source.laneBandCenter.map((p,i)=>sub(mul(p,2),inner[i]));
       const incoming=source.turn==='left'?outer:inner,outgoing=source.turn==='left'?inner:outer;
@@ -110,7 +128,8 @@
       entry=incoming.slice(0,-1).concat(entry);exit=exit.concat(outgoing.slice().reverse().slice(1));
     }
     const incoming=clean(entry),outgoing=clean(exit);
-    const result={entry:{colorKey:'entry',...check(plan,incoming,options)},exit:{colorKey:'exit',...check(plan,outgoing,options)},trafficBasis:'proposed-one-way-ring',verification:'planar-body-samples-and-turn-window'};
+    const ringTrip=P=>{const v=check(plan,P,options);if(plan.graph?.hasLoop&&v.state!=='unconnected')return v;const {samples,...base}=v;return {...base,state:'unconnected',stopDistanceMm:0,firstIssue:{id:'ROUTE_DISCONNECTED',at:v.points[0]||plan.ramp?.landing||null,note:'램프에서 순환 차로까지의 연결과 경로 길이를 확인하세요'}};};
+    const result={entry:{colorKey:'entry',...ringTrip(incoming)},exit:{colorKey:'exit',...ringTrip(outgoing)},trafficBasis:'proposed-one-way-ring',verification:'planar-body-samples-and-turn-window'};
     // Landing restrictions precede traffic simulation; do not call a short merge clear.
     if(plan.ramp?.approach?.accepted===false)for(const key of ['entry','exit']){const v=result[key];if(v.state==='unconnected')continue;const at=plan.ramp.landing,issue={id:'RAMP_APPROACH',at,note:plan.ramp.approach.summary||'램프 합류 조건을 확인하세요'},distance=v.points.reduce((s,p,i)=>i?s+len(sub(p,v.points[i-1])):s,0);const atDistance=passAt(v.points,at,(plan.grid?.aisleMm||TURN_R)/2);if(v.state==='clear'||atDistance<=v.stopDistanceMm)result[key]={...v,state:'blocked',stopDistanceMm:Math.max(0,Math.min(distance,atDistance-v.vehicle.lengthMm/2)),firstIssue:issue};}
     return result;

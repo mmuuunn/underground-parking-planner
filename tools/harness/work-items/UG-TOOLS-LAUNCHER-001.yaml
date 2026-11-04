@@ -1,0 +1,21 @@
+id: UG-TOOLS-LAUNCHER-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 현황판 포트 충돌 없이 계단·복도·코어·지상 및 활성 지하주차 선택창을 복원하는가?
+allowed_files:
+  - start.bat
+  - tools/launch-tools.py
+  - tools/launch-tools.test.cjs
+  - tools/harness/work-items/UG-TOOLS-LAUNCHER-001.yaml
+acceptance:
+  - start.bat에서 도구 선택 화면 열기·계단 복도 코어 지상 및 활성 지하주차 연결
+  - 8765현황판 및 기존 실행중 서버 보존·기존 지상주차와 레거시 저장소 파일 수정 없이 제공
+  - 각 도구 HTTP200과 활성 지하주차 연결 및 경로 이탈 차단을 별도 실행으로 확인
+not_doing:
+  - 기존 start.bat 변경·레거시 기능 개발·서버 강제 종료·기존 자료 및 인증키 삭제·커밋 push
+completion_contract: |
+  {"kind":"support","goal":"도구 선택 시작 화면과 포트 충돌 없는 실행기를 복원한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"start.bat","depends_on":[],"checks":[{"id":"launcher","script":"tools/launch-tools.test.cjs","args":[]}],"review_required":true,"user_required":true}
+remaining:
+  - 사용자 기본 브라우저에서 start.bat 실행 확인 및 독립 검토·사용자 확인

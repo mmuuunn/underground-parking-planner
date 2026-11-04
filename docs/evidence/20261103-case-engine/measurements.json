@@ -1,0 +1,267 @@
+{
+  "basis": "Independent rectangle arithmetic and actual public entry calls; no engine, golden or stored scene edits",
+  "checks": {
+    "adapterAlignment": true,
+    "twoWayPolicy": true,
+    "inputPreserved": true,
+    "selfCheck": true
+  },
+  "adapter": {
+    "fixtureSelection": "continuous",
+    "automaticSelection": null,
+    "forwardedSelection": null,
+    "fixtureAlignment": "back-to-back",
+    "forwardedAlignment": "back-to-back",
+    "continuousForwarded": false
+  },
+  "sghs": {
+    "engineWithFixture": {
+      "count": 9,
+      "status": "INFEASIBLE",
+      "columns": 38,
+      "loop": false,
+      "deadSide": 9,
+      "lost": 47,
+      "violations": [
+        "CORE_IN_AISLE",
+        "DEAD_END",
+        "FIXED_COLUMN_BLOCKS_ROUTE",
+        "NO_LOOP",
+        "RAMP_OFFGRID",
+        "STALL_NO_FRONT"
+      ]
+    },
+    "adapterRowPolicy": {
+      "count": 9,
+      "status": "INFEASIBLE",
+      "columns": 38,
+      "loop": false,
+      "deadSide": 9,
+      "lost": 47,
+      "violations": [
+        "CORE_IN_AISLE",
+        "DEAD_END",
+        "FIXED_COLUMN_BLOCKS_ROUTE",
+        "NO_LOOP",
+        "RAMP_OFFGRID",
+        "STALL_NO_FRONT"
+      ]
+    },
+    "suppliedDefault": {
+      "count": 66,
+      "status": "INFEASIBLE",
+      "columns": 38,
+      "loop": false,
+      "deadSide": 66,
+      "lost": 0,
+      "violations": [
+        "DEAD_END",
+        "NO_LOOP",
+        "SUPPLIED_NETWORK_UNVERIFIED"
+      ]
+    },
+    "suppliedTwoWay": {
+      "count": 66,
+      "status": "CONDITIONAL",
+      "columns": 38,
+      "loop": false,
+      "deadSide": 66,
+      "lost": 0,
+      "violations": [
+        "DEAD_END",
+        "RETURN_MANEUVER_UNVERIFIED",
+        "SUPPLIED_NETWORK_UNVERIFIED"
+      ]
+    }
+  },
+  "sourceDiagnostic": {
+    "basis": "Existing source-envelope diagnostic, not independent evidence of exact original coordinates",
+    "visibleReadCount": 59,
+    "officialSourceCount": null,
+    "rows": [
+      {
+        "id": "서측 외벽",
+        "candidates": 11,
+        "matchingFacing": 11,
+        "wrongFacing": 0
+      },
+      {
+        "id": "서측 안쪽",
+        "candidates": 4,
+        "matchingFacing": 4,
+        "wrongFacing": 0
+      },
+      {
+        "id": "남서측 쌍열",
+        "candidates": 8,
+        "matchingFacing": 8,
+        "wrongFacing": 0
+      },
+      {
+        "id": "중앙 북측 1",
+        "candidates": 3,
+        "matchingFacing": 3,
+        "wrongFacing": 0
+      },
+      {
+        "id": "중앙 북측 2",
+        "candidates": 3,
+        "matchingFacing": 3,
+        "wrongFacing": 0
+      },
+      {
+        "id": "중앙 남측 1",
+        "candidates": 3,
+        "matchingFacing": 3,
+        "wrongFacing": 0
+      },
+      {
+        "id": "중앙 남측 2",
+        "candidates": 3,
+        "matchingFacing": 3,
+        "wrongFacing": 0
+      },
+      {
+        "id": "동측 외벽",
+        "candidates": 12,
+        "matchingFacing": 12,
+        "wrongFacing": 0
+      },
+      {
+        "id": "중앙 장애인 열",
+        "candidates": 3,
+        "matchingFacing": 3,
+        "wrongFacing": 0
+      },
+      {
+        "id": "남측 단열",
+        "candidates": 4,
+        "matchingFacing": 4,
+        "wrongFacing": 0
+      },
+      {
+        "id": "남측 장애인 열",
+        "candidates": 3,
+        "matchingFacing": 3,
+        "wrongFacing": 0
+      },
+      {
+        "id": "동측 북단",
+        "candidates": 2,
+        "matchingFacing": 2,
+        "wrongFacing": 0
+      },
+      {
+        "id": "동측 남단",
+        "candidates": 2,
+        "matchingFacing": 2,
+        "wrongFacing": 0
+      }
+    ],
+    "outsideRows": 8,
+    "loadingCandidateHits": 3
+  },
+  "pairedB1": {
+    "beforeOffsetMm": 275,
+    "afterOffsetMm": 0,
+    "stalls": 8,
+    "total": 66
+  },
+  "controls": {
+    "continuousT": [
+      46,
+      47
+    ],
+    "gapUnreachable": 17,
+    "coreBlockUnreachable": 8,
+    "fixedColumnCollision": {
+      "count": 5,
+      "status": "INFEASIBLE",
+      "columns": 4,
+      "loop": false,
+      "deadSide": 5,
+      "lost": 20,
+      "violations": [
+        "DEAD_END",
+        "FIXED_COLUMN_BLOCKS_ROUTE",
+        "NO_LOOP",
+        "STALL_NO_FRONT",
+        "SUPPLIED_NETWORK_UNVERIFIED"
+      ]
+    },
+    "explicitOmissionColumns": [
+      4,
+      3
+    ],
+    "invalidOmissionRejected": true,
+    "rectangle": {
+      "count": 130,
+      "status": "FEASIBLE",
+      "columns": 70,
+      "loop": true,
+      "deadSide": 0,
+      "lost": 0,
+      "violations": []
+    }
+  },
+  "pairedSweep": {
+    "cases": 441,
+    "capacityPreserved": 441,
+    "alignmentPossible": 388,
+    "alignedWhenPossible": 388,
+    "impossibleRetained": 53,
+    "rectangleCollisions": 0
+  },
+  "horizontalOuterBays": {
+    "scope": "placement-only, no supplied column solids, no reach certification",
+    "count": 12,
+    "enumeratedX": [
+      10000,
+      30000
+    ],
+    "laneX": [
+      1000,
+      39000
+    ],
+    "innerX": [
+      400,
+      39600
+    ],
+    "noOuterBayCandidates": true
+  },
+  "islandSweep": {
+    "cases": 441,
+    "coreOverlapsHole": 361,
+    "wholeIslandExempted": 361,
+    "noCoreOverlapFlagged": 80,
+    "holeM2": 324,
+    "coreM2": 1,
+    "interpretation": "Measures a heuristic exception, not proof that every exempt core island is a bad plan"
+  },
+  "goldenSources": [
+    {
+      "id": "rectangle",
+      "source": "handoff-69 reference shape"
+    },
+    {
+      "id": "l-shape",
+      "source": "handoff-69 reference shape"
+    },
+    {
+      "id": "diagonal",
+      "source": "handoff-69 reference shape"
+    },
+    {
+      "id": "nowon-user-snapshot",
+      "source": "handoff userdoc2.txt snapshot, not live browser"
+    },
+    {
+      "id": "narrow-wing",
+      "source": "handoff-69 reference shape"
+    },
+    {
+      "id": "all-oblique",
+      "source": "stage-0 five reference masses; six stalls lack aisle frontage pending screen review"
+    }
+  ]
+}

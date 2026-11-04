@@ -1,0 +1,32 @@
+id: UG-CASE-ENGINE-CROSSWALK-001
+status: ACCEPTED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex-readonly-audit
+verify_profile: vehicle-circulation
+question: 기존 11개 공모·48종 분석의 원칙은 생성 코드·제품 호출·시험에 어디까지 연결되는가?
+allowed_files:
+  - docs/CASE_ENGINE_CROSSWALK_20261103_1.md
+  - tools/harness/work-items/UG-CASE-ENGINE-CROSSWALK-001.yaml
+  - docs/evidence/20261103-case-engine/audit.cjs
+  - docs/evidence/20261103-case-engine/measurements.json
+acceptance:
+  - 우선 원칙별 근거·코드·실제 호출·시험·적용 한계를 한 보고서에 연결
+  - 최소 재현 및 독립 실패/통과 입력으로 연결 누락을 확인
+  - 기존 파일 해시 보존 및 다음 최소 구현 단위 하나 제시
+not_doing:
+  - 제품·골든·기존 작업표 수정, 새 그림, 추가 수집, 커밋, push, 다른 모델 호출
+max_implementation_rounds: 0
+max_reviewer_calls: 0
+max_changed_files: 4
+max_new_production_lines: 0
+completion_contract: |
+  {"kind":"support","goal":"공모 분석과 엔진의 연결 대조 보고서 작성","stage_goal":"통과, 실패, 미검증을 구분한다","target":"docs/CASE_ENGINE_CROSSWALK_20261103_1.md","depends_on":[],"checks":[{"id":"reference-reproduce","script":"04_parking/01_src/sghs-reference.js","args":["--paired"]},{"id":"independent-audit","script":"docs/evidence/20261103-case-engine/audit.cjs","args":["--check"]}],"review_required":false,"user_required":false}
+completion_run: 20261103-004515-UG-CASE-ENGINE-CROSSWALK-001-549f67e1
+results:
+  scope: 보고서와 재현 보조파일만 추가; 제품·기존 시험·골든·기존 사용자 파일204개 바이트 보존
+  npm_test: 133/133
+  harness: 110/110;TASK_VERIFIED;checks2/2;productProgress=false
+  independent_measurement: 양면441조건·섬441위치·고정기둥/단절/코어 반례·일반/제공망·HEAD 비교
+  approval_meaning: 읽기 전용 지원 작업 완료; 건축계획 독립 승인·제품 진척·단계 종료 아님

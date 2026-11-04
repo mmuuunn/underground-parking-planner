@@ -1,0 +1,44 @@
+id: UG-COLUMN-SIZE-FIX-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: s0_independent_review
+verify_profile: vehicle-circulation
+question: 확정 계약 S0의 파일 입력·축 동일성·외부 축 편집 세 결함만 고치고 기존 기둥 치수 동작을 보존하는가?
+allowed_files:
+  - 04_parking/01_src/planning-controls.js
+  - 04_parking/02_tests/column-size-input.test.cjs
+  - 04_parking/underground-compare.html
+  - tools/harness/work-items/UG-COLUMN-SIZE-FIX-001.yaml
+acceptance:
+  - S0-F1/P1 불완전한 구조축 파일은 폼·문서·저장·히스토리 변경 전에 거부; 유효 파일은 미적용 입력만 갱신
+  - S0-F2/P2 동일 x/y 좌표는 키 순서와 무관하게 유효 위상 재결속; 36기둥과 62→66→62칸 보존
+  - S0-F3 외부 축 편집은 적용 치수만 사용; 미적용 치수 문자열 보존·축 폼 동기화·상태 안내
+  - S0-P3 실제 축 변경은 기존 위상 재선정; 499mm 거부와 500/550mm 정상 경계; 팝업 0.6m 하한 유지
+  - S0-P4/P5/P6/P7 옛 문서·자동 모드·입력 되돌리기·undo/redo·재읽기·저장키 분리 보존
+  - G-01/G-02 보존 해시와 허용 파일 한도 검사; 기존 안전 미해결·시험 실패·영수증 차단은 별도 유지
+not_doing:
+  - S1,생성기,전역위상키,저장형식,presentation호출자,경로수리,골든갱신,안전판정,기존브라우저저장접근
+max_implementation_rounds: 1
+max_reviewer_calls: 1
+max_changed_files: 4
+max_new_production_lines: 80
+completion_contract: |
+  {"kind":"experiment","goal":"확정 S0 세 결함을 CLI/VM으로 보완·검증하고 화면·독립 검토는 미승인으로 남긴다","stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"column-size-fix","script":"04_parking/02_tests/column-size-input.test.cjs","args":[]}],"review_required":true,"user_required":true}
+contract_basis: C:/Users/seok2/.codex/reviews/implementation-readiness-20261103_1/consolidated-contract-1.json
+evidence_directory: C:/Users/seok2/.codex/reviews/column-size-fix-20261103_1
+verification_credit: CLI_VM_ONLY; no product/screen/adoption approval credited
+completion_run: 20261103-193206-UG-COLUMN-SIZE-FIX-001-ddca7995
+results:
+  implementation_rounds: 1
+  changed_files: 4
+  added_production_lines: 14
+  before: npm139of139;harness111of111;corrected-regressions5pass5fail
+  after: npm139of139;harness111of111;column-size-fix10of10
+  preservation: fixed9of9;230of233-baseline-repo-files-unchanged;3-intended-edits-and1-new-work-item
+  geometry: original-trial600-500-600=62-66-62;36columns;phase3600-7600;complete-same-size-generator-output-preserved
+  counterexample: yx-ordered-axes500mm86-before-to66-after;not-new-capacity-performance
+  gates: independent-review-S0_PASS_CLI_VM_ONLY;screen-PENDING;plan-adoption-and-structural-adequacy-PENDING
+  limits: CLI_VM_ONLY;no-browser-access;S1-not-started;existing100mm-exit-and-old-test-receipt-issues-retained
+independent_review_report: C:/Users/seok2/.codex/reviews/column-size-fix-independent-20261103_1/REPORT_1.json

@@ -1,0 +1,43 @@
+id: UG-LAYOUT-B-CONTINUOUS-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-existing-option-publication
+question: 이미 연속 주차열 우선을 사용하는 실제 B1 비교 화면의 결과를 현재 B안과 현황판에 일치시켰는가?
+allowed_files:
+  - tools/harness/work-items/UG-LAYOUT-B-CONTINUOUS-001.yaml
+acceptance:
+  - 실제 calibrated B1 차로지정 화면이 이미 occupied-bands와 continuous를 사용하는지 코드와 브라우저에서 확인
+  - 기존 B65칸과 새 B66칸의 차로·기둥·코어·점유물·램프·그래프가 동일하며 표시구역 혼합방향5칸이0으로 바뀜
+  - 원도 밖 추가한칸과 순환·회차·입출고 미확인을 유지하며 일반자동기본값·다른비교입력·골든·허용오차를 변경하지 않음
+  - 실제 B화면66칸·일반자동화면9칸·재열기와 현황판의 최신 표시 이미지를 확인
+not_doing:
+  - 엔진 알고리즘 수정·일반 생성 기본값 변경·고립한칸 자동삭제·승인기록 변경·커밋·push·다른모델 호출
+max_changed_files: 1
+max_new_production_lines: 0
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"기존 연속 주차열 우선 B1 화면을 확인하고 현재 B안 비교 자료에 반영한다",
+    "stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target":"tools/harness/dashboard.html",
+    "depends_on":[],
+    "checks":[{"id":"dashboard-records","script":"tools/harness/scripts/dashboard.test.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-CONTINUOUS-APPLY-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-PRODUCT-TEST-READINESS-20261030/comparison.json
+remaining:
+  - 적용한 B안 이미지 사용자 검토와 추가 한칸 처리 기준 결정
+results:
+  outcome: 실제B화면확인·현재B자료갱신;사용자검토대기
+  correction: 실제B비교화면은기존에이미continuous사용;순차65칸은앞선공정비교자료의설정이었음;불필요한제품수정생략
+  observed: 실제B66칸·일반자동9칸;표시구역12→13칸·방향혼합5→0;차로·구조·램프동일
+  checks: 실제화면·재열기·모드전환일치;페이지오류0;현황판검사7개통과
+  limits: 추가한칸채택미결정;정밀주행·회차·교행미확인;엔진·제품화면소스·기존승인미변경
+  product_test_readiness: 차로직접지정·수정과주차열ALT선택은사용자조작화면미연결;현재이미지검토가능·두기능조작테스트는아직이름
+  first_user_test_gate: 한화면에서차로한구간수정→주차열대안2개선택→저장재열기동일성확인후10분테스트

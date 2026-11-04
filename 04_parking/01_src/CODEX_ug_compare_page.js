@@ -10,8 +10,11 @@
 'use strict';
 const SITE = [[-49338,64968],[-43711,65645],[67007,12166],[67742,7397],[37015,-34457],[30224,-30255],[26582,-31258],[23369,-32143],[20185,-34285],[-4356,-39324],[-11075,-40704],[-25459,-52254],[-39885,16502],[-48960,63033]];
 const referenceQuery = new URL(location.href).searchParams;
+const appAssetVersion = new URL(document.currentScript?.src||location.href).searchParams.get('v')||'20261030-workflow1';
 const referenceScene = referenceQuery.get('reference') === 'sghs' ? {floor:referenceQuery.get('floor')||'B1',revision:referenceQuery.get('revision')||'revised'} : null;
-const WALL = 400, FLOOR = 3800, STORE = referenceScene ? `ug-sghs:2026-10-29-r1:${referenceScene.floor}:${referenceScene.revision}` : 'ug-compare:v2';
+const manualLanePilot = referenceScene?.floor==='B1'&&referenceScene.revision==='calibrated'&&referenceQuery.get('layout')==='manual';
+const workspaceId = /^[a-zA-Z0-9-]{1,64}$/.test(referenceQuery.get('plan')||'')?referenceQuery.get('plan'):null;
+const WALL = 400, FLOOR = 3800, STORE = referenceScene ? `ug-sghs:2026-10-29-r1:${referenceScene.floor}:${referenceScene.revision}${manualLanePilot?':manual-lanes-v1':''}` : 'ug-compare:v2'+(workspaceId?':plan:'+workspaceId:'');
 const $ = (id) => document.getElementById(id);
 
 // ── 기하 ──
@@ -102,6 +105,7 @@ function removeAlignedVertex(index) {
 
 // ── 문서(저장·실행 취소 대상) ──
 function defaultDoc() {
+  if(!referenceScene&&workspaceId){const shape=referenceQuery.get('shape'),mass=shape==='l-shape'?[[0,0],[64000,0],[64000,25000],[38000,25000],[38000,46000],[0,46000]]:[[0,0],[64000,0],[64000,46000],[0,46000]];return {v:2,ucs:0,mass,workspaceShape:shape==='l-shape'?'l-shape':'rectangle',cores:[],ramp:{p:[24000,41000],k:0,alignedAngleDeg:0,len:24000,w:6000},snap:1000,module:'normal',layoutMode:'auto'};}
   const ucs = longestEdgeAngle(SITE), W = (u) => rot([u[0] * 1000, u[1] * 1000], ucs).map(Math.round);
   return {v: 2, ucs, mass: [[-50, 10], [-30, 10], [-30, -12], [46, -12], [46, 10], [51, 10], [51, 38], [-50, 38]].map(W),
     cores: [{c: W([-5, 25]), w: 9000, d: 7000}, {c: W([20, 0]), w: 9000, d: 7000}], ramp: {p: W([-22, 34.2]), k: 0, len: 24000, w: 6000}, snap: 1000, module: 'normal'};
@@ -110,6 +114,8 @@ function validDoc(d) {
   if(d?.referenceColumnMm!==undefined&&(!Number.isFinite(d.referenceColumnMm)||d.referenceColumnMm<=0))return false;
   if(d?.columnAxes!==undefined){try{UGP.grid.normalize({mass:d.mass,cores:d.cores,grid:{columnAxes:d.columnAxes,...(d.referenceColumnMm!==undefined?{columnMm:d.referenceColumnMm}:{}),...(d.columnIntersections?{columnIntersections:d.columnIntersections}:{})}});}catch(e){return false;}}
   const ok = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
+  if(d?.siteContext){const s=d.siteContext,ring=P=>Array.isArray(P)&&P.length>=3&&P.length<=2048&&P.every(ok);if(s.provider!=='vworld'||!ring(s.outline)||!ok(s.origin)||Math.abs(s.origin[0])>180||Math.abs(s.origin[1])>85||!Array.isArray(s.context)||s.context.length>200||s.context.some(c=>!['road','building','parcel'].includes(c.kind)||!ring(c.pts))||!Number.isInteger(s.entryEdge)||s.entryEdge<0||s.entryEdge>=s.outline.length||!Number.isFinite(s.setbackM))return false;}
+
   return d && d.v === 2 && Number.isFinite(d.ucs) && Array.isArray(d.mass) && d.mass.length >= 3 && d.mass.every(ok) && Array.isArray(d.cores) && d.cores.every((c) => ok(c.c) && c.w > 0 && c.d > 0) && d.ramp && ok(d.ramp.p) && d.ramp.len > 0 && d.ramp.w > 0 && (d.ramp.alignedAngleDeg === undefined || Number.isFinite(d.ramp.alignedAngleDeg));
 }
 function load() { try { const d = JSON.parse(localStorage.getItem(STORE)); return validDoc(d) ? d : null; } catch (e) { return null; } }
@@ -153,7 +159,7 @@ const syncCoreBox = (i) => { const r = coreRect(i); Object.assign(doc.cores[i], 
 function colFeats(side) { const r = ui.res; if (!r || r.fail || !r.columns?.length) return {x: [], y: []}; const C = r.columns.map((P) => P.map(toU)), hc = (Math.max(...C[0].map((q) => q[0])) - Math.min(...C[0].map((q) => q[0]))) / 2, f = (k) => [...new Set(C.map((P) => Math.round(P.reduce((s, q) => s + q[k], 0) / P.length)))].flatMap((v) => side?[v+side*hc]:[v-hc,v+hc]); return {x: f(0), y: f(1)}; }
 const magnet = (v, F, tol) => { let b = null; for (const f of F) if (Math.abs(f - v) <= tol && (b === null || Math.abs(f - v) < Math.abs(b - v))) b = f; return b; };
 const corePoly = (k) => { const h = [k.w / 2, k.d / 2]; return [[-h[0], -h[1]], [h[0], -h[1]], [h[0], h[1]], [-h[0], h[1]]].map((p) => add(k.c, rot(p, doc.ucs)).map(Math.round)); };
-const movePlanningRegions = mv => {if(doc.massHoles)doc.massHoles=doc.massHoles.map(P=>P.map(mv));for(const key of ['nonParkingZones','zoneAssignments'])if(doc[key])doc[key]=doc[key].map(z=>({...z,paths:z.paths.map(P=>P.map(mv))}));};
+const movePlanningRegions = mv => {if(doc.manualLayout)doc.manualLayout.routes=doc.manualLayout.routes.map(r=>({...r,points:r.points.map(mv)}));if(doc.massHoles)doc.massHoles=doc.massHoles.map(P=>P.map(mv));for(const key of ['nonParkingZones','zoneAssignments'])if(doc[key])doc[key]=doc[key].map(z=>({...z,paths:z.paths.map(P=>P.map(mv))}));};
 const CURVE_DEFAULTS = Object.freeze({
   turn:'left', turnDeg:204, innerRadiusMm:6000, lanes:2, legalLaneWidthMm:6500,
   straightTopMm:3000, straightBottomMm:3000, upperLevelMm:0, lowerLevelMm:-3800,
@@ -234,12 +240,12 @@ const coreLayouts = (ev = 1,height=projectFloor()) => {
 };
 function changeCoreEv(i,ev){
   const original=doc.cores[i],next=UGPlan.configureCore(original,ev,coreLayouts(ev)||[]),grew=next.w!==original.w||next.d!==original.d;
-  delete next.layouts;delete next.configurationFits;doc.cores[i]=next;ui.sel={kind:'core',i};
+  delete next.layouts;delete next.configurationFits;delete next.layoutAltId;doc.cores[i]=next;ui.sel={kind:'core',i};
   commit(`코어 ${i+1} 승강기 ${ev==='auto'?'자동':ev+'대'}${grew?' · 상자 크기 맞춤':''}`);
 }
 const planInput = () => {
   const ramp=rampSpec(doc.ramp),boundary=planningMass(ramp);
-  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,stallRowAlignment:doc.stallRowAlignment,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const selected=referenceScene&&c.referenceEnvelopeOnly?null:l;const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return selected?{...fixed,layouts:selected}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.referenceColumnMm!==undefined?{columnMm:doc.referenceColumnMm}:{}),...(doc.columnAxes?{columnAxes:doc.columnAxes}:{}),...(doc.columnIntersections?{columnIntersections:doc.columnIntersections}:{})},floorMm:referenceScene&&doc.ramp.referenceVisibleOnly?undefined:projectFloor(),phase:docPhase()};
+  return {mass:doc.mass,massHoles:doc.massHoles,allowExternalRamp:doc.allowExternalRamp??true,allowedBoundary:doc.allowedBoundary,nonParkingZones:doc.nonParkingZones,zoneAssignments:doc.zoneAssignments,autoZones:doc.autoZones,stallRowAlignment:doc.stallRowAlignment,stallRowSelection:doc.automaticRowSelection,parkingOptions:doc.parkingOptions,planningBoundary:boundary,ucs:doc.ucs,cores:doc.cores.map(c=>{const l=coreLayouts(c.ev??'auto');const selected=referenceScene&&c.referenceEnvelopeOnly?null:c.layoutAltId?l?.filter(a=>a.id===c.layoutAltId):l;const fixed=doc.columnAxes?{...c,keep:{x:true,y:true}}:c;return selected?{...fixed,layouts:selected}:fixed;}),...(Number.isFinite(doc.accessibleRate)?{accessibleRate:doc.accessibleRate}:{}),occupants:doc.occupants||[],occupantPolicy:doc.occupantPolicy||'report',ramp,grid:{...(MODULES[doc.module]||MODULES.normal).grid,wallMm:WALL,...(doc.referenceColumnMm!==undefined?{columnMm:doc.referenceColumnMm}:{}),...(doc.columnAxes?{columnAxes:doc.columnAxes}:{}),...(doc.columnIntersections?{columnIntersections:doc.columnIntersections}:{})},floorMm:referenceScene&&doc.ramp.referenceVisibleOnly?undefined:projectFloor(),phase:docPhase()};
 };
 function solveCurveInput(input) {
   let draft,placedCurve=input.ramp;
@@ -884,8 +890,10 @@ for(const field of document.querySelectorAll('[data-curve-field]')){
 }
 
 async function startPlan(){
+  if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
+  if(!referenceScene&&workspaceId){SITE.splice(0,SITE.length,...structuredClone(doc.siteContext?.outline||doc.mass));document.querySelector('.project .eyebrow').textContent='새 일반 도면 · '+(referenceQuery.get('shape')==='l-shape'?'ㄱ자형':'직사각형');}
   if(referenceScene){
-    await import('./sghs-reference.js');
+    await import('./sghs-reference.js?v='+encodeURIComponent(appAssetVersion));
     const data=window.SGHSReference,f=data.floors.find(f=>f.id===referenceScene.floor);
     if(!f||!['before','revised','landing','aligned','clearance','reviewed','calibrated'].includes(referenceScene.revision)||!f[referenceScene.revision])throw Error('SGHS 층 또는 입력 버전을 확인하세요');
     MODULES.sghs={name:'SGHS 시험 모듈 · 칸·벽·기둥 치수는 가정',grid:data.grid};
@@ -904,6 +912,7 @@ async function startPlan(){
     window.sghsScene={floor:f.id,revision:referenceScene.revision,snapshot:()=>({input:structuredClone(doc),result:ui.res,routes:ui.res&&!ui.res.fail?UGPlan.inspectVehicleRoutes(ui.res):null})};
   }
   if (!MODULES[doc.module]) doc.module = 'normal';
+  await import('./manual-lane-editor.js?v='+encodeURIComponent(appAssetVersion));await window.UGManualLane.init({integrated:referenceQuery.get('workflow')!=='legacy'});
   pushHist(); renderAll(); fit(); recompute(null);
   if(referenceScene)save();
 }

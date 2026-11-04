@@ -1,0 +1,130 @@
+#taskNavigation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:10px 14px;border-bottom:1px solid var(--line);background:inherit}
+#taskNavigation button{font:inherit;font-size:11px;min-height:34px;padding:6px 3px;background:transparent;color:inherit;border:1px solid var(--line);border-radius:5px;cursor:pointer}
+#taskNavigation button:hover{background:var(--stallf)}
+#taskNavigation button:focus-visible,.task-layout button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.task-layout>h2{margin-bottom:6px}.task-layout>.note{margin:0 0 14px}
+.task-layout .task-group{border-top:1px solid var(--line);padding:12px 0 2px}
+.task-layout .task-group h3{font-size:12px;margin:0 0 6px}
+.task-layout .task-group>.note{line-height:1.6;margin:6px 0 10px}
+.task-layout .task-group .row{gap:6px;margin:6px 0;flex-wrap:wrap}
+.task-layout #layoutModeRow{display:grid;grid-template-columns:1fr 1fr}
+.task-layout #layoutModeRow button{min-height:34px}
+.task-layout #layoutModeRow button[aria-pressed="true"]{font-weight:700;border:2px solid currentColor}
+.task-layout #taskPreview{padding:12px;margin:10px 0;border:1px solid currentColor;border-radius:6px}
+.task-layout #taskPreview[hidden]{display:none}
+@media print{#taskNavigation{display:none}}
+html[data-theme]{color-scheme:dark}
+body.workspace-a{color-scheme:dark;--paper:#242424;--bg:#191919;--ink:#e6e6e6;--mute:#b5b5b5;--line:#555;--glass:#242424f5;--stallf:#353535;--accent:#dedede}
+.workspace-a button,.workspace-a .mini-btn,.workspace-a select,.workspace-a input,.workspace-a textarea{background:var(--paper);color:var(--ink);border-color:var(--line);transition:none}
+.workspace-a button:hover:not(:disabled){background:var(--stallf)}
+.workspace-a button:focus-visible,.workspace-a summary:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.workspace-a .note,.workspace-a .field-label,.workspace-a .eyebrow{color:var(--mute)}
+.workspace-a .kv,.workspace-a .coreRow,.workspace-a .input-unit,.workspace-a .toggle-row,.workspace-a details>summary,.workspace-a .panel-tabs button{color:var(--mute)}
+.workspace-a .panel-tabs button.active,.workspace-a .coreRow b{color:var(--ink)}
+.workspace-a .coreRow.on,.workspace-a .review-notice,.workspace-a .draft-badge,.workspace-a .review-badge,.workspace-a .hintbar span{background:var(--bg);color:var(--ink)}
+.workspace-a .workspace-bar .tools,.workspace-a .view-switch button.active{background:var(--paper);color:var(--ink)}
+.workspace-a .workspace-bar .tools button{color:var(--ink)}
+.workspace-a .sheet-area .planTitle{background:var(--paper);color:var(--ink)}
+.workspace-a .sheet-caption strong,.workspace-a .north,.workspace-a .scalebar{color:var(--mute)}
+.workspace-a [hidden]{display:none!important}
+#taskNavigation{display:flex;flex-direction:column;gap:16px;padding:28px 14px;background:var(--paper);border-right:1px solid var(--line);overflow:auto}
+#taskNavigation button{display:block;width:100%;min-height:34px;margin:0 0 10px;padding:6px;font-size:12px;background:var(--paper)}
+#taskNavigation button[aria-current=step]{background:var(--stallf);border-color:var(--ink);font-weight:700}
+.task-eyebrow{font-size:11px;color:var(--mute);margin:0}
+.task-elements{padding-top:8px;border-top:1px solid var(--line)}
+.task-nav-note{font-size:10px;color:var(--mute);margin-top:auto}
+#taskProject{font-size:13px}
+#taskHeading{padding:20px 22px 10px}
+#taskHeading h2{font-size:18px;font-weight:650}
+#taskHeading p{font-size:11px;color:var(--mute);margin-top:6px}
+#taskConditions label{display:block;margin:18px 0;font-size:11px;color:var(--mute)}
+#taskConditions output{display:block;background:var(--bg);border:1px solid var(--line);padding:10px;margin-top:6px;border-radius:4px;color:var(--ink);font-size:12px}
+.workspace-a #planningPanel>section{padding:14px 22px}
+.workspace-a #siteSummary,.workspace-a #layoutControls>h2,.workspace-a #layoutControls>.note{display:none}
+.workspace-a .panel-tabs{padding:0 18px;background:var(--paper)}
+.workspace-a .panel-tabs button{font-size:11px}
+.workspace-a .result-section{background:var(--paper)}
+.workspace-a #selectionInspector{position:static;width:auto;max-height:none;padding:18px 22px;background:var(--paper);color:var(--ink);border:0;border-bottom:1px solid var(--line);border-radius:0}
+.workspace-a #selectionInspector input,.workspace-a #selectionInspector select{max-width:100%}
+.workspace-a #taskInputDetails{padding:16px 22px;border-top:1px solid var(--line);font-size:12px}
+.workspace-a #taskInputDetails summary{cursor:pointer}
+.workspace-a #taskInputDetails section{padding:12px 0}
+.workspace-a #taskPreview{border-color:var(--ink);border-radius:4px;margin:8px 0}
+.workspace-a #taskSave .row{display:flex;flex-direction:column;align-items:stretch}
+.workspace-a #taskSave button{min-height:34px}
+.workspace-a #taskMode{margin-top:0;padding-top:0;border-top:0}
+.workspace-a[data-workspace-task=conditions] #taskSave,.workspace-a[data-workspace-task=conditions] #taskMode,
+.workspace-a[data-workspace-task=lanes] #taskSave,.workspace-a[data-workspace-task=lanes] #taskMode{display:none}
+.workspace-a:not([data-workspace-task=conditions]) #taskConditions,.workspace-a:not([data-workspace-task=conditions]) #taskInputDetails{display:none}
+.workspace-a #selectionInspector:not([hidden])~#planningPanel #taskConditions{display:none}
+#taskAlternatives{position:absolute;bottom:0;left:176px;right:316px;height:112px;margin:0;padding:12px 22px;background:var(--paper);border-top:1px solid var(--line);z-index:8}
+#taskAlternatives h3{font-size:11px;color:var(--mute);margin:0 0 8px}
+#taskAlternatives #layoutALT{display:flex;gap:12px;margin:0}
+#taskAlternatives button{min-width:150px;min-height:34px}
+#taskAlternatives button[aria-pressed=true]{background:var(--stallf);border-color:var(--ink);font-weight:700}
+#taskAlternatives>.note{position:absolute;right:22px;top:12px;font-size:10px;margin:0}
+#taskCandidate{font-size:10px;color:var(--mute);margin-top:4px}
+#taskElementTools{display:flex;gap:6px}
+#taskElementTools button{white-space:nowrap;padding:6px 12px;border:1px solid var(--line);border-radius:4px}
+#taskTheme{display:flex;gap:4px}
+#taskTheme button{font-size:11px;padding:6px 8px;border:1px solid var(--line);border-radius:4px}
+#taskTheme button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+#taskMore{position:relative;font-size:11px;white-space:nowrap}
+#taskMore summary{cursor:pointer;border:1px solid var(--line);padding:6px 10px;border-radius:4px}
+#taskMore>div{position:absolute;right:0;top:36px;width:160px;padding:8px;background:var(--paper);border:1px solid var(--line);box-shadow:0 3px 12px #0002;display:grid;gap:4px;z-index:50}
+.workspace-a .site-dialog{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.workspace-a #trafficDialog{right:18px;top:120px;width:300px}
+.workspace-a .sheet-heading,.workspace-a .sheet-caption{color:var(--ink);background:var(--glass)}
+@media screen{
+ .workspace-a #plan{background:var(--bg);filter:grayscale(1)}
+ .workspace-a #drawingGround{display:none}
+ html[data-theme=dark] .workspace-a #plan>g{filter:invert(.88) grayscale(1)}
+ .workspace-a .app{position:relative;grid-template-columns:176px minmax(0,1fr) 316px;grid-template-rows:108px minmax(0,1fr)}
+ .workspace-a .app:before{content:'주차 계획 · A안 / 자유 탐색형';position:absolute;left:0;right:0;top:0;height:42px;padding:11px 22px;background:#303030;color:#eee;font-size:11px;z-index:11;pointer-events:none}
+ .workspace-a .app-header{grid-row:1;padding:42px 22px 0;gap:22px;background:var(--paper)}
+ .workspace-a .brand svg,.workspace-a .brand-divider,.workspace-a .action-divider{display:none}
+ .workspace-a .header-actions{gap:8px}
+ .workspace-a .project-name{font-size:11px}
+ .workspace-a .project .eyebrow{color:var(--ink)}
+ .workspace-a #taskNavigation{grid-column:1;grid-row:2}
+ .workspace-a .drawing-workspace{grid-column:2;grid-row:2;padding:0 0 112px;background:var(--bg);min-width:0}
+ .workspace-a aside{grid-column:3;grid-row:2;min-width:0;background:var(--paper);border-color:var(--line)}
+ .workspace-a .workspace-bar{height:48px;gap:8px;padding:0 14px;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+ .workspace-a .workspace-bar .floor-tab,.workspace-a .workspace-unit{display:none}
+ .workspace-a #canvasActions{margin:0;gap:6px;max-width:none}
+ .workspace-a #canvasActions>button{font-size:11px}
+ .workspace-a .view-switch{flex-shrink:0;background:var(--bg)}
+ .workspace-a .view-switch button{padding:4px 8px}
+ .workspace-a .sheet-area{min-height:180px;border:0;box-shadow:none;background:var(--bg);color:var(--ink)}
+ .workspace-a .sheet-heading{left:22px;top:14px}
+ .workspace-a .sheet-heading h1{font-size:13px}
+ .workspace-a .sheet-heading>p,.workspace-a .sheet-heading>.eyebrow{display:none}
+ .workspace-a .sheet-caption{bottom:18px;left:22px;right:22px}
+ .workspace-a .drawing-number,.workspace-a .sheet-caption>div:not(.scalebar){display:none}
+ .workspace-a .drawing-footer{background:var(--paper);padding:6px 18px;min-height:30px}
+ .workspace-a .drawing-footer .legend{display:none}
+ .workspace-a .hintbar{background:var(--paper);min-height:24px;padding:4px 18px}
+ .workspace-a.presentation .app{grid-template-columns:1fr}
+ .workspace-a.presentation #taskNavigation,.workspace-a.presentation #taskAlternatives{display:none}
+ .workspace-a.presentation .drawing-workspace{grid-column:1;padding-bottom:0}
+}
+@media screen and (max-width:1250px){
+ .workspace-a .app{grid-template-columns:142px minmax(0,1fr) 290px}
+ #taskAlternatives{left:142px;right:290px}
+ .workspace-a .app-header{gap:12px;padding-left:16px;padding-right:16px}
+ .workspace-a .project{max-width:170px}.workspace-a .brand strong{font-size:13px}
+ .workspace-a .header-actions{gap:4px}.workspace-a .hbtn{font-size:11px;padding:5px 8px}
+ #taskAlternatives button{min-width:120px}.workspace-a #taskAlternatives>.note{display:none}
+}
+@media screen and (max-width:760px){
+ .workspace-a .app{height:auto;min-height:100dvh;grid-template-columns:1fr;grid-template-rows:auto auto minmax(520px,70dvh) auto}
+ .workspace-a .app-header{grid-row:1;min-height:150px;flex-wrap:wrap;padding-top:50px}
+ .workspace-a #taskNavigation{grid-column:1;grid-row:2;padding:10px;overflow:visible}
+ #taskNavigation .task-eyebrow,#taskProject,.task-elements,.task-nav-note{display:none}
+ .task-steps{display:flex;gap:5px}.task-steps button{font-size:10px!important;margin:0!important}
+ .workspace-a .drawing-workspace{grid-column:1;grid-row:3}
+ .workspace-a aside{grid-column:1;grid-row:4;overflow:visible}
+ .workspace-a #taskAlternatives{position:static;height:auto}
+ .workspace-a .drawing-workspace{padding-bottom:0}.workspace-a #taskAlternatives>.note{display:none}
+}
+@media print{html[data-theme],body.workspace-a{color-scheme:light}.workspace-a #taskNavigation,.workspace-a #taskHeading,.workspace-a #taskAlternatives,#taskElementTools,#taskMore,#taskTheme{display:none!important}.workspace-a #plan,.workspace-a #plan>g{filter:none!important}}

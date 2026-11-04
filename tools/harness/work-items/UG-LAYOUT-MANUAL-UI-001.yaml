@@ -1,0 +1,46 @@
+id: UG-LAYOUT-MANUAL-UI-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-existing-engine-ui-adapter
+question: B1에서 차로 꺾임점 수정·두 주차열 대안 선택·저장 재열기를 사용자가 같은 화면에서 수행할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/02_tests/manual-lane-editor.test.cjs
+  - tools/harness/work-items/UG-LAYOUT-MANUAL-UI-001.yaml
+acceptance:
+  - B1 calibrated layout=manual 명시 모드만 사용하며 기존 일반·SGHS 저장공간을 보존
+  - 기존 차로의 점을 끌거나 좌표로 수정하고 공유 접점은 함께 움직이며 램프 착지는 고정
+  - 순차배치와 연속열우선 선택을 같은 차로·기둥·코어·램프에서 계산하고 선택과 차로를 저장·재열기
+  - 잘못된 좌표·짧은 구간·저장 실패를 알리고 실행취소·다시실행·초기차로 복원 가능
+  - 실제 마우스 수정·대안 선택·재열기·기존 장면 보존과 현황판 테스트 안내 이미지 확인
+not_doing:
+  - 엔진 알고리즘·일반 기본값·골든·허용오차 변경·완전 자유 차로 그리기·정밀 주행 합격·자동 한칸 삭제·커밋·push·다른 모델 호출
+max_changed_files: 4
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"구민회관 B1의 기존 차로 수정과 주차열 선택을 한 제품 화면에 연결한다",
+    "stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"manual-state","script":"04_parking/02_tests/manual-lane-editor.test.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-MANUAL-LANE-PILOT-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-MANUAL-LANE-PILOT-20261030/browser-checks.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-MANUAL-LANE-PILOT-20261030/edge-checks.json
+remaining:
+  - 사용자 10분 조작 시험과 남서쪽 주차열 선호 확인
+  - 원도면과의 차이·외딴 한칸 처리·램프 연결과 정밀 통행은 별도 검토
+results:
+  outcome: 첫 조작 시험 준비·사용자 확인 전
+  checks: 기존 시험 109개·새 입력 검사 4개 통과; 실제 마우스·ALT 전환·저장 재열기·기존 저장 보존·저장 실패 처리 확인
+  actual: 초기 ALT1 65칸·ALT2 66칸; 물리 입력과 일반 생성 기본값 유지
+  limits: 기존 차로 점 수정용 B1 시험이며 자유 차로 추가·삭제와 정밀 통행 합격은 포함하지 않음

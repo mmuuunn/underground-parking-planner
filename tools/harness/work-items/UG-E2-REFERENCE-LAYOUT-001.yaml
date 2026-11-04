@@ -1,0 +1,47 @@
+id: UG-E2-REFERENCE-LAYOUT-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: codex-independent-calculation-of-astra-design
+verify_profile: vehicle-circulation
+question: 같은 고정 입력에서 주차열과 차로를 함께 다시 구성한 최대 세 기준안의 실제 장단점은 무엇인가?
+allowed_files:
+  - tools/harness/work-items/UG-E2-REFERENCE-LAYOUT-001.yaml
+  - tools/check-e2-reference-layouts.cjs
+acceptance:
+  - 고정 입력 출처와 설계 가정을 구분하고 기둥·램프·원본·현재 제품을 보존
+  - 최대 세 기준 구성에서 네 색 지적에 실제 치수와 후보로 응답
+  - 정적 형상·전면·차로 연결의 독립 계산 및 실패/통과 반례
+  - 차량 경로 미검증을 표시하고 기본 배열 방향 사용자 확인 대기
+not_doing:
+  - 일반 엔진·제품 화면·골든 수정, 커밋, push, FEASIBLE 승격
+  - 무거운 차량 탐색, 병렬 에이전트, 추가 모델 왕복
+max_implementation_rounds: 2
+max_reviewer_calls: 1
+max_changed_files: 2
+max_new_production_lines: 0
+completion_contract: |
+  {"kind":"experiment","goal":"주차열과 차로의 공동 재배치 기준안을 실제 치수로 비교한다","stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다","target":"tools/check-e2-reference-layouts.cjs","depends_on":[],"checks":[{"id":"reference-layouts","script":"tools/check-e2-reference-layouts.cjs","args":[]}],"review_required":true,"user_required":true}
+
+completion_run: 20261102-233431-UG-E2-REFERENCE-LAYOUT-001-acb075dc
+implementation_results:
+  reference_schemes: A53;B49;C51;common lane network with different west row orientations
+  geometry: fixed38 columns and ramp preserved;all bays full6m frontage;no area collisions
+  evidence: external e2-reference-layouts/schemes.json and verification.json
+  routes: bend and turning court only;individual parking and whole journeys NOT_EVALUATED
+  existing_files_preserved: 205
+  baseline_npm: 133/133
+  independent_review: PENDING;Astra interim findings only;no final review receipt
+  user_gate: REJECTED;2026-11-03;A recommendation withdrawn
+  product_progress: not credited;no generator or product changes
+  harness_common: 110/110
+  contract_checks: 1/1
+  formal_status: REVIEW_PENDING
+
+user_rejection:
+  date: 2026-11-03
+  recommendation: WITHDRAWN
+  local_patching: STOPPED
+  evidence: e2-reference-layouts/user-decision.json and review_2.md
+  reasons: A01 versus wall continuation;unjustified turning court;A52/A53 row misalignment;inherited missing columns

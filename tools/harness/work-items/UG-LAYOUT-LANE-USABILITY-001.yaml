@@ -1,0 +1,44 @@
+id: UG-LAYOUT-LANE-USABILITY-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-read-only-usability-investigation
+question: B1의 작은 차로 점 이동이 배치를 무너뜨리는 이유와 T자 두 점의 역할, 고리 없는 통행 판단의 문제를 재현했는가?
+allowed_files:
+  - tools/harness/work-items/UG-LAYOUT-LANE-USABILITY-001.yaml
+acceptance:
+  - 새 외부 폴더에 필요한 기준 자료를 복사하고 64개 좌표 이동과 실제 1픽셀 드래그로 영향 측정
+  - T자 두 점의 좌표·거리·연결 수와 편집 손잡이의 역할·권장 노출 수 확인
+  - 고리 필수 경로 검사와 고리 전용 재생 경로를 분리하고 왕복형 수정 범위 제시
+  - 현재 상태·원인·미구현 수정안을 구분한 실제 이미지와 쉬운 설명을 현황판에 표시
+not_doing:
+  - 제품 코드·엔진 판정·기존 시험·골든·이전 증거·작업표·승인 기록 변경·커밋·push·다른 모델 호출
+max_changed_files: 1
+max_new_production_lines: 0
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"B1 차로 점의 편집 민감도·불필요한 손잡이·고리 필수 조건을 검토하고 수정안을 화면으로 설명한다",
+    "stage_goal":"실패 위치와 사용자 안내 원인이 일치한다",
+    "target":"tools/harness/dashboard.html",
+    "depends_on":[],
+    "checks":[{"id":"dashboard-records","script":"tools/harness/scripts/dashboard.test.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-LANE-USABILITY-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-LANE-USABILITY-20261030/measurements.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-LANE-USABILITY-20261030/traffic-check.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-LANE-USABILITY-20261030/REVIEW.md
+remaining:
+  - 차로 단위 편집과 적용 전 확인의 구현
+  - 고리형·왕복형 판정 분리와 실제 왕복 경로·회차 검증의 구현 및 별도 검토
+results:
+  outcome: 원인 검토 완료·제품 수정 전
+  finding: 서쪽 T자 점 1픽셀 이동에 66칸에서 3칸; 절대 좌표 반올림과 차로 기울어짐 뒤 도달 단절 확인
+  handles: 현재 13개; 기본 접점4·굴곡2 표시와 가지 선택 시 끝점5 표시 제안; 중간점2 숨김
+  traffic: 13구간 모두 램프 쪽 도달; 고리 필수 검사와 고리 전용 경로 생성 확인; 실제 왕복·회차는 미검증
+  changes: 현황판 자료와 이번 검토표만 추가; 제품·엔진·이전 기록 유지

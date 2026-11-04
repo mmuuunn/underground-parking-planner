@@ -7,7 +7,8 @@
   const fields={curveRadius:['안쪽 회전 여유 (m)','램프 안쪽 연석을 기준으로 회전 반경을 조정합니다.'],curveWidth:['차량이 지나는 유효 폭 (m)','벽·연석을 포함한 전체 폭과 구분하는 차로 폭입니다.'],curveTop:['위층 진입 직선 (m)','위층에서 곡선으로 들어가기 전 길이입니다. 위층 바닥의 경사 완충을 포함합니다.'],curveBottom:['아래층 도착 직선 (m)','곡선에서 나온 뒤 아래층 바닥에 닿기까지 길이입니다. 바닥 이후의 평평한 합류 직선 6m와 별개입니다.'],curveUpper:['위층 바닥 높이 (m)','높이 기준점입니다. 아래층 높이와의 차를 램프와 코어 계단에 같이 적용합니다.'],curveLower:['아래층 바닥 높이 (m)','위층보다 낮은 바닥 높이입니다. 기본 입력의 층간 높이 차와 연결됩니다.'],curveTransitionTop:['위층 경사 완충 (m)','위층 진입 직선 안에 포함됩니다. 평평한 바닥과 주경사 사이의 경사 변화를 완화합니다.'],curveTransitionBottom:['아래층 경사 완충 (m)','아래층 도착 직선 안에 포함됩니다. 경사 길이에 추가로 더하는 값이 아닙니다.'],curveCurbInner:['안쪽 연석 폭 (m)','차로 안쪽 연석의 실제 폭입니다. 모르면 비워 둡니다.'],curveCurbOuter:['바깥 연석 폭 (m)','차로 바깥쪽 연석의 실제 폭입니다. 모르면 비워 둡니다.']};
   let selectedZone=null,activeField=null;const routeCache=new WeakMap(),anchors=new WeakMap();
   const structure=document.createElement('div');structure.className='structure-editor';structure.id='structureEditor';
-  structure.innerHTML=`<label class="field-label" for="structureMode">기둥 구조</label><select id="structureMode" class="full-select"><option value="auto">자동 · 균등 격자</option><option value="fixed">직접 입력 · 불균등 격자</option></select><div id="structureFields" hidden><p class="note">도면의 왼쪽 아래 외곽을 기준으로 첫 축 위치를 입력합니다. X는 오른쪽, Y는 위쪽입니다. 모든 축 교점에 기둥을 두며, 외곽 밖 교점은 제외합니다.</p><div class="structure-origins"><label for="axisStartX">X 첫 축 (m)<input id="axisStartX" type="number" step="0.001"></label><label for="axisStartY">Y 첫 축 (m)<input id="axisStartY" type="number" step="0.001"></label></div><label for="axisSpansX">X 축 간격 (m)</label><textarea id="axisSpansX" rows="2" placeholder="6 9 8.4" spellcheck="false"></textarea><label for="axisSpansY">Y 축 간격 (m)</label><textarea id="axisSpansY" rows="2" placeholder="9 9 8.4" spellcheck="false"></textarea><p class="note">간격은 공백·쉼표·줄바꿈으로 구분합니다. 축은 방향별 2~128개, 최소 간격은 기둥 폭 0.6m입니다.</p><button id="seedStructure" class="mini-btn">현재 결과의 기둥 축 가져오기</button><p class="note">가져온 값은 편집 시작값입니다. 원도 치수와 비교한 뒤 적용하세요.</p></div><p id="structureSummary" class="note"></p><p id="structureMessage" class="structure-message" role="status" aria-live="polite"></p><div class="row"><button id="applyStructure" class="mini-btn">구조 적용</button><button id="revertStructure" class="mini-btn">입력 되돌리기</button></div><details class="setting-details"><summary>구조축 파일</summary><div class="row"><button id="exportStructure" class="mini-btn">JSON 저장</button><button id="importStructure" class="mini-btn">JSON 불러오기</button></div><input id="structureFile" type="file" accept=".json,application/json" hidden><p class="note">구조축만 저장합니다. 전체 배치를 피드백하려면 상단의 ‘장면 복사’를 사용하세요.</p></details>`;
+  structure.innerHTML=`<label class="field-label" for="structureMode">기둥 구조</label><select id="structureMode" class="full-select"><option value="auto">자동 · 균등 격자</option><option value="fixed">직접 입력 · 불균등 격자</option></select><div id="structureFields" hidden><p class="note">도면의 왼쪽 아래 외곽을 기준으로 첫 축 위치를 입력합니다. X는 오른쪽, Y는 위쪽입니다. 모든 축 교점에 기둥을 두며, 외곽 밖 교점은 제외합니다.</p><div class="structure-origins"><label for="axisStartX">X 첫 축 (m)<input id="axisStartX" type="number" step="0.001"></label><label for="axisStartY">Y 첫 축 (m)<input id="axisStartY" type="number" step="0.001"></label></div><label for="axisSpansX">X 축 간격 (m)</label><textarea id="axisSpansX" rows="2" placeholder="6 9 8.4" spellcheck="false"></textarea><label for="axisSpansY">Y 축 간격 (m)</label><textarea id="axisSpansY" rows="2" placeholder="9 9 8.4" spellcheck="false"></textarea><p class="note">간격은 공백·쉼표·줄바꿈으로 구분합니다. 축은 방향별 2~128개, 최소 간격은 입력한 기둥 한 변 이상입니다.</p><button id="seedStructure" class="mini-btn">현재 결과의 기둥 축 가져오기</button><p class="note">가져온 값은 편집 시작값입니다. 원도 치수와 비교한 뒤 적용하세요.</p></div><p id="structureSummary" class="note"></p><p id="structureMessage" class="structure-message" role="status" aria-live="polite"></p><div class="row"><button id="applyStructure" class="mini-btn">구조 적용</button><button id="revertStructure" class="mini-btn">입력 되돌리기</button></div><details class="setting-details"><summary>구조축 파일</summary><div class="row"><button id="exportStructure" class="mini-btn">JSON 저장</button><button id="importStructure" class="mini-btn">JSON 불러오기</button></div><input id="structureFile" type="file" accept=".json,application/json" hidden><p class="note">구조축만 저장합니다. 전체 배치를 피드백하려면 상단의 ‘장면 복사’를 사용하세요.</p></details>`;
+  structure.insertAdjacentHTML('afterbegin','<label class="field-label" for="columnSizeMm">기둥 한 변 (mm)</label><input id="columnSizeMm" class="full-select" type="number" min="1" step="1" aria-describedby="columnSizeHelp"><p id="columnSizeHelp" class="note">정사각형 기둥의 계획 치수입니다. 500 또는 600 등을 입력하고 구조 적용을 누르세요. 구조 적합성은 별도 검토입니다.</p>');
   $('moduleSel').closest('section').appendChild(structure);
   let structureKey=null,structureDirty=false;
   const structureBase=()=>G.bbox(doc.mass.map(p=>rot(p,-doc.ucs))).slice(0,2);
@@ -30,41 +31,58 @@
   }
   function seedStructure(){writeStructure(structureAxes());}
   function markStructureDirty(){structureDirty=true;$('applyStructure').disabled=false;structureMessage('아직 적용하지 않은 입력입니다. 현재 배치는 유지됩니다.');}
-  function validateStructure(axes){
-    if(!axes||!Array.isArray(axes.x)||!Array.isArray(axes.y))throw Error('X·Y 구조축 배열이 필요합니다.');
-    const input=planInput(),frame=UGP.grid.frame({...input,grid:{...input.grid,columnAxes:axes}});
+  function readColumnSize(){
+    const field=$('columnSizeMm'),size=field.valueAsNumber;
+    if(!field.reportValidity()||!Number.isSafeInteger(size)||size<=0)throw Error('기둥 한 변은 1mm 이상 정수로 입력하세요.');
+    return size;
+  }
+  function validateStructure(axes,columnMm=readColumnSize()){
+    if(axes&&(!Array.isArray(axes.x)||!Array.isArray(axes.y)))throw Error('X·Y 구조축 배열이 필요합니다.');
+    const input=planInput(),grid={...input.grid,columnMm};
+    if(axes)grid.columnAxes=axes;else delete grid.columnAxes;
+    const frame=UGP.grid.frame({...input,grid});
     UGP.grid.setPhase(frame,[0,0]);UGP.layout.placeColumns(frame,[],null);
     return frame.columnAxes;
   }
-  function readStructure(){
-    const base=structureBase(),axes={};
+  function readStructure(columnMm){
+    const base=structureBase(),axes={},columnM=columnMm/1000;
     for(const [i,axis]of ['x','y'].entries()){
       const key=axis.toUpperCase(),start=$('axisStart'+key),raw=$('axisSpans'+key).value.trim();
       if(!start.value||!Number.isFinite(start.valueAsNumber))throw Error(key+' 첫 축 위치를 숫자로 입력하세요.');
       if(!raw)throw Error(key+' 축 간격을 하나 이상 입력하세요.');
       const values=raw.split(/[\s,;]+/).map(Number);
-      if(values.length>127||values.some(v=>!Number.isFinite(v)||v<.6))throw Error(key+' 간격은 0.6m 이상 숫자로 최대 127개 입력하세요.');
+      if(values.length>127||values.some(v=>!Number.isFinite(v)||v<columnM))throw Error(key+' 간격은 기둥 한 변 '+columnM+'m 이상 숫자로 최대 127개 입력하세요.');
       const xs=[Math.round(base[i]+start.valueAsNumber*1000)];for(const v of values)xs.push(xs.at(-1)+Math.round(v*1000));axes[axis]=xs;
     }
-    return validateStructure(axes);
+    return validateStructure(axes,columnMm);
   }
   function resetStructureForm(){
+    $('columnSizeMm').value=doc.referenceColumnMm??UGP.grid.DEFAULTS.columnMm;
     $('structureMode').value=doc.columnAxes?'fixed':'auto';$('structureFields').hidden=!doc.columnAxes;
     writeStructure(doc.columnAxes);structureDirty=false;$('applyStructure').disabled=true;structureMessage('');
   }
   $('structureMode').onchange=()=>{const fixed=$('structureMode').value==='fixed';$('structureFields').hidden=!fixed;markStructureDirty();if(fixed&&!$('axisSpansX').value){try{seedStructure();}catch(e){structureMessage(e.message,true);}};};
-  for(const id of ['axisStartX','axisStartY','axisSpansX','axisSpansY'])$(id).oninput=()=>{markStructureDirty();$(id).removeAttribute('aria-invalid');};
+  for(const id of ['columnSizeMm','axisStartX','axisStartY','axisSpansX','axisSpansY'])$(id).oninput=()=>{markStructureDirty();$(id).removeAttribute('aria-invalid');};
   $('seedStructure').onclick=()=>{try{seedStructure();markStructureDirty();}catch(e){structureMessage(e.message,true);}};
   $('revertStructure').onclick=()=>resetStructureForm();
-  function applyStructure(axes,message){
-    if(axes)axes=validateStructure(axes);
+  function applyStructure(axes,message,columnMm){
+    const explicitSize=columnMm!==undefined,draftSize=$('columnSizeMm').value;
+    columnMm=explicitSize?columnMm:doc.referenceColumnMm??UGP.grid.DEFAULTS.columnMm;
+    const pendingSize=!explicitSize&&draftSize!==String(columnMm);
+    axes=validateStructure(axes,columnMm);
+    const sameAxes=['x','y'].every(axis=>JSON.stringify(axes?.[axis]||[])===JSON.stringify(doc.columnAxes?.[axis]||[])),phase=doc.phase&&phaseMatches()?doc.phase.p.slice():null;
     if(axes)doc.columnAxes=axes;else delete doc.columnAxes;
+    if(explicitSize)doc.referenceColumnMm=columnMm;
+    // A size-only edit keeps the chosen parking phase, so it compares the same layout setup.
+    if(sameAxes&&phase)doc.phase={key:phaseKey(),p:phase};
     structureDirty=false;structureKey=null;setTool('select');$('ucsList').innerHTML='';
-    commit(message||(axes?'불균등 구조축 적용':'자동 구조 격자로 복원'));
-    renderStructure();structureMessage(ui.res?.fail?'구조축은 저장됐으나 배치를 계산하지 못했습니다. 결과의 오류를 확인하세요.':'적용했습니다. 기둥·축선과 결과의 문제 위치를 확인하세요.',!!ui.res?.fail);
+    commit(message||`기둥 ${columnMm}×${columnMm}mm · ${axes?'불균등 구조축 적용':'자동 구조 격자로 복원'}`);
+    renderStructure();
+    if(pendingSize){$('columnSizeMm').value=draftSize;structureDirty=true;$('applyStructure').disabled=false;}
+    structureMessage((ui.res?.fail?'구조축은 저장됐으나 배치를 계산하지 못했습니다. 결과의 오류를 확인하세요.':'적용했습니다. 기둥·축선과 결과의 문제 위치를 확인하세요.')+(pendingSize?` 축 입력을 적용 중 구조축으로 갱신했습니다. 적용 중 기둥 ${columnMm}mm · 미적용 치수는 보존했습니다. 구조 적용을 눌러 확정하세요.`:''),!!ui.res?.fail);
   }
   $('applyStructure').onclick=()=>{
-    try{applyStructure($('structureMode').value==='fixed'?readStructure():null);}catch(e){structureMessage(e.message,true);}
+    try{const columnMm=readColumnSize();applyStructure($('structureMode').value==='fixed'?readStructure(columnMm):null,undefined,columnMm);}catch(e){structureMessage(e.message,true);}
   };
   $('exportStructure').onclick=()=>{
     if(!doc.columnAxes)return structureMessage('직접 입력한 구조축을 먼저 적용하세요.',true);
@@ -78,11 +96,12 @@
       if(file.size>65536)throw Error('구조축 JSON은 64KB 이하 파일만 읽습니다.');
       const value=JSON.parse(await file.text());
       if(value?.schema!=='ug-column-axes/1'||value.unit!=='mm'||!Number.isFinite(value.ucs)||Math.abs(value.ucs-doc.ucs)>.001)throw Error('구조축 파일 형식 또는 도면 방향이 다릅니다. 같은 방향에서 저장한 파일을 사용하세요.');
+      if(!value.columnAxes||!Array.isArray(value.columnAxes.x)||!Array.isArray(value.columnAxes.y))throw Error('파일에 X·Y 구조축 배열이 필요합니다.');
       const axes=validateStructure(value.columnAxes);$('structureMode').value='fixed';$('structureFields').hidden=false;writeStructure(axes);markStructureDirty();structureMessage('파일을 읽었습니다. 위치와 간격을 확인한 뒤 구조 적용을 누르세요.');
     }catch(e){structureMessage('불러오지 못했습니다: '+e.message,true);}finally{$('structureFile').value='';}
   };
   function renderStructure(){
-    const key=JSON.stringify([doc.columnAxes,doc.mass,doc.ucs]);if(key!==structureKey){structureKey=key;resetStructureForm();}
+    const key=JSON.stringify([doc.columnAxes,doc.mass,doc.ucs,doc.referenceColumnMm]);if(key!==structureKey){structureKey=key;resetStructureForm();}
     const fixed=!!doc.columnAxes;
     for(const id of ['ucsPick','ucsLong','ucsSuggest'])$(id).disabled=fixed;
     $('phaseSuggest').textContent=fixed?'주차 모듈 위치 비교':'구조열 위치 제안';
@@ -164,7 +183,7 @@
     doc.parkingOptions={...(doc.parkingOptions||{})};if(mode==='default')delete doc.parkingOptions[key];else doc.parkingOptions[key]=mode==='off'?{mode:'off'}:{mode,value:value.valueAsNumber/(mode==='ratio'?100:1),rounding:$('quota-'+key+'-round').value,...(basis.value?{basisTotal:basis.valueAsNumber}:{})};
     commit(names[key]+' 주차 목표 변경');
   };
-  const areaSection=document.createElement('section');areaSection.id='planningAreas';areaSection.innerHTML=`<h2>잔여공간 정리</h2><label class="toggle-row"><span>남는 공간을 DA·PIT로 제안</span><input type="checkbox" id="autoZonesToggle"></label><div id="planningAreaSummary" class="area-summary"></div><button class="add-btn" id="pickZone">도면에서 영역 선택</button><p class="note">DA·PIT는 단면 확인 전 계획 제안입니다. 선택한 영역을 바꾸거나 바닥으로 유지할 수 있습니다. 대당 면적은 이 분류 전 본체 실내 면적을 기준으로 합니다.</p><div class="zone-editor" id="zoneEditor" hidden><p id="zoneInfo"></p><select id="zoneKind" aria-label="선택 영역 용도"><option value="da">DA · 외기 여유</option><option value="pit">PIT · 설비 여유</option><option value="keep">바닥 유지 · 자동 분류 제외</option></select><div class="row"><button class="mini-btn" id="applyZone">적용</button><button class="mini-btn" id="releaseZone">자동으로 돌리기</button><button class="mini-btn" id="closeZone">닫기</button></div></div>`;
+  const areaSection=document.createElement('section');areaSection.id='planningAreas';areaSection.innerHTML=`<h2>잔여공간 정리</h2><label class="toggle-row"><span>자동 잔여공간 표시</span><input type="checkbox" id="autoZonesToggle"></label><div id="planningAreaSummary" class="area-summary"></div><button class="add-btn" id="pickZone">도면에서 영역 선택</button><p class="note">자동 잔여는 용도 미확인입니다. DA·PIT 직접 지정은 계획상 지정이며 설비 성능은 미검증입니다. 표시를 꺼도 지정·바닥 유지와 확정 물리 점유는 보존합니다. 대당 면적은 본체 실내 기준면적을 사용합니다.</p><div class="zone-editor" id="zoneEditor" hidden><p id="zoneInfo"></p><select id="zoneKind" aria-label="선택 영역 용도"><option value="da">DA 직접 지정 · 성능 미검증</option><option value="pit">PIT 직접 지정 · 성능 미검증</option><option value="keep">바닥 유지 · 자동 분류 제외</option></select><div class="row"><button class="mini-btn" id="applyZone">적용</button><button class="mini-btn" id="releaseZone">지정 해제</button><button class="mini-btn" id="closeZone">닫기</button></div></div>`;
   options.after(areaSection);
   $('autoZonesToggle').onchange=()=>{doc.autoZones=$('autoZonesToggle').checked;selectedZone=null;commit('잔여공간 자동 정리 변경');};
   $('pickZone').onclick=()=>{ui.zonePick=!ui.zonePick;svg.classList.toggle('zone-pick',ui.zonePick);$('pickZone').textContent=ui.zonePick?'도면에서 DA·PIT 또는 유지 영역을 누르세요':'도면에서 영역 선택';};
@@ -173,6 +192,9 @@
   $('releaseZone').onclick=()=>{if(!selectedZone)return;const key=selectedZone.source==='auto'?'zoneAssignments':'nonParkingZones';doc[key]=(doc[key]||[]).filter(z=>z.id!==selectedZone.id);selectedZone=null;commit('영역 자동 분류 복원');};
   const inside=(paths,p)=>paths.reduce((s,P)=>s+(G.CL.Clipper.PointInPolygon({X:p[0],Y:p[1]},G.toC(P))!==0?Math.sign(G.signedArea(P)):0),0)!==0;
   function zones(r){return (r?.nonParkingZones||[]).concat(r?.keptZones||[],(doc.nonParkingZones||[]).filter(z=>z.kind==='keep').map(z=>({...z,source:'input',areaM2:Math.abs(G.areaOf(z.paths))/1e6})));}
+  function automaticZone(z){return z.source==='auto'&&!z.assigned;}
+  function zoneName(z){return z.kind==='keep'?'바닥 유지 · 자동 분류 제외':automaticZone(z)?'잔여공간 · 자동 추정 · 용도 미확인':z.kind.toUpperCase()+' 지정영역';}
+  function zoneSource(z){return z.kind==='keep'?'사용자 유지 지정 · 설비 용도 지정 아님':automaticZone(z)?'설비 성능 미검증':(z.assigned?'잔여공간에서 직접 분류':'명시 입력')+' · 사용자 지정 · 설비 성능 미검증';}
   function chooseZone(z){selectedZone=z;ui.zonePick=false;svg.classList.remove('zone-pick');renderAll();$('planningAreas').scrollIntoView({block:'nearest'});}
   svg.addEventListener('pointerdown',e=>{if(e.button!==0||ui.drag)return;const target=e.target.closest?.('[data-zone-id]');if(!ui.zonePick&&!target)return;const r=ui.live||ui.res;if(!r||r.fail)return;const p=world(e),z=zones(r).find(z=>target?z.id===target.dataset.zoneId:inside(z.paths,p));e.stopImmediatePropagation();e.preventDefault();if(z)chooseZone(z);else flash('DA·PIT 또는 유지 영역 안을 선택하세요. Esc로 취소합니다.');},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ui.zonePick=false;svg.classList.remove('zone-pick');selectedZone=null;render(ui.res);}});
@@ -187,12 +209,12 @@
   }
   function drawZones(g,r){
     if(!r||r.fail)return;
-    for(const z of zones(r)){const on=selectedZone?.id===z.id,p=el('path',{d:pathsD(z.paths),fill:z.kind==='da'?'url(#daHatch)':z.kind==='pit'?'#ece8df':'#f5f4f0','fill-rule':'nonzero',stroke:on?'#b78337':z.kind==='pit'?'#a69a85':'#a6a6a6','stroke-width':on?1.8:.7,'stroke-dasharray':z.source==='auto'&&!z.assigned?'4 2':'','vector-effect':NSS,'data-planning-zone':z.kind},g);el('title',{},p).textContent=`${z.kind==='keep'?'바닥 유지':z.kind.toUpperCase()} · ${fmt(z.areaM2)}㎡ · ${z.assigned?'직접 분류':z.source==='auto'?'계획 제안':'직접 지정'}`;}
+    for(const z of zones(r)){const on=selectedZone?.id===z.id,auto=automaticZone(z),p=el('path',{d:pathsD(z.paths),fill:auto?'#eeeeec':z.kind==='da'?'url(#daHatch)':z.kind==='pit'?'#ece8df':'#f5f4f0','fill-rule':'nonzero',stroke:on?'#b78337':auto?'#a6a6a6':z.kind==='pit'?'#a69a85':'#a6a6a6','stroke-width':on?1.8:.7,'stroke-dasharray':auto?'4 2':'','vector-effect':NSS,'data-planning-zone':auto?'residual':z.kind,'data-zone-id':z.id},g);el('title',{},p).textContent=`${zoneName(z)} · ${fmt(z.areaM2)}㎡ · ${zoneSource(z)}`;}
   }
   function drawZoneLabels(g,r){if(!r||r.fail||ui.drag)return;const k=scale(),placed=[];for(const z of zones(r)){if(z.areaM2<3||z.source==='auto'&&!z.assigned&&z.areaM2<10)continue;
-    const name=`${z.kind==='keep'?'유지':z.kind.toUpperCase()} ${Number(z.areaM2.toFixed(1))}㎡`,w=(name.length*4.4+6)/k,h=13/k;
+    const name=`${zoneName(z)} ${Number(z.areaM2.toFixed(1))}㎡`,w=(name.length*4.4+6)/k,h=13/k;
     const p=anchor(z).map(toD).find(p=>{const b=[p[0]-w/2,p[1]-h/2,p[0]+w/2,p[1]+h/2];return placed.every(q=>b[0]>q[2]||b[2]<q[0]||b[1]>q[3]||b[3]<q[1])&&[[b[0],b[1]],[b[2],b[1]],[b[2],b[3]],[b[0],b[3]]].every(q=>inside(z.paths,rot([q[0],-q[1]],doc.ucs)));});if(!p)continue;placed.push([p[0]-w/2,p[1]-h/2,p[0]+w/2,p[1]+h/2]);
-    const t=el('text',{x:p[0],y:p[1],fill:z.kind==='pit'?'#8d7655':'#7c8386','font-size':8/k,'text-anchor':'middle','dominant-baseline':'middle','paint-order':'stroke',stroke:'#f7f5ef','stroke-width':3/k,'data-zone-id':z.id,'pointer-events':'all',style:'cursor:pointer'},g);t.textContent=name;}}
+    const t=el('text',{x:p[0],y:p[1],fill:!automaticZone(z)&&z.kind==='pit'?'#8d7655':'#7c8386','font-size':8/k,'text-anchor':'middle','dominant-baseline':'middle','paint-order':'stroke',stroke:'#f7f5ef','stroke-width':3/k,'data-zone-id':z.id,'pointer-events':'all',style:'cursor:pointer'},g);t.textContent=name;}}
   function highlightRamp(g,spec){
     if(!activeField||!spec.body)return;let P=spec.gradeLine;
     if(activeField==='curveRadius')P=spec.curbs.inner.wallSide.slice(spec.spec.straightTopMm>0?1:0,spec.spec.straightBottomMm>0?-1:undefined);
@@ -215,13 +237,15 @@
       const basis=$('quota-'+key+'-basis');if(document.activeElement!==basis)basis.value=cfg?.basisTotal??'';basis.disabled=mode==='off'||mode==='default';
       const info=$('quota-'+key+'-result');info.textContent=q?`목표 ${q.need}대 · 배치 ${q.placed}대${q.short?' · 부족 '+q.short+'대':q.excess?' · 목표보다 '+q.excess+'대 많음':''}`:'추가 목표 해제';info.classList.toggle('short',!!q?.short);
     }
-    $('autoZonesToggle').checked=doc.autoZones!==false;const a=r?.areas;$('planningAreaSummary').innerHTML=a?[['층 전체 외곽',a.floorEnvelopeM2],['주차에 쓰는 바닥',a.parkingSurfaceM2],['DA 계획',a.daM2],['PIT 계획',a.pitM2],['잔여 바닥 유지',a.keptFreeM2],['아직 미분류',a.unassignedFreeM2]].map(([n,v])=>`<span>${n}<b>${fmt(v)}㎡</b></span>`).join(''):'';
+    $('autoZonesToggle').checked=doc.autoZones!==false;const a=r?.areas,legacy=a?.accountingBasis==='legacy-depth-hypothesis/v1';
+    const areaGroups=a?(legacy?[['구 실험 면적 · 새 지정 집계와 별도',[['층 전체 외곽',a.floorEnvelopeM2],['구 실험 바닥 · 벽 공제',a.parkingSurfaceM2],['구 실험 DA 후보 · 성능 미검증',a.daM2],['구 실험 PIT 후보 · 성능 미검증',a.pitM2],['바닥 유지',a.keptFreeM2],['구 실험 미분류',a.unassignedFreeM2]]]]:[['본체 면적 구분',[['본체 실내 기준면',a.innerM2],['지정 비주차·물리 점유 합계',a.nonParkingM2],['위 합계를 제외한 기준면',a.parkingSurfaceM2],['층 전체 외곽 · 별도 기준',a.floorEnvelopeM2]]],['지정·점유 내역 · 위 합계에 포함',[['DA 지정 면적 · 성능 미검증',a.daM2],['PIT 지정 면적 · 성능 미검증',a.pitM2],['그 밖의 물리 점유',a.otherOccupiedM2]]],['자유 잔여 내역 · 제외 기준면에 포함',[['바닥 유지 지정 잔여',a.keptFreeM2],['용도 미할당 잔여 · 자동 추정 포함',a.unassignedFreeM2]]]]):[];
+    $('planningAreaSummary').innerHTML=areaGroups.map(([title,rows])=>`<p class="note" style="grid-column:1/-1">${title}</p>`+rows.map(([n,v])=>`<span>${n}<b>${fmt(v)}㎡</b></span>`).join('')).join('');
     if(selectedZone){selectedZone=zones(r).find(z=>z.id===selectedZone.id)||null;}
-    $('zoneEditor').hidden=!selectedZone;if(selectedZone){$('zoneInfo').textContent=`${selectedZone.kind.toUpperCase()} · ${fmt(selectedZone.areaM2)}㎡ · ${selectedZone.assigned?'직접 분류':selectedZone.source==='auto'?'자동 제안':'직접 지정'}`;$('zoneKind').value=selectedZone.kind;$('releaseZone').disabled=selectedZone.source!=='input'&&!selectedZone.assigned;}
+    $('zoneEditor').hidden=!selectedZone;if(selectedZone){$('zoneInfo').textContent=`${zoneName(selectedZone)} · ${fmt(selectedZone.areaM2)}㎡ · ${zoneSource(selectedZone)}`;$('zoneKind').value=selectedZone.kind;$('releaseZone').disabled=selectedZone.source!=='input'&&!selectedZone.assigned;}
     let stale=$('zoneAssignmentNotice');if(!stale){stale=document.createElement('p');stale.id='zoneAssignmentNotice';stale.className='note';$('zoneEditor').after(stale);}const unused=r?.unmatchedZoneAssignments||[];stale.innerHTML=unused.length?`형상이 달라진 분류 ${unused.length}개는 다시 확인하세요. <button class="mini-btn" id="discardZoneAssignments">바뀐 분류 지우기</button>`:'';if(unused.length)$('discardZoneAssignments').onclick=()=>{doc.zoneAssignments=(doc.zoneAssignments||[]).filter(z=>!unused.includes(z.id));commit('형상이 바뀐 잔여영역 분류 해제');};
     $('pickZone').textContent=ui.zonePick?'도면에서 영역 선택 중 · Esc 취소':'도면에서 영역 선택';
     const tr=routes(r);$('vehicleRouteStates').innerHTML=tr?['entry','exit'].map(key=>{const v=tr[key];return `<div class="traffic-state" data-state="${v.state}"><span>${key==='entry'?'진입 · 파랑':'진출 · 적갈색'}</span><b>${v.state==='clear'?'표시 경로 차체 확인':v.state==='blocked'?'문제 앞 정지':'연결 확인 필요'}</b></div>`;}).join(''):'<p class="note">배치를 놓으면 차량 경로를 확인합니다.</p>';drawScheme();
   }
   window.UGPlanningUI={render,review,routes,issues,issueHtml,drawZones,drawZoneLabels,highlightRamp,focusField,text,structure:{axes:structureAxes,apply:applyStructure}};
-  for(const s of document.querySelectorAll('.legend>span')){const t=s.textContent.trim();if(t==='DA')s.lastChild.textContent='DA · 외기 여유';if(t==='자투리 후보'){s.lastChild.textContent='PIT · 설비 여유';const i=s.querySelector('i');if(i)i.style.background='#ece8df';}}
+  for(const s of document.querySelectorAll('.legend>span')){const t=s.textContent.trim();if(t==='DA')s.lastChild.textContent='DA 지정 · 성능 미검증';if(t==='자투리 후보'){s.lastChild.textContent='잔여공간 · 자동 추정 · 용도 미확인';const i=s.querySelector('i');if(i){i.style.background='#eeeeec';i.style.border='1px dashed #a6a6a6';}}}
 })();

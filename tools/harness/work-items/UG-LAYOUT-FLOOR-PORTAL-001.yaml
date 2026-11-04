@@ -1,0 +1,41 @@
+id: UG-LAYOUT-FLOOR-PORTAL-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-existing-reservation-drawing-label
+question: B1에서 사용자가 표시한 B2 하행 램프 접속부를 위치와 목적층이 읽히는 도면 표시로 안내하는가?
+allowed_files:
+  - 04_parking/01_src/manual-lane-editor.js
+  - tools/harness/work-items/UG-LAYOUT-FLOOR-PORTAL-001.yaml
+acceptance:
+  - 기존 ramp-access 예약 영역을 읽어 B1→B2 진입 위치와 목적층 표시
+  - 현재 B1 시험 모드만 표시하고 도면 보기·동선 검토·도면만 보기·재열기에 유지
+  - 차량 궤적이나 통행 합격으로 표현하지 않고 실제 입력·도형·대수·판정·저장 내용 보존
+  - 사용자가 표시한 위치와 새 표현을 실제 이미지로 현황판에 공유
+not_doing:
+  - 다층 램프 설계·B2 생성·차량 판정·엔진·기존 골든·녹색점 편집 수정·기존 기록 변경·커밋·push·다른 모델 호출
+max_changed_files: 2
+max_new_production_lines: 60
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"B1 시험 도면에 기존 B2 하행 램프 접속부의 목적층과 진입 위치를 표시한다",
+    "stage_goal":"통과, 실패, 미검증을 구분한다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"manual-state","script":"04_parking/02_tests/manual-lane-editor.test.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-LOWER-FLOOR-PORTAL-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-LOWER-FLOOR-PORTAL-20261030/browser-checks.json
+remaining:
+  - 표현 확인 후 녹색점 편집 안정화 진행
+results:
+  outcome: B1에서 B2로 내려가는 입구 표시 추가·사용자 확인 전
+  checks: 도면·동선 검토·도면만 보기·인쇄·재열기와 일반 SGHS 화면 확인; 표시 전후 전체 입력·결과·저장 자료 동일
+  actual: 초기 ALT2 66칸·ALT1 65칸 유지; 기존 B2 하행 접속부만 표시
+  limits: 위치와 목적층 안내이며 새 램프 설계·B2 연결·실제 통행 검증 아님; 녹색점 문제는 다음 수정 대상

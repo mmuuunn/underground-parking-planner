@@ -1,0 +1,32 @@
+id: UG-UX-DARK-SURROUND-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review-no-model-calls
+verify_profile: vehicle-circulation
+question: 도면 화이트·다크 선택에 관계없이 작업 영역과 도면 외 여백을 동일한 다크 색상으로 유지하는가?
+allowed_files:
+  - 04_parking/01_src/task-workspace.css
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/task-workspace.cjs
+  - tools/harness/work-items/UG-UX-DARK-SURROUND-001.yaml
+acceptance:
+  - 두 모드의 메뉴·속성창·도구막대·대안 선반 색상이 같고 어두운 색상 유지
+  - 도면 외 중앙 여백과 기존 회색 바깥 지반 표시를 검정 계열로 통일
+  - 화이트는 도면 원래 밝기 유지·다크는 도면만 반전하며 인쇄는 기존 밝은 도면 유지
+  - 전체 입력·계산·저장값 및 기존 연결 흐름 보존
+not_doing:
+  - 계산·저장·골든·미커밋 변경 정리·차로 노면표시·램프 UP/DN 및 랜딩 세부 표현 이식
+  - 다른 모델·서브에이전트·병렬 작업·단계 종료·커밋·push
+max_changed_files: 4
+max_new_production_lines: 40
+completion_contract: |
+  {"kind":"experiment","goal":"도면 모드만 구분하고 주변 작업 공간을 다크로 통일한다","stage_goal":"통과, 실패, 미검증을 구분한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"dark-surround-flow","script":"04_parking/02_tests/task-workspace.cjs","args":[]}],"review_required":true,"user_required":true}
+results:
+  run: 20261102-014242-UG-UX-DARK-SURROUND-001-6eacc940
+  checks: 공통 계산109/109·화면 연결1/1 통과; 두 모드 주변6영역 색상 일치·화면 지반 숨김·인쇄 반전 해제 확인
+  preservation: 계산 파일17/17 일치·이전 변경 중 이번 허용 파일 밖 변경0
+remaining:
+  - 독립 검토 및 사용자 화면 확인; 다른 모델 호출 금지 유지
+  - 확정 노면표시·램프 UP/DN·끊김선·랜딩 세부 표현 이식은 후속 단위

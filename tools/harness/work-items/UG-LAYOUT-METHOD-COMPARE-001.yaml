@@ -1,0 +1,39 @@
+id: UG-LAYOUT-METHOD-COMPARE-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-read-only-comparison
+question: 구민회관 B1에서 자동 배치와 사람이 주요 차로를 정하는 방식 중 실제 업무에 쓸 범위를 고를 수 있는가?
+allowed_files:
+  - tools/harness/dashboard.html
+  - tools/harness/work-items/UG-LAYOUT-METHOD-COMPARE-001.yaml
+acceptance:
+  - 외곽·기둥·코어·램프·위상·칸 배치 설정을 고정하고 두 기존 생성 경로를 비교
+  - 제품 전체에서 사용방식 선택을 위한 비교임을 설명하고 원도와 두 안의 확인 위치를 이미지에 표시
+  - 후보 대수를 사용 가능 대수로 표시하지 않고 하역장·순환·정밀 차량 이용·편집·시간 절감의 미확인을 공개
+  - 사용자 차로 의도 확인 전 엔진·기존 시험·골든·기존 작업표·검토승인 기록을 변경하지 않음
+not_doing:
+  - 엔진 수정·반자동 편집 기능 구현·제품 방식 확정·원안 불가능 판정·정밀 주행 합격·커밋·push
+completion_contract: |
+  {
+    "kind":"support",
+    "goal":"구민회관 B1의 자동 배치와 차로 지정 실험을 같은 조건과 표시된 이미지로 비교한다",
+    "stage_goal":"통과, 실패, 미검증을 구분한다",
+    "target":"tools/harness/dashboard.html",
+    "depends_on":[],
+    "checks":[{"id":"dashboard-records","script":"tools/harness/scripts/dashboard.test.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-METHOD-COMPARE-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-ROW-INTENT-20261030/comparison.json
+remaining:
+  - 최신 이미지로 연속된 주차열과 추가 후보 한 칸의 처리 방식 검토
+results:
+  outcome: 비교 이미지 준비·사용자 확인 대기
+  comparison: 같은 고정 입력과 주차열 설정에서 자동9칸·차로지정65칸;두안순환미해결;실사용가능대수아님
+  preservation: 기둥38·코어·점유물·램프몸체및착지동일;입력불변;제품엔진변경없음
+  limitation: 기존66칸은추가설정있는과거실험;하역장겹침각3칸;편집화면·시간절감·실제차량이용미검증
+  latest_image: 주차열구성비교;표시구역현재12칸·연속열우선13칸;엔진기본값변경없음

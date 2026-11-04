@@ -1,0 +1,36 @@
+id: UG-LAYOUT-GENERAL-START-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 기본 차로 애니메이션과 선택형 칸 입출차를 구분하고 다른 사례·새 일반 도면을 보존하며 만들 수 있는가?
+allowed_files:
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/general-start.cjs
+  - tools/harness/work-items/UG-LAYOUT-GENERAL-START-001.yaml
+acceptance:
+  - 기본 화면에서 확인된 직선 교행 경로의 차량 자동 반복 재생·일시정지 가능·줄인 모션 존중
+  - 주차칸 클릭 선택은 기본 해제·입출차 보기로 켤 때만 기존 칸별 기능 사용
+  - 구민회관B1과 B2 및 기존 일반 도면을 별도 열고 직사각형·ㄱ자형 새 작업 생성
+  - 새 일반 작업은 각기 다른 저장 키를 사용하고 원본 사례와 기존 사용자 작업을 덮어쓰지 않음
+  - 일반 입력에서 외곽·코어·기둥·램프 수정 및 자동/반자동과 저장·재열기 확인
+  - 기존 계산·검사·골든·이전 증거와 작업 기록 및 미커밋 변경 보존
+not_doing:
+  - 전체 순환 통행 합격·층간 통행·차량 판정 엔진 변경·기존 시험이나 완료 승인 기록 수정·커밋·push·다른 모델 호출
+max_changed_files: 5
+max_new_production_lines: 180
+completion_contract: |
+  {"kind":"experiment","goal":"기본 차량 재생과 사례에 고정되지 않은 일반 도면 시작을 제공한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"general-start","script":"04_parking/02_tests/general-start.cjs","args":[]},{"id":"manoeuvres","script":"04_parking/02_tests/vehicle-manoeuvres.cjs","args":[]},{"id":"full-workflow","script":"04_parking/02_tests/full-workflow.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-GENERAL-START-20261031/comparison.json
+remaining:
+  - 사용자 실제 조작 확인과 독립 검토
+results:
+  default: 기본 직선 차로 차량 자동 반복 재생·칸별 입출차 선택 기본 해제
+  general: 구민회관B1·B2·기존 일반 도면·새 직사각형69칸·새 ㄱ자형49칸
+  editing: 일반 입력에서 외곽 다시 그리기·코어·기둥·램프·자동 반자동·이름 저장·개별 재열기 확인
+  verification: 공통109통과·기존 차량 및 전체 입력 시험 통과·화면 오류0
+  evidence: C:/Users/seok2/.codex/research/SGHS-GENERAL-START-20261031/completion.json

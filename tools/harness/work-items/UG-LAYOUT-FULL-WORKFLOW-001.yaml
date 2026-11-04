@@ -1,0 +1,48 @@
+id: UG-LAYOUT-FULL-WORKFLOW-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review
+verify_profile: vehicle-circulation
+question: 기존 입력 기능과 자동 배치·차로 지정·주차열 선택을 동일 도면에서 사용하고 저장 재열기할 수 있는가?
+allowed_files:
+  - 04_parking/underground-compare.html
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/02_tests/full-workflow.cjs
+  - tools/harness/work-items/UG-LAYOUT-FULL-WORKFLOW-001.yaml
+acceptance:
+  - 기존 외곽·코어·기둥·램프·영역·표현·제안 기능을 숨기지 않고 동일 문서를 사용
+  - 입력 편집과 차로 편집을 명확히 구분하고 자동·반자동 전환에서 물리 입력 보존
+  - 자동 생성 차로를 편집 가능한 입력으로 가져오고 차로 추가·가지 삭제·직교 이동 가능
+  - 코어 추가·크기 수정과 램프·구조 입력 후 반자동 결과에 실제 반영
+  - 미적용 변경 보호·실행 취소·저장 재열기·기존 저장 자료 보존
+  - 기본 자동 결과와 기존 B1 시험 기능 보존·실제 조작 흐름과 현황판 이미지 확인
+not_doing:
+  - 새 코어 생성기·엔진 판정·골든 변경·정밀 통행·독립 검토나 사용자 승인 대행·다른 모델·커밋·push
+max_changed_files: 5
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"기존 계획 입력과 자동·반자동 배치를 한 도면의 사용 흐름으로 연결한다",
+    "stage_goal":"기준 매스별 주차대수와 램프 위치가 재현된다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"full-workflow","script":"04_parking/02_tests/full-workflow.cjs","args":[]},{"id":"legacy-b1","script":"04_parking/02_tests/b1-ready.cjs","args":[]}],
+    "review_required":true,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-FULL-WORKFLOW-20261030/comparison.json
+remaining:
+  - 독립 검토와 사용자 화면 확인·다른 모델 호출 금지 유지
+  - 정밀 차량 통행과 층간 연결은 기존 별도 미검증 유지
+results:
+  outcome: 기존 입력 기능과 자동·반자동 배치를 동일 도면에 연결·화면 조작 검사 통과
+  checks: 코어 추가·크기·마우스 이동·삭제; 외곽 그리기; 구조 적용; 램프·모듈; 대안·차로 추가삭제; 실행취소; 저장 재열기; 저장 실패; 기존 자료 불러오기
+  preservation: 일반 자동126칸·SGHS 자동9칸의 입력과 전체 결과 동일; B1 반자동66칸; 기존 엔진·시험·기록 보존
+  compatibility: workflow=legacy는 이전 B1 전용 시험 재현용; 기본 주소와 기존 B1 주소는 전체 기능 제공
+  evidence: C:/Users/seok2/.codex/research/SGHS-FULL-WORKFLOW-20261030/completion.json

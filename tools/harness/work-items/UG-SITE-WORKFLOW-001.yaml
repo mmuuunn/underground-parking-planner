@@ -1,0 +1,32 @@
+id: UG-SITE-WORKFLOW-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 지상주차의 VWorld 부지 선택을 재사용해 부지·주변 맥락에서 지하 계획을 시작하고 패널 중복 편집을 제거하는가?
+allowed_files:
+  - 04_parking/01_src/site-provider.js
+  - 04_parking/01_src/site-workflow.js
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/01_src/CODEX_ug_compare_page.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/site-workflow.cjs
+  - tools/harness/work-items/UG-SITE-WORKFLOW-001.yaml
+scope_reason: 기존 provider를 변경 없이 선별 복사하고 별도 UI 모듈·초기화·지리 맥락 저장과 호출부·실행 시험을 연결하기 위해7파일로 한정
+acceptance:
+  - 기존 지상주차 provider 재사용·주소 지번 검색·필지 미리보기·인접 필지 합치기·주변 도로 건물 필지 표시
+  - 실제 필지와 사용자 지정 진입 변에서 별도 일반 작업 생성·이전 사례와 저장 자료 보존·실패와 응답 지연 및 잘못된 도형 처리
+  - 프로젝트에 인증키 미포함·이전 브라우저 키 저장 이름 재사용·인증 실패를 실제 자료 성공으로 표현하지 않음
+  - 우측은 부지·배치 조건·결과 중심·도면 중복 편집은 캔버스 도구와 선택 대상 속성으로 이동·기존 기능 제거 금지
+  - 부지 맥락과 도면 저장·재열기·실행 취소·코어 기둥 차로 편집 및 기존 전체 동선 보존
+not_doing:
+  - 원본 지상주차 및 레거시 저장소 수정·법규나 도로 접속 허가 확정·골든 변경·기존 시험 증거 승인 완료 기록 변경·커밋 push·다른 모델 호출
+max_changed_files: 7
+max_new_production_lines: 800
+completion_contract: |
+  {"kind":"experiment","goal":"VWorld 부지 맥락에서 지하 계획을 시작하고 중복 편집 패널을 정리한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"site-workflow","script":"04_parking/02_tests/site-workflow.cjs","args":[]},{"id":"quiet-routes","script":"04_parking/02_tests/quiet-routes.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-SITE-WORKFLOW-20261031/comparison.json
+remaining:
+  - 유효한 VWorld 인증키로 실제 부지 조회·새 계획 시작 확인 및 독립 검토·사용자 확인

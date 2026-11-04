@@ -22,7 +22,7 @@ test('straight and curved ramps use the same 6m approach boundary for one 90 deg
     const straight=E.createStraightRamp({landing,tangent,widthMm:6500,lengthMm:24000});
     const curve=E.createCurveRamp({id:'R',systemId:'S',operation:'twoWay',landing,tangent,turn:'left',turnDeg:180,innerRadiusMm:6000,lanes:2,legalLaneWidthMm:6500,straightTopMm:3000,straightBottomMm:3000,transitions:{topMm:1700,bottomMm:1700},levels:{connects:{upperLevelMm:0,lowerLevelMm:-3800}}});
     assert.ok(curve.body);
-    const approaches=[straight,curve].map(ramp=>E.generate({...base,ramp}).ramp.approach);
+    const approaches=[straight,curve].map(ramp=>{const p=E.generate({...base,ramp});if(!accepted){const v=p.violations.find(v=>v.id==='RAMP_OFFGRID');assert.deepEqual(p.issues.find(v=>v.id==='RAMP_OFFGRID').at,v.at);}return p.ramp.approach;});
     for(const a of approaches){assert.equal(a.firstStraightMm,x-20650);assert.deepEqual(a.turnAnglesDeg,[90]);assert.equal(a.accepted,accepted);assert.ok(a.summary.includes(`착지 뒤 ${((x-20650)/1000).toFixed(3)}m 직진`));}
     assert.deepEqual(approaches[0],approaches[1]);
   }
@@ -52,6 +52,20 @@ test('P1 gradual 90 and 180 degree arcs stay clear',()=>{
   for(const steps of [30,60]){const P=[[-15000,-6000],[0,-6000]];for(let k=1;k<=steps;k++){const t=-Math.PI/2+k*Math.PI/60;P.push([6000*Math.cos(t),6000*Math.sin(t)].map(Math.round));}P.push(steps===30?[6000,15000]:[-15000,6000]);assert.equal(E.checkVehiclePath(wide,P).state,'clear');}
 });
 const mass=[[0,18000],[15000,0],[101481,0],[101481,51840],[0,51840]],input={mass,ucs:0,cores:[],phase:[7400,3600],floorMm:3800,allowExternalRamp:true},ramp=y=>({x:11850,y,angleDeg:270,widthMm:6000,lengthMm:24000});
+test('fixed 50-bay baseline joins the ring with complete clear trips while the old late turn stays blocked',()=>{
+  const P=require('../../tools/parking-comparison-basis.cjs'),spec=P.read().cases.find(c=>c.id==='regular'),fixed=structuredClone(spec.input),events=[];
+  E.generate(fixed,event=>events.push(event));const baseline=events.find(e=>e.id==='baseline').plan,before=P.hash(baseline);
+  assert.equal(baseline.stallCount,50);assert.equal(baseline.columns.length,36);assert.equal(before,spec.expected.planHash);
+  const routes=E.inspectVehicleRoutes(baseline);
+  for(const key of ['entry','exit']){const v=routes[key],replay=E.checkVehiclePath(baseline,v.points);
+    assert.equal(v.state,'clear',key+' '+JSON.stringify(v.firstIssue));assert.equal(replay.state,'clear');assert.equal(v.stopDistanceMm,v.lengthMm);assert(v.samples>100);
+    assert.deepEqual(v.vehicle,{lengthMm:4600,widthMm:1900});assert.equal(v.sampleMm,500);assert.equal(v.turnWindowMm,4712);assert.equal(v.turnLimitDeg,90.5);
+  }
+  const late=E.checkVehiclePath(baseline,[[-23600,6900],[14600,6900],[17650,9950]]);
+  assert.equal(late.state,'blocked');assert.equal(late.firstIssue.id,'VEHICLE_OUTSIDE_LANE');assert.equal(late.firstIssue.outsideAreaM2,.665);assert.deepEqual(late.firstIssue.at,[14200,6900]);
+  assert.equal(P.hash(baseline),before);assert.deepEqual(fixed,spec.input);
+});
+
 test('straight ramp suggestions exclude blocked routes even when they have more stalls',()=>{
   const c=require('./fixtures/underground-golden-cases.json').cases.find(c=>c.id==='l-shape');
   const base=E.generate(c.input),blocked=E.generate({...c.input,phase:base.grid.phase,ramp:{...c.input.ramp,x:25400,y:65700,angleDeg:0}});
@@ -80,6 +94,16 @@ test('F3/F4 both ramp forms report the same short approach and the unresolved 14
   const a=E.generate({...input,ramp:ramp(26000)}),b=E.generate({...input,ramp:E.createStraightRamp(ramp(26000))});
   for(const p of [a,b]){assert.equal(p.stallCount,120);assert.equal(p.ramp.approach.accepted,false);assert(p.ramp.approach.firstStraightMm<6000);assert(p.violations.some(v=>v.id==='RAMP_OFFGRID'));assert(p.issues.some(v=>v.id==='RING_SHARP_TURN'&&v.at));const routes=E.inspectVehicleRoutes(p);assert.equal(routes.entry.state,'blocked');assert.equal(routes.exit.state,'blocked');}
   assert.deepEqual(a.ramp.approach,b.ramp.approach);
+});
+
+test('ramp issue positions retain reported world coordinates and preserve missing-position fallback',()=>{
+  const G=require('../01_src/plan/CLAUDE_ugp_geom.js'),l=require('./fixtures/underground-golden-cases.json').cases.find(c=>c.id==='l-shape').input;
+  for(const base of [l,{...input,ramp:ramp(26000)}])for(const [angle,shift] of [[0,[0,0]],[37,[12345,-6789]],[90,[-20000,10000]]]){
+    const point=p=>G.add(G.rot(p,angle),shift),landing=point([base.ramp.x,base.ramp.y]),p=E.generate({...base,mass:base.mass.map(point),ucs:base.ucs+angle,ramp:{...base.ramp,x:landing[0],y:landing[1],angleDeg:base.ramp.angleDeg+angle}}),v=p.violations.find(v=>v.id==='RAMP_OFFGRID'),marker=p.issues.find(v=>v.id==='RAMP_OFFGRID');
+    assert.ok(v?.at);assert.deepEqual(marker.at,v.at);assert.deepEqual(marker.at,p.ramp.landing);assert.equal(marker.note,v.note);
+    const routes=E.inspectVehicleRoutes(p);assert.equal(routes.entry.firstIssue.id,'RAMP_APPROACH');assert.deepEqual(marker.at,routes.entry.firstIssue.at);
+  }
+  const p=E.generate({...l,floorMm:5000}),v=p.violations.find(v=>v.id==='RAMP_SLOPE');assert.ok(v);assert.equal(v.at,undefined);assert.deepEqual(p.issues.find(v=>v.id==='RAMP_SLOPE').at,p.ramp.approach.points[1]||p.ramp.landing);
 });
 test('P3 aligned and raw external ramps share a connected graph',()=>{
   for(const r of [ramp(43440),E.createStraightRamp(ramp(43440))]){const p=E.generate({...input,ramp:r});assert.equal(p.stallCount,130);assert(p.graph.hasLoop);assert.equal(p.planningBoundary.bodyOutsideMm2,0);assert.deepEqual(p.grid.phase,[7400,3600]);}
@@ -110,6 +134,8 @@ test('turn-bay proposal preserves the scene and reports the unverified dead end'
   const before=E.generate(input),result=E.suggestTurnBay(input);assert.ok(result);const after=result.plan;
   assert.equal(before.stallCount,82);assert.equal(after.stallCount,87);assert.equal(after.status,'CONDITIONAL');assert.equal(result.turning,'UNVERIFIED');
   assert.equal(after.deadSideCount,7);assert(after.violations.some(v=>v.id==='DEAD_END'));assert.deepEqual(after.columns,before.columns);assert.deepEqual(after.cores,before.cores);assert.deepEqual(after.ramp.body,before.ramp.body);
-  const routes=E.inspectVehicleRoutes(after);assert.equal(routes.entry.state,'clear');assert.equal(routes.exit.state,'clear');assert(after.areas.nonParkingM2<before.areas.nonParkingM2-300);
+  const routes=E.inspectVehicleRoutes(after);assert.equal(routes.entry.state,'clear');assert.equal(routes.exit.state,'clear');
+  assert.equal(before.areas.nonParkingM2,0);assert.equal(after.areas.nonParkingM2,0);
+  assert(after.areas.unassignedFreeM2<before.areas.unassignedFreeM2-300);
   assert.deepEqual(E.generate(input),before);assert.equal(E.suggestTurnBay({...input,ramp:null}),null);assert.equal(E.suggestTurnBay({...input,ramp:{...input.ramp,angleDeg:input.ramp.angleDeg+90}}),null);
 });

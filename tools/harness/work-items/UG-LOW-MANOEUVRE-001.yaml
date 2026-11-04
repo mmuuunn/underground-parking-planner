@@ -1,0 +1,52 @@
+id: UG-LOW-MANOEUVRE-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-user-restricted-independent-review
+verify_profile: vehicle-circulation
+question: 기존 생성기와 차량 여유를 유지하며 조작이 적은 정확 접속 경로를 먼저 찾고 기존 증거보다 나쁜 경로로 바꾸지 않을 수 있는가?
+allowed_files:
+  - 04_parking/01_src/plan/low-manoeuvre-search.js
+  - tools/search-low-manoeuvres.cjs
+  - 04_parking/02_tests/low-manoeuvre-search.test.cjs
+  - package.json
+  - tools/harness/work-items/UG-LOW-MANOEUVRE-001.yaml
+acceptance:
+  - 조작 횟수 우선·길이 차선으로 경로 후보를 비교하고 기존 차량 검사·탐색을 재사용
+  - 목표의 위치와 방향을 정확히 연결;700mm와5도 근사 목표를 연결 성공으로 대체하지 않음
+  - 시작·목표·차체·반경·전후진·탐색 한도를 검증하고 실패와 불가능을 구분
+  - 실제 E2 기존 전체 경로를 보존하며 앞서 확인한9개 조작 감소 사례 재현·전체50칸 연결 유지
+  - 공통 비교 기능이 읽을 수 있는 새 경로 보고를 별도 저장;기존 생성기·E2·골든·이전 자료 보존
+not_doing:
+  - 기존 generate·generateConnected·차량 검사 기준·법규·골든·제품 UI·FEASIBLE 판정 변경
+  - 일반 최적성 증명·다른 모델·서브에이전트·병렬 작업·자기 독립검토·승인 대행·커밋·push
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+max_changed_files: 5
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"support",
+    "goal":"기존 차량 검사 위에 조작이 적은 정확 접속 경로를 먼저 찾는 모듈과 전체 여정 실행 도구를 구현한다",
+    "stage_goal":"통과, 실패, 미검증을 구분한다",
+    "target":"tools/search-low-manoeuvres.cjs",
+    "depends_on":[],
+    "checks":[{"id":"low-manoeuvre-counterexamples","script":"04_parking/02_tests/low-manoeuvre-search.test.cjs","args":[]}],
+    "review_required":true,
+    "user_required":true
+  }
+completion_run: 20261102-191748-UG-LOW-MANOEUVRE-001-acdf49c4
+implementation_results:
+  npm_test: 133/133 passed
+  harness_common: 110/110 passed
+  harness_contract_checks: 1/1 passed
+  current_e2_full_journeys: 50/50
+  current_e2_gear_distribution: 2 changes=10 stalls;6 changes=37 stalls;10 changes=3 stalls
+  current_e2_gear_reduced_stalls: 33
+  current_e2_same_gear_shorter_stalls: 4
+  mean_round_trip_m: 253.40970103022678 to 259.21589462938516;gear changes take precedence
+  separate_formula_audit: 519243 poses at25mm;outside0mm2;obstacle0mm2;same author
+  previous_nine_six_to_two_cases: reproduced
+  formal_gates: independent review and user approval remain pending;no substitute reviewer invoked
+  evidence_directory: C:/Users/seok2/.codex/visualizations/2026/11/02/01a19b07-a42d-7cc2-bf9e-2e7d37dcae9c/low-manoeuvre-implementation

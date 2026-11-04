@@ -1,0 +1,47 @@
+id: UG-LAYOUT-ORTHOGONAL-EDITOR-001
+status: USER_GATE
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: not-required-first-editor-stability-fix
+question: B1에서 직교·접속을 유지하는 차로 편집과 적용 전 검토로 작은 이동에 저장 배치가 무너지는 문제를 막는가?
+allowed_files:
+  - 04_parking/01_src/manual-lane-editor.js
+  - 04_parking/02_tests/manual-lane-orthogonal.test.cjs
+  - tools/harness/work-items/UG-LAYOUT-ORTHOGONAL-EDITOR-001.yaml
+acceptance:
+  - 기존 중간점은 계산에 보존하고 접점·굴곡·선택한 가지 끝점을 구분해 표시
+  - 직교 차로 평행 이동·접점 연동·끝점 길이 조절·램프 착지 고정과 상대 이동 간격·클릭 여유 적용
+  - 끄는 중 기존 배치 유지; 놓은 후 미리 계산·적용·취소; 충돌·도달 단절·계산 실패 시 기존 입력과 저장 보존
+  - ALT·초기 복원도 미리보기 후 적용; 미적용 변경을 저장·재열기에서 보호; 실행취소·다시실행과 저장 오류 안내 유지
+  - B2 하행 입구를 기본도면 선·화살표·층 이름으로 표시하고 기존 도형·판정·골든 유지
+  - 단위 검사와 실제 클릭·드래그·키보드·적용·취소·재열기·기존 자료 보존 및 현황판 표시 이미지 확인
+not_doing:
+  - 다층 설계·정밀 차량 통행·기존 엔진 판정 완화·골든 변경·이전 기록 수정·커밋·push·다른 모델 호출
+max_changed_files: 3
+max_new_production_lines: 400
+completion_contract: |
+  {
+    "kind":"experiment",
+    "goal":"B1의 차로 편집을 직교·연결 유지와 미리보기 적용 방식으로 안정화하고 하행 입구를 도면답게 표시한다",
+    "stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다",
+    "target":"04_parking/underground-compare.html",
+    "depends_on":[],
+    "checks":[{"id":"orthogonal-state","script":"04_parking/02_tests/manual-lane-orthogonal.test.cjs","args":[]},{"id":"existing-state","script":"04_parking/02_tests/manual-lane-editor.test.cjs","args":[]}],
+    "review_required":false,
+    "user_required":true
+  }
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SGHS-B1-ORTHOGONAL-EDITOR-20261030/comparison.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-ORTHOGONAL-EDITOR-20261030/browser-checks.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-ORTHOGONAL-EDITOR-20261030/edge-checks.json
+  - C:/Users/seok2/.codex/research/SGHS-B1-ORTHOGONAL-EDITOR-20261030/REVIEW.md
+remaining:
+  - 사용자 편집 시험과 기본도면 하행 표시 확인
+results:
+  outcome: 직교 차로 편집과 도면용 하행 표시 구현·사용자 확인 전
+  actual: 1픽셀 이동 전후 입력·66칸·저장·이력 동일; 중앙 세로 가지0.1m 이동 시 양끝과 접점 연동; 충돌한 이동 적용 차단
+  operations: 접점·굴곡·선·끝점 구분; 중간점2 숨김; 상대 간격 이동·큰 선택 영역·방향별0.1m 이동 여유 안내·미리보기·적용취소·변경칸 표시·되돌리기·재열기·이전 기울어진 차로 복원 확인
+  checks: 실제 브라우저 조작17항목과 저장·기존자료·키보드·검토모드5항목 통과; 기존109개와 관련17개 검사 통과
+  limits: 왕복형 판단은 별도 작업에서 독립 검토 전; 원도 램프 접속과 정밀 통행은 미검증

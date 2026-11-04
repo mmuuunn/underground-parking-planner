@@ -215,7 +215,7 @@
       if (seen.has(key)) return []; seen.add(key);
       if (v.id === 'STALL_NO_FRONT' && lost.length) return [{...base, at: mid(lost[0]), zone: lost}];
       if (v.id === 'DEAD_END' && rep.deadEnds.length) return [{...base, at: rep.deadEnds[0].map(Math.round), points: rep.deadEnds.map((p) => p.map(Math.round))}];
-      if (/^RAMP_|^LANDING/.test(v.id) && rampOut) { const ap = (rampOut.approach || []).map((p) => W(p).map(Math.round)); return [{...base, at: ap[1] || W(rampOut.landing).map(Math.round), zone: [rampOut.body.map((p) => W(p).map(Math.round))], points: ap.slice(1)}]; }
+      if (/^RAMP_|^LANDING/.test(v.id) && rampOut) { const ap = (rampOut.approach || []).map((p) => W(p).map(Math.round)); return [{...base, at: v.at || ap[1] || W(rampOut.landing).map(Math.round), zone: [rampOut.body.map((p) => W(p).map(Math.round))], points: ap.slice(1)}]; }
       if (v.id === 'EMPTY_ISLAND') return [{...base, at: v.at, zone: v.zone}];
       if (/^CORE_/.test(v.id)) { const i = coreAt(v.at); return [{...base, at: v.at, ...(i >= 0 ? {core: i, zone: [out.cores[i].pts]} : {})}]; }
       return [{...base, at: v.at || null}];

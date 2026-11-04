@@ -1,0 +1,35 @@
+id: UG-COLUMN-CONTROL-ACCESS-001
+status: TASK_FAILED
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: independent-review-pending
+verify_profile: vehicle-circulation
+question: 사용자가 기둥 치수 버튼으로 접힌 입력란을 바로 열고 편집할 수 있는가?
+allowed_files:
+  - 04_parking/01_src/task-workspace.js
+  - 04_parking/02_tests/column-control-access.test.cjs
+  - 04_parking/underground-compare.html
+  - tools/harness/work-items/UG-COLUMN-CONTROL-ACCESS-001.yaml
+acceptance:
+  - 두 기둥 도구의 이름에 치수를 명시하고 클릭하면 기존 고급 설정을 펼쳐 columnSizeMm로 스크롤·포커스
+  - 기둥열 편집의 기존 동작을 유지하고 입력값·문서·저장·배치를 자동 적용하지 않음
+  - 미적용 배치 미리보기 중에는 기존 이동 차단 유지; 코어·램프·외곽 동작 보존
+  - S1 검토 완료 지문을 보존 자료로 고정; S1 계산·표시 결함과 보호 기준은 이번에 수정하지 않음
+max_implementation_rounds: 1
+max_reviewer_calls: 1
+max_changed_files: 4
+max_new_production_lines: 40
+completion_contract: |
+  {"kind":"experiment","goal":"기둥 치수 입력의 발견 가능성을 기존 도구에서 개선하고 자동 적용을 방지한다","stage_goal":"대수 변화가 있으면 어떤 차로와 칸이 왜 바뀌었는지 설명한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"column-control-access","script":"04_parking/02_tests/column-control-access.test.cjs","args":[]},{"id":"column-size-preservation","script":"04_parking/02_tests/column-size-input.test.cjs","args":[]}],"review_required":true,"user_required":true}
+baseline_exception: Prior S1 common suite145of146/harness117of118 fails protected comparison planHash; preserve and report, do not update
+user_authorization: 너무 찾기 어려워요. 수정 필요해요.
+evidence_directory: C:/Users/seok2/.codex/reviews/column-control-access-20261103_1
+completion_run: 20261103-210734-UG-COLUMN-CONTROL-ACCESS-001-30995865
+results:
+  behavior: both-column-buttons-name-size-and-axes;open-advanced-input;scroll-and-focus-columnSizeMm;no-automatic-size-commit
+  target_checks: column-access3of3;column-size10of10
+  common_checks: npm145of146;harness117of118;existing-protected-planHash-failure-retained
+  preservation: only-task-workspace-and-html-cache-token-changed;new-test-and-workitem;S1-calculation-and-controls-unchanged
+  screen: HTTP200-new-script-confirmed;user-refresh-required;no-browser-control-or-user-storage-access
+  remaining: screen-user-confirmation;independent-UI-review;prior-S1-keep-display-finding-and-protected-comparison-baseline-unresolved

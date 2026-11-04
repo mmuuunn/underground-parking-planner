@@ -1,0 +1,40 @@
+id: UG-RAMP-ISSUE-POSITION-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+authority: codex
+owner: codex
+reviewer: pending-independent-review-no-model-calls
+verify_profile: vehicle-circulation
+question: 램프 검사에서 보고한 실패 좌표를 같은 번호의 도면 표시가 보존하는가?
+allowed_files:
+  - 04_parking/01_src/plan/CLAUDE_ugp_plan.js
+  - 04_parking/02_tests/parking-turns.test.cjs
+  - tools/harness/work-items/UG-RAMP-ISSUE-POSITION-001.yaml
+acceptance:
+  - L자와 오각형의 램프 합류 정지 좌표 불일치를 수정 전에 재현
+  - 램프 검사에 위치가 있으면 그대로 사용하고 없는 경우 기존 합류점과 착지점 대체 동작 유지
+  - 도면 번호와 설명 및 실제 차량 합류 정지 좌표가 일치하고 서로 다른 급회전 문제는 별도로 유지
+  - 이동 및 회전 사례와 직선 및 곡선 램프에서 동일한 좌표 전달 확인
+  - 변경 전후 주차대수와 배치 전체 및 판정과 차량 경로는 동일하고 도면 문제의 위치만 변경
+  - B1의 입력과 계산 및 저장 보존과 현재 제품의 실제 SVG 번호 연결 확인
+not_doing:
+  - 판정 기준과 주차 배치 및 램프 형상 변경
+  - 검사창 종료와 클릭 가로채기 및 설명 상태 등 다른 결함 수정
+  - 다른 모델 호출과 서브에이전트 및 병렬 작업과 커밋 및 push
+max_changed_files: 3
+max_new_production_lines: 5
+max_implementation_rounds: 2
+max_reviewer_calls: 0
+completion_contract: |
+  {"kind":"experiment","goal":"램프 검사 결과의 좌표를 도면 문제 번호에 보존한다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"ramp-issue-position","script":"04_parking/02_tests/parking-turns.test.cjs","args":[]},{"id":"workspace-flow","script":"04_parking/02_tests/task-workspace.cjs","args":[]}],"review_required":true,"user_required":true}
+results:
+  run: 20261102-111056-UG-RAMP-ISSUE-POSITION-001-f08040a2
+  production_change: issueList의 램프 위치 대체식 한 줄에 검사 좌표 v.at 우선순위 추가
+  regression: 수정 전 두 좌표 시험 실패를 보존하고 수정 후 통과; 직선과 곡선의 6m 경계 및 이동과 37도와 90도 회전 및 좌표 없는 항목의 대체 위치 확인
+  preservation: 249개 입력의 도면 문제 좌표 외 전체 계산 결과와 차량 경로 동일; 위치 훑기 242곳의 불일치 242에서 0
+  ui: 분리된 시험 브라우저의 B1 66칸과 L자 67칸과 오각형120칸 및 입력과 저장 보존; L자와 오각형 SVG 번호와 말풍선이 검사 착지 좌표에 일치
+  checks: 공통110/110 및 작업2/2 통과; 작업 흐름 첫 실행의 초기화 대기 시간 초과 기록 보존 후 동일 시험 단독 재실행과 하네스 재확인 통과
+  evidence: C:/Users/seok2/Documents/Codex/2026-11-02/outputs/08-3_램프검사좌표_최소수정
+remaining:
+  - 하네스의 독립 검토와 사용자 화면 확인 대기; 기계 검사를 최종 승인으로 기록하지 않음
+  - 다른 모델과 서브에이전트 및 병렬 작업 없이 현재 담당만 작업

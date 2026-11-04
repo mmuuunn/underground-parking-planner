@@ -1,0 +1,24 @@
+id: UG-SITE-COMFORT-001
+status: REVIEW_PENDING
+stage: vehicle-circulation
+owner: codex
+reviewer: pending-independent-review
+question: 지도와 주차도면의 넓은 흰 면을 줄여 눈부심을 낮추는가?
+allowed_files:
+  - 04_parking/01_src/site-workflow.js
+  - 04_parking/underground-compare.html
+  - 04_parking/02_tests/site-visibility.cjs
+  - tools/harness/work-items/UG-SITE-COMFORT-001.yaml
+acceptance:
+  - 화면은 중간 회색 바탕과 부드러운 회색 도면으로 표시하고 인쇄는 기존 종이 색을 유지한다
+  - 대상지 안의 기존 건물 가림과 외부 주변 표시를 유지한다
+  - 도면 입력·배치 결과를 바꾸지 않는다
+not_doing:
+  - 엔진 변경·테마 선택 기능 추가·기존 증거 및 승인 변경·커밋 push
+completion_contract: |
+  {"kind":"support","goal":"부지 계획 화면의 눈부심을 줄인다","stage_goal":"실패 위치와 사용자 안내 원인이 일치한다","target":"04_parking/underground-compare.html","depends_on":[],"checks":[{"id":"site-visibility","script":"04_parking/02_tests/site-visibility.cjs","args":[]}],"review_required":true,"user_required":true}
+dashboard_review_for: UG-LAYOUT-METHOD-COMPARE-001
+dashboard_sources:
+  - C:/Users/seok2/.codex/research/SITE-COMFORT-20261031/comparison.json
+remaining:
+  - 중간 회색 화면의 사용자 확인
